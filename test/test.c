@@ -11,6 +11,7 @@ uint32_t testCountOk = 0, testCountFailed = 0;
 TestFlags testFlags = None;
 
 // Here add test suite so test.c knows what test suites it can expect
+TEST_SUITE(TokenTest)
 
 int main(int argc, char **argv)
 {
@@ -49,6 +50,8 @@ int main(int argc, char **argv)
         freopen("/dev/null", "w", stderr); // redirects stderr into /dev/null
 
     // Register new test suite here if you want to run the test suite
+    REGISTER_TEST_SUITE(TokenTest)
+
     RUN_TEST_SUITES
 
     if (!(testFlags & OnlyFailed)) {
