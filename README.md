@@ -30,5 +30,4 @@ _Week 2 [12.10 - 18.10]_
   
   #11 Grammar, basic parser implementation - **Katka** :white_medium_square:
   
-  #12 Builtins - Jakub + Marek
-  What did/didn't we good last time we planned, how to improve
+  #12 Builtins - **Jakub + Marek** :white_medium_square:
