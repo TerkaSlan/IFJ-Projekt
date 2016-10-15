@@ -1,29 +1,44 @@
+#ifndef STR_H
+#define STR_H
+
+#define STR_ERROR   1
+#define STR_SUCCESS 0
+
 
 typedef struct {
-	char* str;					//array of chars which ends with '\0'
-	uint32_t uiLength;			//actual length of string
-	uint32_t uiAllocSize;		//size of allocated memory
+	char *str;                    ///array of chars which ends with '\0'
+	uint32_t uiLength;            ///actual length of string
+	uint32_t uiAllocSize;        ///size of allocated memory
 } dtStr, *dtStrPtr;
 
 
 /**
- * @brief      Creates and initialises new dtStr
+ * @brief      Creates and initialises new dtStr string structure on heap
  *
  * @return     Pointer to new dtStr
  */
 dtStr *strNew();
 
 /**
- * This function allocates space for string and makes empty string with '\0' at the end
+ * This function initializes dtStr structure (local) and makes it empty with '\0' at the end. NOTE: Use for local objects only! NOT RECOMMENDED, DEPRECATED
  *
  * @param      s     dtStr, structure representing string
  *
- * @return     STR_SUCCES or STR_ERROR according to initialisation result
+ * @return     STR_SUCCES or STR_ERROR according to initialization result
  */
 int32_t strInit(dtStr *s);
 
 /**
- * @brief      This function deallocates memory allocated for string
+ * This function deinitializes dtStr structure (local) and makes it empty with '\0' at the end. NOTE: Use for local objects only! NOT RECOMMENDED, DEPRECATED
+ *
+ * @param      s     dtStr, structure representing string
+ *
+ * @return     STR_SUCCES or STR_ERROR according to initialization result
+ */
+void strDeinit(dtStr *s);
+
+/**
+ * @brief      This function deallocates memory allocated for string on heap
  *
  * @param      s     dtStr, structure representing string
  */
@@ -114,7 +129,7 @@ int32_t strCmpCStr(dtStr *s1, char *s2);
  *
  * @return     string
  */
-char *strGetStr(dtStr *s);
+char *strGetCStr(dtStr *s);
 
 /**
  * @param      s     dtStr
@@ -122,3 +137,6 @@ char *strGetStr(dtStr *s);
  * @return     Length of string
  */
 uint32_t strGetLength(dtStr *s);
+
+
+#endif
