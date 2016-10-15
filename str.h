@@ -88,7 +88,7 @@ int32_t strCopyStr(dtStr *s1, dtStr *s2);
  *
  * @return     Pointer to the new dtStr
  */
-dtStr *strSetNewStr(dtStr *s);
+dtStr *strNewFromStr(dtStr *s);
 
 /**
  * @brief      Creates and initialises new dtStr and sets it to given *str.
@@ -97,7 +97,7 @@ dtStr *strSetNewStr(dtStr *s);
  *
  * @return     Pointer to the new dtStr
  */
-dtStr *strSetNewCStr(char *str);
+dtStr *strNewFromCStr(char *str);
 
 /**
  * @brief      compares the string pointed to, by s1->str to the string pointed to by s2->str
