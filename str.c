@@ -10,6 +10,17 @@
 #define STR_SUCCESS 0
 
 
+dtStr *strNew() {
+	if ((dtStr *s = (dtStr*) malloc(sizeof(dtStr))) == NULL) {
+		//!!!!!!!!!!!!!! ERROR (Nevieme co teraz) #SK
+	}
+	if (strInit(s) == STR_ERROR) {
+		free(s);
+		//!!!!!!!!!!!!!! ERROR (Nevieme co teraz) #SK
+	}
+	return s;
+}
+
 int32_t strInit(dtStr *s) {
 	if (s == NULL) {
 								// Doplnit error #SK
@@ -60,7 +71,7 @@ int32_t strAddChar(dtStr *s, char c) {
 	return STR_SUCCESS;
 }
 
-int32_t strCopyString(dtStr *s1, dtStr *s2) {
+int32_t strCopyStr(dtStr *s1, const dtStr *s2) {
    //S1 <- S2 | S1 destination, S2 source
    if (s1 == NULL || s2 == NULL || s2->str == NULL) {
                         // Doplnit error #SK
@@ -73,19 +84,20 @@ int32_t strCopyString(dtStr *s1, dtStr *s2) {
       }
       s1->uiAllocSize = uiNewLength + 1;
    }
-   strcpy(s1->str, s2->str);
+   //memset();
+   strcpy(s1->str, s2->str);		//copyruje '\0' znak? #SK
    s1->uiLength = uiNewLength;
    return STR_SUCCESS;
 }
 
-int32_t strCmpString(dtStr *s1, dtStr *s2) {
+int32_t strCmpStr(dtStr *s1, dtStr *s2) {
 	if (s1 == NULL || s2 == NULL || s1->str == NULL || s2->str == NULL) {
                         // Doplnit error #SK
 	}
 	return strcmp(s1->str, s2->str);
 }
 
-int32_t strCmpConstStr(dtStr *s1, char *s2) {
+int32_t strCmpCStr(dtStr *s1, const char *s2) {
 	if (s1 == NULL || s2 == NULL || s1->str == NULL) {
                         // Doplnit error #SK
 	}
