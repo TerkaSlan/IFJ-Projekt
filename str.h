@@ -5,6 +5,8 @@
 #define STR_ERROR   1
 #define STR_SUCCESS 0
 
+#include "error.h"
+
 typedef struct {
 	char *str;					//array of chars which ends with '\0'
 	uint32_t uiLength;			//actual length of string

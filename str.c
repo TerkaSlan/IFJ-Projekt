@@ -9,8 +9,7 @@
 #define STR_INIT_LEN 32            //how many bits is allocated in initialization
 
 /* TODO:
- * 	memset();
- * 	3 functions
+ * 	treba nastavit void funkcie na int?
  */
 
 dtStr *strNew() {
@@ -38,7 +37,7 @@ int32_t strInit(dtStr *s) {
 		printError(ERR_LEX, "Couldn't allocate enough memory.");
 		return STR_ERROR;
 	}
-	s->str = '\0';
+	s->str[0] = '\0';
 	s->uiLength = 0;
 	s->uiAllocSize = STR_INIT_LEN;
 	return STR_SUCCESS;
@@ -52,7 +51,7 @@ void strDeinit(dtStr *s) {
 	}
 	free(s->str);
 	s->str = NULL;
-	s->uiLength = 0;            //nula sa dava aj pri init kde je ale '\0'? #SK
+	s->uiLength = 0;
 	s->uiAllocSize = 0;
 	
 }
@@ -73,6 +72,7 @@ void strClear(dtStr *s) {
 		printError(ERR_LEX, "Parameter is NULL.");
 		return;
 	}
+	memset(s->str, 0, s->uiAllocSize);		//Treba to fakt nulovat??? #SK
 	s->str[0] = '\0';
 	s->uiLength = 0;
 }
@@ -96,6 +96,28 @@ int32_t strAddChar(dtStr *s, char c) {
 	return STR_SUCCESS;
 }
 
+int32_t strAddCStr(dtStr *s, char *str) {
+	if (s == NULL || s->str == NULL || str == NULL) {
+		printError(ERR_LEX, "Parameter or its member is NULL");
+		return STR_ERROR;
+	}
+	int i = 0;
+	while(str[i] != '\0') {
+		if (s->uiLength + 1 >= s->uiAllocSize) {
+			// pamet nestaci, je potreba provest realokaci #SK
+			if ((s->str = (char*) realloc(s->str, s->uiLength + STR_INIT_LEN)) == NULL) {
+    		printError(ERR_LEX, "Couldn't reallocate memory.");
+        	return STR_ERROR;
+    		}
+    		s->uiAllocSize = s->uiLength + STR_INIT_LEN;
+		}
+		s->str[s->uiLength] = str[i];
+		s->uiLength++;
+		s->str[s->uiLength] = '\0';
+	}
+	return STR_SUCCESS;
+}
+
 int32_t strCopyStr(dtStr *s1, const dtStr *s2) {
 	//S1 <- S2 | S1 destination, S2 source
 	if (s1 == NULL || s2 == NULL || s2->str == NULL) {
@@ -111,10 +133,46 @@ int32_t strCopyStr(dtStr *s1, const dtStr *s2) {
 		}
 		s1->uiAllocSize = uiNewLength + 1;
 	}
-	//memset();
-	strcpy(s1->str, s2->str);		//copyruje '\0' znak? #SK
+	memset(s1->str, 0, s1->uiAllocSize);
+	strcpy(s1->str, s2->str);
 	s1->uiLength = uiNewLength;
 	return STR_SUCCESS;
+}
+
+dtStr *strNewFromStr(dtStr *s) {
+	if (s == NULL) {
+		printError(ERR_LEX, "Parameter is NULL.");
+		return NULL;
+	}
+	dtStr *newStr = NULL;
+	newStr = strNew();
+	if (newStr == NULL) {
+		printError(ERR_LEX, "Error in strNew");
+		return NULL;
+	}
+	if (strCopyStr(newStr, s) == STR_ERROR) {
+		printError(ERR_LEX, "Error in strCopyStr");
+		return NULL;
+	}
+	return newStr;
+}
+
+dtStr *strNewFromCStr(char *str) {
+	if (str == NULL) {
+		printError(ERR_LEX, "Parameter is NULL.");
+		return NULL;
+	}
+	dtStr *newStr = NULL;
+	newStr = strNew();
+	if (newStr == NULL) {
+		printError(ERR_LEX, "Error in strNew");
+		return NULL;
+	}
+	if (strAddCStr(newStr, str) == STR_ERROR) {
+		printError(ERR_LEX, "Error in strAddCStr");
+		return NULL;
+	}
+	return newStr;
 }
 
 int32_t strCmpStr(dtStr *s1, dtStr *s2) {
