@@ -11,6 +11,7 @@
 #include "str.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include "instruction.h"
 
 /**
  *  \brief Typedef enum of Symbol types.
@@ -32,8 +33,8 @@ struct tHashTableItem;
  *  \brief Typedef of Hash Table (symbol table) structure
  */
 typedef struct {
-	uint32_t Size;                ///Size of rows of the hash table
-	uint32_t NumberOfItems;        ///Number of symbols in the hash table
+	uint32_t              Size;               ///Size of rows of the hash table
+	uint32_t              NumberOfItems;      ///Number of symbols in the hash table
 	struct tHashTableItem *Data[];            ///Symbol pointer array
 } *tHashTablePtr;
 
@@ -42,10 +43,10 @@ typedef struct {
  *  \brief Typedef struct of function symbol data
  */
 typedef struct {
-	void *ArgumentList;        ///Pointer to Linked list of function arguments ///TODO:: needs tweaking
-	eSymbolType ReturnType;            ///Type of return value
-	void *InstructionPtr;    ///Pointer to the first instruction of this funtion ///TODO:: needs fixin
-	tHashTablePtr LocalSymbolTable;    ///Pointer to the local symbol hash table.
+	void          *ArgumentList;        ///Pointer to Linked list of function arguments ///TODO:: needs tweaking
+	eSymbolType   ReturnType;           ///Type of return value
+	uint32_t      InstructionIndex;     ///Pointer to the first instruction of this funtion
+	tHashTablePtr LocalSymbolTable;     ///Pointer to the local symbol hash table.
 } tFuncData;
 
 
@@ -54,10 +55,10 @@ typedef struct {
  */
 typedef union {
 	tFuncData FunctionData;
-	int32_t Integer; //should behave liek regular INT? 32?64?...
-	double Double;
+	int32_t   Integer; //should behave liek regular INT? 32?64?...
+	double    Double;
 	bool Bool;
-	dtStrPtr String;
+	dtStrPtr  String;
 } tSymbolData;
 
 
@@ -66,12 +67,13 @@ typedef union {
  */
 typedef struct tHashTableItem {
 	struct tHashTableItem *Next;            ///Pointer to the next symbol in the linked list
-	dtStrPtr Name;            ///Pointer to string structure representing Name of the symbol
-	eSymbolType Type;            ///Symbol Type
-	bool Initialized;    ///Initialized flag
-	bool Static;        ///Static flag
-	struct tHashTableItem *Parent;        ///Pointer to the parent symbol, if there is one
-	tSymbolData Data;            ///Symbol Data
+	dtStrPtr              Name;             ///Pointer to string structure representing Name of the symbol
+	eSymbolType           Type;             ///Symbol Type
+	bool Initialized;      ///Initialized flag
+	bool Static;           ///Static flag
+	bool Const;            ///Constant flag
+	struct tHashTableItem *Parent;          ///Pointer to the parent symbol, if there is one
+	tSymbolData           Data;             ///Symbol Data
 } tSymbol, *tSymbolPtr;
 
 
@@ -160,6 +162,14 @@ void htabFree(tHashTablePtr table);
  *  \details Allocates a new symbol on heap and returnes pointer to it. Symbol is also initialized to default.
  */
 tSymbolPtr symbolNew(void);
+
+
+/**
+ *  \brief Allocates a new symbol identical to the symbol specified.
+ *
+ *  \return tSymbolPtr, Returnes newly allocated and copied symbol. If an error occures, NULL is returned.
+ */
+tSymbolPtr symbolNewCopy(tSymbolPtr symbol);
 
 
 /**

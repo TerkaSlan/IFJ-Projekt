@@ -239,6 +239,31 @@ tSymbolPtr symbolNew() {
 	return ret;
 }
 
+tSymbolPtr symbolNewCopy(tSymbolPtr symbol) {
+	if(!symbol)
+		return NULL;
+
+	tSymbolPtr ret = malloc(sizeof(*ret));
+	if(ret == NULL)
+		return NULL;
+
+	//copy symbol
+	if(memcpy(ret, symbol, sizeof(tSymbol)) == NULL)
+		goto ERRORsymbolNewCopy;
+
+	if((ret->Name = strNew()) == NULL)
+		goto ERRORsymbolNewCopy;
+
+	if(strCopyStr(ret->Name, symbol->Name) == STR_SUCCESS)
+		return ret;
+
+	ERRORsymbolNewCopy:
+	free(ret);
+	return NULL;
+}
+
+
+
 void symbolFree(tSymbolPtr symbol) {
 	if(!symbol)
 		return;
