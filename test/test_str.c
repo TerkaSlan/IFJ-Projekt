@@ -3,9 +3,11 @@
 
 TEST_SUITE_START(StringTest);
 
-//dtStr *string = strNew();
+dtStr *string = strNew();
 
-dtStr string;
-strInit(&string);
+SHOULD_EQUAL("strNew()", strcmp(string->str, "\0"), 0);
+
+strFree(string);
+
 
 TEST_SUITE_END

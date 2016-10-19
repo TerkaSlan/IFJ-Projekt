@@ -1,11 +1,12 @@
 
+#include <stdint.h>				//for "uint32_t"
+
 #ifndef STR_H
 #define STR_H
 
-#define STR_ERROR   1
+#define STR_ERROR   INT32_MIN
 #define STR_SUCCESS 0
 
-#include "error.h"
 
 typedef struct {
 	char *str;					//array of chars which ends with '\0'
@@ -20,25 +21,6 @@ typedef struct {
  * @return     Pointer to new dtStr string structure on heap
  */
 dtStr *strNew();
-
-/**
- * This function initializes dtStr structure (local) and makes it empty with '\0' at the end. NOTE: Use for local objects only! NOT RECOMMENDED, DEPRECATED
- *
- * @param      s     dtStr, structure representing string
- *
- * @return     STR_SUCCES or STR_ERROR according to initialization result
- */
-int32_t strInit(dtStr *s);
-
-
-/**
- * This function deinitializes dtStr structure (local) and makes it empty with '\0' at the end. NOTE: Use for local objects only! NOT RECOMMENDED, DEPRECATED
- *
- * @param      s     dtStr, structure representing string
- *
- * @return     STR_SUCCES or STR_ERROR according to initialization result
- */
-void strDeinit(dtStr *s);
 
 
 /**
