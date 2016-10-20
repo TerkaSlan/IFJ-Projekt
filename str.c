@@ -77,7 +77,6 @@ void strFree(dtStr *s) {
 	}
 	strDeinit(s);
 	free(s);
-	s = NULL;
 }
 
 
@@ -116,7 +115,7 @@ int32_t strAddCStr(dtStr *s, char *str) {
 		return STR_ERROR;
 	}
 	uint32_t uiStrLength = strlen(str);
-	if (uiAllocSize <= uiLength + uiStrLength) {
+	if (s->uiAllocSize <= s->uiLength + uiStrLength) {
 		// pamat nestaci, je potreba provest realokaci #SK
 		if ((s->str = (char*) realloc(s->str, s->uiAllocSize + (((uiStrLength / STR_INIT_LEN) + 1 ) * STR_INIT_LEN ) )) == NULL) {
     		//printError(ERR_LEX, "Couldn't reallocate memory.");
@@ -124,7 +123,7 @@ int32_t strAddCStr(dtStr *s, char *str) {
         }
         s->uiAllocSize = s->uiAllocSize + (((uiStrLength / STR_INIT_LEN) + 1 ) * STR_INIT_LEN );
 	}
-	strcpy(s->str[uiLength], str);
+	strcpy(&(s->str[s->uiLength]), str);
 	s->uiLength = s->uiLength + uiStrLength;
 	s->str[s->uiLength] = '\0';
 
@@ -193,6 +192,7 @@ int32_t strCmpStr(dtStr *s1, dtStr *s2) {
         //printError(ERR_LEX, "Parameter s1 or s2 or theirs member is NULL");
 		return STR_ERROR;
 	}
+	int32_t result = 0;
 	result = strcmp(s1->str, s2->str);
 	if (result > 0) {
 		result = 1;
@@ -208,6 +208,7 @@ int32_t strCmpCStr(dtStr *s1, const char *s2) {
         //printError(ERR_LEX, "Parameter s2 or s1 or its member is NULL");
 		return STR_ERROR;
 	}
+	int32_t result = 0;
 	result = strcmp(s1->str, s2);
 	if (result > 0) {
 		result = 1;
@@ -229,7 +230,7 @@ char *strGetCStr(dtStr *s) {
 int32_t strGetLength(dtStr *s) {
 	if (s == NULL) {
 		//printError(ERR_LEX, "Parameter s or its member is NULL");
-		return ;
+		return STR_ERROR;
 	}
 	return s->uiLength;
 }

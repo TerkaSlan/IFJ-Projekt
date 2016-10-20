@@ -122,6 +122,6 @@ char *strGetCStr(dtStr *s);
  *
  * @return     Length of string
  */
-uint32_t strGetLength(dtStr *s);
+int32_t strGetLength(dtStr *s);
 
 #endif
