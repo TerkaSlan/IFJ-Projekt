@@ -86,7 +86,7 @@ dtStr *strNewFromStr(dtStr *s);
 dtStr *strNewFromCStr(char *str);
 
 /**
- * @brief      compares the string pointed to, by s1->str to the string pointed to by s2->str
+ * @brief      Compares the string pointed to, by s1->str to the string pointed to by s2->str
  * 
  *
  * @param      s1    dtStr
@@ -95,11 +95,12 @@ dtStr *strNewFromCStr(char *str);
  * @return     if Return value < 0 then it indicates s1 is less than s2.
  *             if Return value > 0 then it indicates s2 is less than s1.
  *             if Return value = 0 then it indicates s1 is equal to s2.
+ *             if Return value = STR_ERROR then it indicates that something went wrong
  */
 int32_t strCmpStr(dtStr *s1, dtStr *s2);
 
 /**
- * @brief       compares the string pointed to, by s1->str to the string pointed to by s2
+ * @brief      Compares the string pointed to, by s1->str to the string pointed to by s2
  *
  * @param      s1    dtStr
  * @param      s2    char *s2
@@ -107,6 +108,7 @@ int32_t strCmpStr(dtStr *s1, dtStr *s2);
  * @return     if Return value < 0 then it indicates s1 is less than s2.
  *             if Return value > 0 then it indicates s2 is less than s1.
  *             if Return value = 0 then it indicates s1 is equal to s2.
+ *             if Return value = STR_ERROR then it indicates that something went wrong
  */
 int32_t strCmpCStr(dtStr *s1, const char *s2);
 
