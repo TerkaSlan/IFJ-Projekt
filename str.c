@@ -77,6 +77,7 @@ void strFree(dtStr *s) {
 	}
 	strDeinit(s);
 	free(s);
+	s->uiLength = 42;
 }
 
 
@@ -164,6 +165,7 @@ dtStr *strNewFromStr(dtStr *s) {
 	}
 	if (strCopyStr(newStr, s) == STR_ERROR) {
 		//printError(ERR_LEX, "Error in strCopyStr");
+		strFree(newStr);
 		return NULL;
 	}
 	return newStr;
@@ -182,6 +184,7 @@ dtStr *strNewFromCStr(char *str) {
 	}
 	if (strAddCStr(newStr, str) == STR_ERROR) {
 		//printError(ERR_LEX, "Error in strAddCStr");
+		strFree(newStr);
 		return NULL;
 	}
 	return newStr;
