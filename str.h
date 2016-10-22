@@ -92,8 +92,8 @@ dtStr *strNewFromCStr(char *str);
  * @param      s1    dtStr
  * @param      s2    dtStr
  *
- * @return     if Return value < 0 then it indicates s1 is less than s2.
- *             if Return value > 0 then it indicates s2 is less than s1.
+ * @return     if Return value = -1 then it indicates s1 is less than s2.
+ *             if Return value = 1 then it indicates s2 is less than s1.
  *             if Return value = 0 then it indicates s1 is equal to s2.
  *             if Return value = STR_ERROR then it indicates that something went wrong
  */

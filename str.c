@@ -77,7 +77,6 @@ void strFree(dtStr *s) {
 	}
 	strDeinit(s);
 	free(s);
-	s->uiLength = 42;
 }
 
 
