@@ -5,19 +5,14 @@
 static uint32_t htabHashFunc(char *name, uint32_t htabSize);
 
 
-#define HTAB_DEFAULT_SIZE 4099
-
-tHashTablePtr htabInit() {
-	tHashTablePtr ret = malloc(sizeof(*ret) + HTAB_DEFAULT_SIZE * sizeof(tSymbolPtr));
+tHashTablePtr htabInit(uint32_t size) {
+	tHashTablePtr ret = calloc(1, sizeof(*ret) + size * sizeof(tSymbolPtr));
 
 	if(!ret)
 		return NULL;
 
-	ret->Size = HTAB_DEFAULT_SIZE;
+	ret->Size          = size;
 	ret->NumberOfItems = 0;
-
-	//make table NULL
-	memset(ret->Data, 0, HTAB_DEFAULT_SIZE * sizeof(tSymbolPtr));
 
 	return ret;
 
@@ -27,16 +22,12 @@ tHashTablePtr htabCopy(tHashTablePtr table) {
 	if(!table)
 		return NULL;
 
-	tHashTablePtr ret = malloc(sizeof(*ret) + table->Size * sizeof(tSymbolPtr));
+	tHashTablePtr ret = htabInit(table->Size);
 
 	if(!ret)
 		return NULL;
 
-	ret->Size = table->Size;
 	ret->NumberOfItems = table->NumberOfItems;
-
-	//make table NULL
-	memset(ret->Data, 0, ret->Size * sizeof(tSymbolPtr));
 
 
 	//deep data copy
@@ -82,7 +73,7 @@ tHashTablePtr htabCopy(tHashTablePtr table) {
 }
 
 
-tSymbolPtr htabAddSymbol(tHashTablePtr table, tSymbolPtr symbol) {
+tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol) {
 	if(!table || !symbol)
 		return NULL;
 
@@ -90,19 +81,22 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, tSymbolPtr symbol) {
 	if(htabGetSymbol(table, symbol->Name) != NULL)
 		return NULL;
 
+	//create a copy of a symbol
+	tSymbolPtr symbolCopy = symbolNewCopy(symbol);
+
 	//hash name to get index into the hash table
-	uint32_t index = htabHashFunc(strGetCStr(symbol->Name), table->Size);
+	uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
 
 
 	//first item in the list will become second
-	symbol->Next = table->Data[index];
+	symbolCopy->Next = table->Data[index];
 
 
 	//insert new item to the beginning of the list	
-	table->Data[index] = symbol;
+	table->Data[index] = symbolCopy;
 	table->NumberOfItems++;
 
-	return symbol;
+	return symbolCopy;
 
 }
 
@@ -230,12 +224,8 @@ uint32_t htabHashFunc(char *name, uint32_t htabSize) {
 
 
 tSymbolPtr symbolNew() {
-	tSymbolPtr ret = malloc(sizeof(*ret));
-	if(ret == NULL)
-		return NULL;
+	tSymbolPtr ret = calloc(1, sizeof(*ret));
 
-	//make everything NULL
-	memset(ret, 0, sizeof(*ret));
 	return ret;
 }
 
@@ -257,6 +247,8 @@ tSymbolPtr symbolNewCopy(tSymbolPtr symbol) {
 	if(strCopyStr(ret->Name, symbol->Name) == STR_SUCCESS)
 		return ret;
 
+	free(ret->Name);
+
 	ERRORsymbolNewCopy:
 	free(ret);
 	return NULL;
@@ -270,7 +262,7 @@ void symbolFree(tSymbolPtr symbol) {
 
 	//dealloc name
 	if(symbol->Name)
-		strFree(symbol->Name); ///TODO::make sure they fixed it!!!!
+		strFree(symbol->Name);
 
 	//dealloc symbol
 	free(symbol);

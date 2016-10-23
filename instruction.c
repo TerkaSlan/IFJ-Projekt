@@ -7,7 +7,7 @@
 #include "instruction.h"
 
 
-#define INSTRUCTION_LIST_DEFAULT_SIZE 4000
+#define INSTRUCTION_LIST_DEFAULT_SIZE 4096
 
 
 tInstructionListPtr instrListNew() {
@@ -79,12 +79,30 @@ tInstructionPtr instrListInsertInstruction(tInstructionListPtr list, tInstructio
 	return ret;
 }
 
+void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index) {
+	if(!list || index >= list->allocatedSize)
+		return;
+
+	list->firstInstruction  = (int64_t) index;
+	list->activeInstruction = (int64_t) index;
+
+}
+
+
+tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index) {
+	if(!list || index >= list->usedSize)
+		return NULL;
+
+	return &(list->instructionArray[index]);
+}
+
+
 
 void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex) {
 	if(!list)
 		return;
 
-	list->activeInstruction = (int64_t) instructionIndex - 1;
+	list->activeInstruction = (int64_t) instructionIndex;
 }
 
 void instrListFree(tInstructionListPtr list) {

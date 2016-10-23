@@ -9,7 +9,7 @@
 TEST_SUITE_START(SymbolHashTableTest);
 
 
-	tHashTablePtr table = htabInit();
+	tHashTablePtr table = htabInit(HTAB_DEFAULT_SIZE);
 	SHOULD_NOT_EQUAL("Table ptr is not null", table, NULL);
 
 	tSymbolPtr symbol = symbolNew();
@@ -35,7 +35,7 @@ TEST_SUITE_START(SymbolHashTableTest);
 	SHOULD_EQUAL("strCmpStr", strCmpStr(string, symbol->Name), 0)
 
 
-	SHOULD_EQUAL("adding symbol", htabGetSymbol(table, string), symbol)
+	SHOULD_NOT_EQUAL("adding symbol", htabGetSymbol(table, string), NULL)
 
 	strClear(string);
 	SHOULD_EQUAL_STR("strClear", strGetCStr(string), "")
@@ -48,20 +48,23 @@ TEST_SUITE_START(SymbolHashTableTest);
 
 	anothersymbol->Data.Integer = 1337;
 	htabAddSymbol(table, anothersymbol);
-	SHOULD_EQUAL("get symbol that is there", htabGetSymbol(table, string), anothersymbol)
+	SHOULD_NOT_EQUAL("get symbol that is there", htabGetSymbol(table, string), NULL)
 
 	tHashTablePtr newtable = htabCopy(table);
-	SHOULD_EQUAL("get symbol that is there after copy", htabGetSymbol(newtable, string), anothersymbol)
-
-	htabRemoveSymbol(table, string);
-	SHOULD_EQUAL("get symbol that is not there", htabGetSymbol(table, string), NULL)
+	SHOULD_NOT_EQUAL("get symbol that is there after copy", htabGetSymbol(newtable, string), NULL)
 
 	dtStrPtr newstring = strNewFromStr(string);
 	SHOULD_EQUAL_STR("string new copy from str", strGetCStr(newstring), strGetCStr(string))
 
+
+	htabRemoveSymbol(table, string);
+	SHOULD_EQUAL("get symbol that is not there", htabGetSymbol(table, newstring), NULL)
+
 	htabClear(newtable);
 	SHOULD_EQUAL("get symbol that is not there", htabGetSymbol(newtable, newstring), NULL)
 
+	symbolFree(symbol);
+	symbolFree(anothersymbol);
 	htabFree(table);
 	htabFree(newtable);
 	strFree(newstring);
