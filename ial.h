@@ -57,7 +57,7 @@ typedef union {
 	tFuncData FunctionData;
 	int32_t   Integer; //should behave liek regular INT? 32?64?...
 	double    Double;
-	bool Bool;
+	bool      Bool;
 	dtStrPtr  String;
 } tSymbolData;
 
@@ -69,21 +69,24 @@ typedef struct tHashTableItem {
 	struct tHashTableItem *Next;            ///Pointer to the next symbol in the linked list
 	dtStrPtr              Name;             ///Pointer to string structure representing Name of the symbol
 	eSymbolType           Type;             ///Symbol Type
-	bool Initialized;      ///Initialized flag
-	bool Static;           ///Static flag
-	bool Const;            ///Constant flag
+	bool                  Initialized;      ///Initialized flag
+	bool                  Static;           ///Static flag
+	bool                  Const;            ///Constant flag
 	struct tHashTableItem *Parent;          ///Pointer to the parent symbol, if there is one
 	tSymbolData           Data;             ///Symbol Data
 } tSymbol, *tSymbolPtr;
 
 
+#define HTAB_DEFAULT_SIZE 4099
+
 /**
  *  \brief Creates a new hash table using hash tables.
  *
+ *	\param [in] size, Size of hash table created (number of rows), should be prime number
  *  \return tHashTablePtr, Returns pointer to the new hash table. If an error occures, NULL is returned.
  *  
  */
-tHashTablePtr htabInit();
+tHashTablePtr htabInit(uint32_t size);
 
 /**
  *  \brief Creates a new hash table identic to the hash table passed as an argument.
@@ -99,11 +102,12 @@ tHashTablePtr htabCopy(tHashTablePtr table);
  *  \brief Adds Symbol to the hash table.
  *  
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
- *  \param [in] symbol tSymbolPtr, Pointer to the symbol to be added. NOTE: Must be allocated on heap!
+ *  \param [in] symbol tSymbolPtr, Pointer to the symbol to be added.
  *  \return tSymbolPtr, Returns pointer to the added symbol. If symbol with the same name already exists, or other error occures, nothing happens and NULL is returned.
- *  
+ *
+ *  \details Hash table creates its own copy of a symbol passed by reference and deallocates it when htabFree() is called.
  */
-tSymbolPtr htabAddSymbol(tHashTablePtr table, tSymbolPtr symbol);
+tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol);
 
 /**
  *  \brief Looks up a symbol in the hash table with the name specified.

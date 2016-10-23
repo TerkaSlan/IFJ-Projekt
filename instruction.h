@@ -89,6 +89,25 @@ tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list);
 tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list);
 
 /**
+ *  \brief Sets first instruction in the instruction list and make it also active. NOTE:Should be of type label
+ *
+ *  \param [in] list tInstructionListPtr, Pointer to the instruction list
+ *  \param [in] index, uint32_t index of an instruction to be set as first and active
+ *  \return void
+ */
+void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index);
+
+
+/**
+ *  \brief Gets instruction pointer to the instruction with index specified
+ *
+ *  \param [in] list tInstructionListPtr, Pointer to the instruction list
+ *  \param [in] index, uint32_t index of an instruction to be read
+ *  \return void
+ */
+tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index);
+
+/**
  *  \brief Inserts instruction into the instruction list (at the end)
  *  
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be written to
