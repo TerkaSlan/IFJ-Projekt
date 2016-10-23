@@ -1,14 +1,10 @@
 #include <stdlib.h>
-#include <inttypes.h>
 #include "str.h"
 #include "token.h"
-#include "stdio.h"
 
 Token* newToken() {
 	Token *token = calloc(1, sizeof(Token));
-	if (token == NULL) {
-		//TODO: hadle error
-	} else {
+	if (token != NULL) {
 		token->type = TT_empty;
 	}
 
@@ -16,18 +12,33 @@ Token* newToken() {
 }
 
 void freeToken(Token **pToken) {
-	if (pToken == NULL) {
-		//TODO: hadle error
-	} else {
-		if (((*pToken)->type == TT_variable)
-        	|| ((*pToken)->type == TT_identifier)
-			|| ((*pToken)->type == TT_string)) { //here have to be all TokenTypes which contains String data
-			strFree(&(*pToken)->str);
+	if (pToken != NULL) {
+		if (*pToken != NULL) {
+			if (((*pToken)->type == TT_fullIdentifier)
+	        	|| ((*pToken)->type == TT_identifier)
+				|| ((*pToken)->type == TT_string)
+				|| ((*pToken)->type) == TT_keyword) {
+				strFree((*pToken)->str);
+			}
+			free(*pToken);
+			*pToken = NULL;
 		}
-		free(*pToken);
-		*pToken = NULL;
 	}
+}
 
+
+void cleanToken(Token **pToken) {
+	if (pToken != NULL) {
+		if (*pToken != NULL) {
+			if (((*pToken)->type == TT_fullIdentifier)
+	        	|| ((*pToken)->type == TT_identifier)
+				|| ((*pToken)->type == TT_string)
+				|| ((*pToken)->type) == TT_keyword) {
+				strFree((*pToken)->str);
+			}
+			(*pToken)->type = TT_empty;
+		}
+	}
 }
 
 
