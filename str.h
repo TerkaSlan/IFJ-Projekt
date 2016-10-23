@@ -1,44 +1,30 @@
+
+#include <stdint.h>				//for "uint32_t"
+
 #ifndef STR_H
 #define STR_H
 
-#define STR_ERROR   1
+#define STR_ERROR   INT32_MIN
 #define STR_SUCCESS 0
 
 
 typedef struct {
-	char *str;                    ///array of chars which ends with '\0'
-	uint32_t uiLength;            ///actual length of string
-	uint32_t uiAllocSize;        ///size of allocated memory
+	char *str;					//array of chars which ends with '\0'
+	uint32_t uiLength;			//actual length of string
+	uint32_t uiAllocSize;		//size of allocated memory
 } dtStr, *dtStrPtr;
 
 
 /**
- * @brief      Creates and initialises new dtStr string structure on heap
+ * @brief      Creates and initialises new dtStr
  *
- * @return     Pointer to new dtStr
+ * @return     Pointer to new dtStr string structure on heap
  */
 dtStr *strNew();
 
-/**
- * This function initializes dtStr structure (local) and makes it empty with '\0' at the end. NOTE: Use for local objects only! NOT RECOMMENDED, DEPRECATED
- *
- * @param      s     dtStr, structure representing string
- *
- * @return     STR_SUCCES or STR_ERROR according to initialization result
- */
-int32_t strInit(dtStr *s);
 
 /**
- * This function deinitializes dtStr structure (local) and makes it empty with '\0' at the end. NOTE: Use for local objects only! NOT RECOMMENDED, DEPRECATED
- *
- * @param      s     dtStr, structure representing string
- *
- * @return     STR_SUCCES or STR_ERROR according to initialization result
- */
-void strDeinit(dtStr *s);
-
-/**
- * @brief      This function deallocates memory allocated for string on heap
+ * @brief      This function deallocates memory allocated for dtStr s
  *
  * @param      s     dtStr, structure representing string
  */
@@ -79,7 +65,7 @@ int32_t strAddCStr(dtStr *s, char *str);
  *
  * @return     STR_SUCCES or STR_ERROR according to the success of copying
  */
-int32_t strCopyStr(dtStr *s1, dtStr *s2);
+int32_t strCopyStr(dtStr *s1, const dtStr *s2);
 
 /**
  * @brief      Creates and initialises new dtStr and sets it to given s->str.
@@ -100,29 +86,31 @@ dtStr *strNewFromStr(dtStr *s);
 dtStr *strNewFromCStr(char *str);
 
 /**
- * @brief      compares the string pointed to, by s1->str to the string pointed to by s2->str
+ * @brief      Compares the string pointed to, by s1->str to the string pointed to by s2->str
  * 
  *
  * @param      s1    dtStr
  * @param      s2    dtStr
  *
- * @return     if Return value < 0 then it indicates s1 is less than s2.
- *             if Return value > 0 then it indicates s2 is less than s1.
+ * @return     if Return value = -1 then it indicates s1 is less than s2.
+ *             if Return value = 1 then it indicates s2 is less than s1.
  *             if Return value = 0 then it indicates s1 is equal to s2.
+ *             if Return value = STR_ERROR then it indicates that something went wrong
  */
 int32_t strCmpStr(dtStr *s1, dtStr *s2);
 
 /**
- * @brief       compares the string pointed to, by s1->str to the string pointed to by s2
+ * @brief      Compares the string pointed to, by s1->str to the string pointed to by s2
  *
  * @param      s1    dtStr
  * @param      s2    char *s2
  *
- * @return     if Return value < 0 then it indicates s1 is less than s2.
- *             if Return value > 0 then it indicates s2 is less than s1.
+ * @return     if Return value = -1 then it indicates s1 is less than s2.
+ *             if Return value = 1 then it indicates s2 is less than s1.
  *             if Return value = 0 then it indicates s1 is equal to s2.
+ *             if Return value = STR_ERROR then it indicates that something went wrong
  */
-int32_t strCmpCStr(dtStr *s1, char *s2);
+int32_t strCmpCStr(dtStr *s1, const char *s2);
 
 /**
  * @param      s     dtStr
@@ -136,7 +124,6 @@ char *strGetCStr(dtStr *s);
  *
  * @return     Length of string
  */
-uint32_t strGetLength(dtStr *s);
-
+int32_t strGetLength(dtStr *s);
 
 #endif
