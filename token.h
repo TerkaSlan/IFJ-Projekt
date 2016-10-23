@@ -12,24 +12,24 @@ typedef enum {
 	TT_number,
 	TT_keyword,
 	TT_notEqual,
-    TT_not,
-    TT_divide,
-    TT_fullIdentifier,
-    TT_assignment,
-    TT_less,
-    TT_lessEqual,
-    TT_greater,
-    TT_greaterEqual,
-    TT_comma,
-    TT_multiply,
-    TT_semicolon,
-    TT_minus,
-    TT_plus,
-    TT_rightCurlyBracket,
-    TT_leftCurlyBracket,
-    TT_rightRoundBracket,
-    TT_leftRoundBracket,
-    TT_EOF
+	TT_not,
+	TT_divide,
+	TT_fullIdentifier,
+	TT_assignment,
+	TT_less,
+	TT_lessEqual,
+	TT_greater,
+	TT_greaterEqual,
+	TT_comma,
+	TT_multiply,
+	TT_semicolon,
+	TT_minus,
+	TT_plus,
+	TT_rightCurlyBracket,
+	TT_leftCurlyBracket,
+	TT_rightRoundBracket,
+	TT_leftRoundBracket,
+	TT_EOF
 
 } TokenType;
 
@@ -68,21 +68,23 @@ typedef struct {
 } Token;
 
 /**
- * Create new token and initializes it to empty state
+ * Creates new token and initializes it to empty state
  *
  * @return new token or NULL when error
  */
 Token* newToken();
 
 /**
- * Deallocates memory of token's content if needed, deallocates token and sets pointer to NULL.
+ * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword. 
+ * Deallocates token and sets pointer to NULL.
  *  
  * @param pToken token to free
  */
 void freeToken(Token **pToken);
 
 /**
- * Deallocates memory of token's content if needed, change token->type to TT_empty
+ * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword. 
+ * Change (*pToken)->type to TT_empty
  * 
  * @param pToken token to clean
  */
