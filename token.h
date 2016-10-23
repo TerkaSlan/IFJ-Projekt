@@ -84,7 +84,7 @@ void freeToken(Token **pToken);
 
 /**
  * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword. 
- * Change (*pToken)->type to TT_empty
+ * Changes (*pToken)->type to TT_empty
  * 
  * @param pToken token to clean
  */
