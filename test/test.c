@@ -13,6 +13,8 @@ TestFlags testFlags = None;
 // Here add test suite so test.c knows what test suites it can expect
 TEST_SUITE(StringTest)
 
+TEST_SUITE(TokenTest)
+
 TEST_SUITE(SymbolHashTableTest)
 
 TEST_SUITE(InstructionListTest)
@@ -55,6 +57,7 @@ int main(int argc, char **argv)
 
     // Register new test suite here if you want to run the test suite
     REGISTER_TEST_SUITE(StringTest)
+    REGISTER_TEST_SUITE(TokenTest)
     REGISTER_TEST_SUITE(SymbolHashTableTest)
     REGISTER_TEST_SUITE(InstructionListTest)
     RUN_TEST_SUITES
