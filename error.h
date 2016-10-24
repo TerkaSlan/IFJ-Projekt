@@ -23,7 +23,6 @@ typedef enum {
  *  \param [in] errType eError, Error code that occured.
  *  \param [in] fmt const char*, Custom formatted string to be printed
  *  \param [in] ... other arguments matching the formating string
- *  \return Return_Description
  *  
  */
 void printError(eError errType, const char *fmt, ...);

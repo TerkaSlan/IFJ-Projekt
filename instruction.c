@@ -33,7 +33,7 @@ tInstructionListPtr instrListNew() {
 }
 
 tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list) {
-	if(!list)
+	if(!list || !list->instructionArray)
 		return NULL;
 
 	if(list->activeInstruction < 0) {
@@ -49,20 +49,21 @@ tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list) {
 
 
 tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list) {
-	if(!list || list->activeInstruction < 0)
+	if(!list || list->activeInstruction < 0 || !list->instructionArray)
 		return NULL;
 
 	return &(list->instructionArray[list->activeInstruction]);
 }
 
 
-tInstructionPtr instrListInsertInstruction(tInstructionListPtr list, tInstruction instr) {
-	if(!list)
-		return NULL;
+int64_t instrListInsertInstruction(tInstructionListPtr list, tInstruction instr) {
+	if(!list || !list->instructionArray)
+		return -1;
 
 	//add instruction
-	tInstructionPtr ret = &(list->instructionArray[list->usedSize]);
-	memcpy(ret, &instr, sizeof(tInstruction));
+	int64_t index = list->usedSize;
+
+	memcpy(&(list->instructionArray[index]), &instr, sizeof(tInstruction));
 
 
 	//check if still in the array - if not, realloc
@@ -70,13 +71,13 @@ tInstructionPtr instrListInsertInstruction(tInstructionListPtr list, tInstructio
 		uint32_t        newAllocSize        = list->allocatedSize * 2;
 		tInstructionPtr newInstructionArray = realloc(list->instructionArray, sizeof(tInstruction) * newAllocSize);
 		if(!newInstructionArray)
-			return NULL;
+			return -1;
 
 		list->instructionArray = newInstructionArray;
 		list->allocatedSize    = newAllocSize;
 	}
 
-	return ret;
+	return index;
 }
 
 void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index) {
@@ -90,7 +91,7 @@ void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index) {
 
 
 tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index) {
-	if(!list || index >= list->usedSize)
+	if(!list || index >= list->usedSize || !list->instructionArray)
 		return NULL;
 
 	return &(list->instructionArray[index]);

@@ -80,7 +80,7 @@ typedef struct tHashTableItem {
 #define HTAB_DEFAULT_SIZE 4099
 
 /**
- *  \brief Creates a new hash table using hash tables.
+ *  \brief Creates a new hash table of size specified.
  *
  *	\param [in] size, Size of hash table created (number of rows), should be prime number
  *  \return tHashTablePtr, Returns pointer to the new hash table. If an error occures, NULL is returned.
@@ -124,7 +124,6 @@ tSymbolPtr htabGetSymbol(tHashTablePtr table, dtStrPtr name);
  *  
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] func void(*)(tSymbolPtr), Pointer to a function to be executed for each symbol in the hash table.
- *  \return void
  *  
  */
 void htabForEach(tHashTablePtr table, void (*func)(tSymbolPtr));
@@ -134,7 +133,6 @@ void htabForEach(tHashTablePtr table, void (*func)(tSymbolPtr));
  *  
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] name dtStrPtr, Pointer to a string structure representing name of the symbol to be removed.
- *  \return void
  * 
  */
 void htabRemoveSymbol(tHashTablePtr table, dtStrPtr name);
@@ -143,9 +141,7 @@ void htabRemoveSymbol(tHashTablePtr table, dtStrPtr name);
  *  \brief Removes all symbols from the hash table.
  *  
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
- *  \return void
- *  
- *  \details Details
+ *
  */
 void htabClear(tHashTablePtr table);
 
@@ -153,7 +149,6 @@ void htabClear(tHashTablePtr table);
  *  \brief Deallocates the hash table.
  *  
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
- *  \return void
  *  
  */
 void htabFree(tHashTablePtr table);
@@ -180,8 +175,6 @@ tSymbolPtr symbolNewCopy(tSymbolPtr symbol);
 *  \brief Deallocates a new Symbol.
 *
 *	\param [in] tSymbolPtr, Pointer to the symbol to be deallocated
-*  \return void
-
 */
 void symbolFree(tSymbolPtr symbol);
 

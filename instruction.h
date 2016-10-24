@@ -85,6 +85,7 @@ tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list);
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be read from
  *  \return tInstructionPtr, Returns pointer to the instruction being processed in the instruction list. On error NULL is returned.
  *
+ * \details Returns pointer to the instruction after active instruction making the instruction returned active.
  */
 tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list);
 
@@ -93,7 +94,6 @@ tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list);
  *
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list
  *  \param [in] index, uint32_t index of an instruction to be set as first and active
- *  \return void
  */
 void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index);
 
@@ -103,7 +103,7 @@ void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index);
  *
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list
  *  \param [in] index, uint32_t index of an instruction to be read
- *  \return void
+ *  \return tInstructionPtr, Returns pointer to the instruction specified by index
  */
 tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index);
 
@@ -112,18 +112,17 @@ tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index
  *  
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be written to
  *  \param [in] instr tInstruction, instruction to be inserted
- *  \return tInstructionPtr, Returns pointer to the instruction newly copied in the instruction list. On error NULL is returned.
+ *  \return int64_t, Returns index of the inserted instruction. Returns -1 if failed.
  *  
  *  \details Function copies instruction passed as a value into the instruction list after the last inserted instruction.
  */
-tInstructionPtr instrListInsertInstruction(tInstructionListPtr list, tInstruction instr);
+int64_t instrListInsertInstruction(tInstructionListPtr list, tInstruction instr);
 
 /**
- *  \brief Makes the next instruction in the instruction list the instruction specified.
+ *  \brief Makes instruction with index specified active
  *  
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list
  *  \param [in] instructionIndex uint32_t, index of the instruction to be jumped to
- *  \return void
  */
 void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex);
 
@@ -131,7 +130,6 @@ void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex);
  *  \brief Deallocates instruction list including its inner structures.
  *  
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be deallocated
- *  \return void
  *
  */
 void instrListFree(tInstructionListPtr list);
