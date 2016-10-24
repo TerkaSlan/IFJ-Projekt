@@ -10,7 +10,7 @@ _Week 1 [4.10. - 11.10]_
   
    #1 The string data type implementation + test file - **Jakub + Marek** :white_check_mark:
   
-   #2 [Depends on #1] The token data type implementation + test file - **Katka** :white_medium_square:
+   #2 [Depends on #1] The token data type implementation + test file - **Katka** :white_check_mark:
   
    #3 Simple error handling module + test file - **Michal** :white_medium_square:
   
