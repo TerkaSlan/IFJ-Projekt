@@ -34,6 +34,8 @@ _Week 2 [12.10 - 18.10]_
   
   #12 Builtins - **Jakub + Marek** :white_medium_square:
   
+  #13 Conversions - **Terka** :white_medium_square:
+  
 _Week 3 [19.10 - 25.10]_
 
   Finishing half-done tasks from previous weeks

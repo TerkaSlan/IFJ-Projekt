@@ -12,6 +12,7 @@ typedef enum {
 	TT_number,
 	TT_keyword,
 	TT_notEqual,
+	TT_equal,
 	TT_not,
 	TT_divide,
 	TT_fullIdentifier,
@@ -51,7 +52,8 @@ typedef enum {
 	KTT_static,
 	KTT_true,
 	KTT_void,
-	KTT_while
+	KTT_while,
+	KTT_none
 
 } KeywordTokenType;
 
