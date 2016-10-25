@@ -116,7 +116,7 @@ static inline void testResult(uint8_t result, const char *testName, const char *
     }
 
 #define SHOULD_EQUAL(TestName, val1, val2)      \
-        if (val1 == val2)                       \
+        if ((val1) == (val2))                       \
             testResult(TestOk, TestName, __FILE__, __LINE__, NULL); \
         else                                    \
             testResult(TestFailed, TestName, __FILE__, __LINE__, "SHOULD_EQUAL("#val1 " == " #val2 ")");
