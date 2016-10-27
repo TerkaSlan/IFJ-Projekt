@@ -17,6 +17,18 @@ bool fequal(double a, double b) {
     return fabs(a-b) < epsilon;
 }
 
+unsigned char octalToChar(dtStr *octalString){
+  int32_t decimalNumber = 0;
+  int32_t octLen = strGetLength(octalString);
+
+  for(int32_t i = octLen-1; i >= 0 ; i--){
+    if ((octalString->str[i] - '0') > 7)
+      return 0;
+    decimalNumber += (octalString->str[i] - '0') * pow(8, octLen - i - 1);
+  }
+  return (unsigned char)decimalNumber;
+}
+
 int32_t stringToInt(const dtStr *string) {
   const char *stringData = string->str;
   while (isspace(*stringData))

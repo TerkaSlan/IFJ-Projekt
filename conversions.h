@@ -28,4 +28,11 @@ double stringToDouble(const dtStr *string);
 * @return     Truth value of the comparison
 */
 bool fequal(double a, double b);
+
+/**
+* Converts octal number stored as a string to a signle character
+* @param    octalString   String containing the octal number to be converted
+* @return   Converted character
+*/
+unsigned char octalToChar(dtStr *octalString);
 #endif

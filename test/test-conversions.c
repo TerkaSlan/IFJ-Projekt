@@ -140,4 +140,30 @@ SHOULD_EQUAL("Decimal part overflow", fequal(db, 1232002000.34), 1);
 strFree(dbString);
 strFree(string);
 
+// octalToChar
+dtStr *dbStringOctal = strNew();
+strAddCStr(dbStringOctal, "000"); // NULL
+SHOULD_EQUAL("Empty string", octalToChar(dbStringOctal), 0);
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "011"); // tab
+SHOULD_EQUAL("Tab", octalToChar(dbStringOctal), '\t');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "040"); // space
+SHOULD_EQUAL("Space", octalToChar(dbStringOctal), ' ');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "044"); // $
+SHOULD_EQUAL("Dollar sign", octalToChar(dbStringOctal), '$');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "057"); // /
+SHOULD_EQUAL("Slash", octalToChar(dbStringOctal), '/');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "160"); // symbol
+SHOULD_EQUAL("p", octalToChar(dbStringOctal), 'p');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "200");
+SHOULD_EQUAL("Extended ASCII: (200)8->(128)10", octalToChar(dbStringOctal), 128);
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "888"); // not valid, no error raised
+SHOULD_EQUAL("Not valid -> NULL", octalToChar(dbStringOctal), 0);
+strFree(dbStringOctal);
 TEST_SUITE_END
