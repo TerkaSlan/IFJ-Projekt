@@ -1,5 +1,6 @@
 
 #include <stdint.h>				//for "uint32_t"
+#include <stdbool.h>
 
 #ifndef STR_H
 #define STR_H
@@ -125,5 +126,16 @@ char *strGetCStr(dtStr *s);
  * @return     Length of string
  */
 int32_t strGetLength(dtStr *s);
+
+
+/**
+ * Checks wheter given char is in dtStr.
+ *
+ * @param      s     dtStr
+ * @param[in]  c     char, which is searched in dtStr
+ *
+ * @return     Returns true if char was found in string, otherwise returns false.
+ */
+bool strIsCharIn(dtStr *s, const char c);
 
 #endif
