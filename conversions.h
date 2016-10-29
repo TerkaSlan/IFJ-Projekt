@@ -30,9 +30,9 @@ double stringToDouble(const dtStr *string);
 bool fequal(double a, double b);
 
 /**
-* Converts octal number stored as a string to a signle character
+* Converts octal number stored as a dtStr to integer
 * @param    octalString   String containing the octal number to be converted
-* @return   Converted character
+* @return   Converted int
 */
-unsigned char octalToChar(dtStr *octalString);
+int32_t octalToInt(dtStr *octalString);
 #endif
