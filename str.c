@@ -236,3 +236,16 @@ int32_t strGetLength(dtStr *s) {
 	}
 	return s->uiLength;
 }
+
+bool strIsCharIn(dtStr *s, const char c) {
+	if (s == NULL) {
+		return false;
+	}
+	for (int i = 0; i < s->uiLength; i++)
+	{
+		if (s->str[i] == c) {
+			return true;
+		}
+	}
+	return false;
+}
