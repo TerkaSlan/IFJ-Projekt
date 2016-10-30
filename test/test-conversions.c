@@ -50,7 +50,7 @@ SHOULD_NOT_EQUAL("Zero", integer, INT_CONVERSION_ERROR);
 
 // DOUBLES
 
-dbString = strNew();
+strClear(dbString);
 strAddCStr(dbString, "3.14");
 db = stringToDouble(dbString);
 // One does not simply rely on == with doubles, using my double comparison function
