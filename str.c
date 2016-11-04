@@ -67,7 +67,7 @@ void strDeinit(dtStr *s) {
 	s->str = NULL;
 	s->uiLength = 0;
 	s->uiAllocSize = 0;
-	
+
 }
 
 void strFree(dtStr *s) {
@@ -202,7 +202,7 @@ int32_t strCmpStr(dtStr *s1, dtStr *s2) {
 	else if (result < 0) {
 		result = -1;
 	}
-	return result; 
+	return result;
 }
 
 int32_t strCmpCStr(dtStr *s1, const char *s2) {
@@ -237,15 +237,15 @@ int32_t strGetLength(dtStr *s) {
 	return s->uiLength;
 }
 
-bool strIsCharIn(dtStr *s, const char c) {
+int32_t strCharPos(dtStr *s, const char c) {
 	if (s == NULL) {
-		return false;
+		return -1;
 	}
-	for (int i = 0; i < s->uiLength; i++)
+	for (int32_t i = 0; i < s->uiLength; i++)
 	{
 		if (s->str[i] == c) {
-			return true;
+			return i;
 		}
 	}
-	return false;
+	return -1;
 }

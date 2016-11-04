@@ -1,7 +1,7 @@
 #include "scanner.h"
 #include <stdio.h> // eof, FILE*
 
-static FILE* fSourceFile;
+FILE* fSourceFile; // TO ADD 'static' to the final build, can't do it now since it's extern in scanner.h
 
 int8_t openFile(const char *sFileLocation){
 
@@ -158,52 +158,62 @@ int8_t getToken(Token *token){
               break;
             case '{':
               token->type = TT_leftCurlyBracket;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case '}':
               token->type = TT_rightCurlyBracket;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case '(':
               token->type = TT_leftRoundBracket;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case ')':
               token->type = TT_rightRoundBracket;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case '+':
               token->type = TT_plus;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case '-':
-              token->type = TT_minus;
+              state = SMinus;
               break;
             case '*':
               token->type = TT_multiply;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case '/':
               state = SDivide;
+              // no matter what SDivide results in, i won't be needing the string
+              strFree(token->str);
               break;
             case '<':
               state = SLess;
+              strFree(token->str);
               break;
             case '>':
               state = SGreater;
+              strFree(token->str);
               break;
             case '!':
               state = SExclamation;
+              // no matter what SExclamation results in, i won't be needing the string
+              strFree(token->str);
               break;
             case ';':
               token->type = TT_semicolon;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             case '"':
               state = SString;
               break;
             case ',':
               token->type = TT_comma;
-              break;
+              strFree(token->str);
+              return ERR_OK;
             default:
-              if (token->str != NULL)   strFree(token->str);
-              freeToken(&token);
-              printError(ERR_LEX, " in %s at line: %d", __FILE__, __LINE__);
-              return ERR_LEX;
-              //handleLexError(token, ERR_LEX);
+              handleLexError(token, ERR_LEX);
           }
         }
         break;
@@ -236,6 +246,7 @@ int8_t getToken(Token *token){
           token->type = TT_assignment;
           ungetc(iCurrentSymbol, fSourceFile);
         }
+        strFree(token->str);
         return ERR_OK;
       }
       // Common umbrella for ints and doubles. If double detected, redirected to
@@ -375,30 +386,32 @@ int8_t getToken(Token *token){
         }
         else {
           ungetc(iCurrentSymbol, fSourceFile);
-
+          if (strCmpCStr(token->str, "and") == 0){
+            token->type = TT_and;
+            strFree(token->str);
+            return ERR_OK;
+          }
+          if (strCmpCStr(token->str, "or") == 0){
+            token->type = TT_or;
+            strFree(token->str);
+            return ERR_OK;
+          }
           KeywordTokenType keywordType = getKeywordType(token->str);
           if (keywordType == KTT_none){
             token->type = TT_identifier;
             return ERR_OK;
           }
           else{
+            // need to free token->str, sice initialization of token->keywordType would overshadow its value
+            strFree(token->str);
             token->type = TT_keyword;
-            if (keywordType == KTT_true) {
-              token->keywordType = KTT_boolean;
-              token->iNum = 1;
-            }
-            if (keywordType == KTT_false) {
-              token->keywordType = KTT_boolean;
-              token->iNum = 0;
-            }
-            else{
-              token->keywordType = keywordType;
-            }
+            token->keywordType = keywordType;
+            return ERR_OK;
           }
         }
         break;
       }
-      case SFullId: { // TODO: Implementation change: No SFUllId, if in SId and dot appears, i'll go back to SFullIdFirstLetter -> SId, at the end of SId, i'll check for '.' in string, determine TT_ accordingly
+      case SFullId: {
         if (isalpha(iCurrentSymbol) || isdigit(iCurrentSymbol) || iCurrentSymbol == '_' || iCurrentSymbol == '$'){
           state = SFullId;
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
@@ -406,13 +419,16 @@ int8_t getToken(Token *token){
           }
         }
         else{
-          // TODO: Main.9gag won;t match any keywords ever, check for Main and 9gag separately. If match -> error
+          // checks if char after '.' is a digit, if it is, fullId won't be valid
+          if (isdigit(token->str->str[strCharPos(token->str, '.') + 1]))
+              handleLexError(token, ERR_LEX);
+
           KeywordTokenType keywordType = getKeywordType(token->str);
           if (keywordType != KTT_none){
             handleLexError(token, ERR_LEX);
           }
           else{
-            token->type = TT_fullIdentifier; // add to token.h
+            token->type = TT_fullIdentifier;
             ungetc(iCurrentSymbol, fSourceFile);
           }
           return ERR_OK;
@@ -421,12 +437,9 @@ int8_t getToken(Token *token){
       }
       case SDivide: {
         if (iCurrentSymbol == '*'){
-          // getting rid of allocated space for the token string, no need for that in comments
-          strFree(token->str);
           state = SBlockCommentStart;
         }
         else if (iCurrentSymbol == '/'){
-          strFree(token->str);
           state = SComment;
         }
         else {
@@ -504,26 +517,26 @@ int8_t getToken(Token *token){
                 handleLexError(token, ERR_INTERN);
               }
               octalLength++;
-              break;
             }
             else if (iCurrentSymbol <= MIN_ASCII_VALUE){
               handleLexError(token, ERR_LEX);
             }
             else{
-              state = SString; // TODO: You sure?
+              state = SString;
             }
-            break;
           }
         }
+        break;
       }
       case SOctal: {
-        //od 001 do 377
+        // 001 to 377 are valid sequences (0-3 already in token->str)
         if ((iCurrentSymbol >= '0' && iCurrentSymbol <= '7') && octalLength < 3){
           state = SOctal;
           strAddChar(octalString, iCurrentSymbol);
           octalLength++;
         }
         else{
+          ungetc(iCurrentSymbol, fSourceFile);
           int32_t intFromOctal = octalToInt(octalString);
           strFree(octalString);
           if (intFromOctal == INT_CONVERSION_ERROR){
@@ -579,8 +592,24 @@ int8_t getToken(Token *token){
         }
         else {
           token->type = TT_not;
+          ungetc(iCurrentSymbol, fSourceFile);
         }
         return ERR_OK;
+      }
+      case SMinus: {
+        if (isdigit(iCurrentSymbol)){
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_INTERN);
+          }
+          state = SNumber;
+        }
+        else{
+          ungetc(iCurrentSymbol, fSourceFile);
+          token->type = TT_minus;
+          strFree(token->str);
+          return ERR_OK;
+        }
+        break;
       }
       default: {
         handleLexError(token, ERR_LEX);

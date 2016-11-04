@@ -5,6 +5,8 @@
 #include "conversions.h"
 #include "error.h"
 #include "str.h"
+#include <stdio.h> // FILE* TO ERASE: Just for testing purposes, won't be included in final build
+extern FILE* fSourceFile; // TO ERASE: Just for testing purposes, won't be included in final build
 
 typedef enum
 {
@@ -30,7 +32,8 @@ typedef enum
     SExclamation,
     SString,
     SEscape,
-    SOctal
+    SOctal,
+    SMinus
 } tFSMState;
 
 #define MIN_ASCII_VALUE 32  // min value to be recognized as an ASCII assocring to specs
@@ -61,6 +64,8 @@ int8_t getToken(Token *token);
 /**
  * Handles any error encountered during lexical analysis
  */
+
+//fclose(fSourceFile);                                                TO ADD: Testing purposes, will be added before return to final build
 #define handleLexError(token, errorType)                                \
 do {                                                                    \
     if (token->str != NULL)   strFree(token->str);                      \

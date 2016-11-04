@@ -34,15 +34,14 @@ int32_t stringToInt(const dtStr *string) {
   while (isspace(*stringData))
       stringData++;
 
-  // TODO: add support to unary minus (Bonus)
-  if (*stringData == '-' || *stringData == '+')
-      return INT_CONVERSION_ERROR;
-
+  if (*stringData == '+')
+    return INT_CONVERSION_ERROR;
   // checking char pointer if the conversion fails
   char *end;
   long tempLong = strtol(stringData, &end, 10);
   if (tempLong > INT32_MAX || *end != '\0')
     return INT_CONVERSION_ERROR;
+
   int32_t newInt = (int32_t)tempLong;
   return newInt;
 }
@@ -55,7 +54,7 @@ double stringToDouble(const dtStr *string) {
       case DSStart: {
         if (isdigit(iCurrentSymbol))
           convertState = DSWholePart;
-        else if (isspace(iCurrentSymbol))
+        else if (isspace(iCurrentSymbol) || iCurrentSymbol == '-')
           ;
         else{
           return DOUBLE_CONVERSION_ERROR;

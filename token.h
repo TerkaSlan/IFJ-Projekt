@@ -26,6 +26,8 @@ typedef enum {
 	TT_semicolon,
 	TT_minus,
 	TT_plus,
+	TT_and,
+	TT_or,
 	TT_rightCurlyBracket,
 	TT_leftCurlyBracket,
 	TT_rightRoundBracket,
@@ -77,17 +79,17 @@ typedef struct {
 Token* newToken();
 
 /**
- * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword. 
+ * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword.
  * Deallocates token and sets pointer to NULL.
- *  
+ *
  * @param pToken token to free
  */
 void freeToken(Token **pToken);
 
 /**
- * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword. 
+ * Deallocates memory of token's content if (*pToken)->type is one of the following: TT_fullIdentifier, TT_identifier, TT_string, TT_keyword.
  * Changes (*pToken)->type to TT_empty
- * 
+ *
  * @param pToken token to clean
  */
 void cleanToken(Token **pToken);
