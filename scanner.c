@@ -3,7 +3,52 @@
 
 FILE* fSourceFile; // TO ADD 'static' to the final build, can't do it now since it's extern in scanner.h
 
-int8_t openFile(const char *sFileLocation){
+typedef enum
+{
+    SEmpty,
+    SId,
+    SFullId,
+    SEqual,
+    SNotEqual,
+    SNumber,
+    SDecimal,
+    SDouble,
+    SDoubleDecimalPart,
+    SDoubleExponentPart,
+    SDoubleExponentSign,
+    SDoubleExponent,
+    SAssignment,
+    SGreater,
+    SLess,
+    SDivide,
+    SBlockCommentStart,
+    SBlockCommentFinish,
+    SComment,
+    SExclamation,
+    SString,
+    SEscape,
+    SOctal,
+    SMinus,
+    SZero,
+    SAnd,
+    SOr,
+    SPlus
+} tFSMState;
+
+#define MIN_ASCII_VALUE 32  // min value to be recognized as an ASCII assocring to specs
+
+/**
+ * Handles any error encountered during lexical analysis
+ */
+#define handleLexError(token, errorType)                                \
+do {                                                                    \
+    if (token->str != NULL)   strFree(token->str);                      \
+    freeToken(&token);                                                  \
+    printError(ERR_LEX, " in %s at line: %d", __FILE__, __LINE__);      \
+    return errorType;                                                   \
+} while (0)
+
+int32_t openFile(const char *sFileLocation){
 
   if (sFileLocation == NULL){
     printError(ERR_OTHER, " in identifying the file source in %s at line: %d", __FILE__, __LINE__);
@@ -15,6 +60,10 @@ int8_t openFile(const char *sFileLocation){
     return ERR_OTHER;
   }
   return ERR_OK;
+}
+
+void closeFile(){
+  fclose(fSourceFile);
 }
 
 KeywordTokenType getKeywordType(dtStr *string){
@@ -112,13 +161,15 @@ KeywordTokenType getKeywordType(dtStr *string){
   return KTT_none;
 }
 
-int8_t getToken(Token *token){
+int32_t getToken(Token *token){
 
   int32_t iCurrentSymbol;
   uint8_t octalLength = 0;
   dtStr *octalString;
-
+  // for purposes of checking if _ is at the end of literal (which is invalid)
+  char cPrevSymbol = 0;
   tFSMState state = SEmpty;
+
   while (1){
     iCurrentSymbol = getc(fSourceFile);
     switch(state){
@@ -131,6 +182,13 @@ int8_t getToken(Token *token){
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
             handleLexError(token, ERR_INTERN);
         }
+        else if (iCurrentSymbol == '0'){
+          if ((token->str = strNew()) == NULL)
+            handleLexError(token, ERR_INTERN);
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
+            handleLexError(token, ERR_INTERN);
+          state = SZero;
+        }
         else if (isdigit(iCurrentSymbol)){
           state = SNumber;
           if ((token->str = strNew()) == NULL)
@@ -141,77 +199,76 @@ int8_t getToken(Token *token){
         // true for ' ', '\t', '\n', '\v', '\f', '\r'
         else if (iCurrentSymbol == EOF){
           token->type = TT_EOF;
-          fclose(fSourceFile);
           return ERR_OK;
         }
         else if (isspace(iCurrentSymbol)){
           ;
         }
         else {
-          if ((token->str = strNew()) == NULL)
-            handleLexError(token, ERR_INTERN);
-          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
-            handleLexError(token, ERR_INTERN);
           switch(iCurrentSymbol){
             case '=':
+              if ((token->str = strNew()) == NULL)
+                handleLexError(token, ERR_INTERN);
+              if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
+                handleLexError(token, ERR_INTERN);
               state = SAssignment;
               break;
             case '{':
               token->type = TT_leftCurlyBracket;
-              strFree(token->str);
               return ERR_OK;
             case '}':
               token->type = TT_rightCurlyBracket;
-              strFree(token->str);
               return ERR_OK;
             case '(':
               token->type = TT_leftRoundBracket;
-              strFree(token->str);
               return ERR_OK;
             case ')':
               token->type = TT_rightRoundBracket;
-              strFree(token->str);
               return ERR_OK;
             case '+':
-              token->type = TT_plus;
-              strFree(token->str);
-              return ERR_OK;
+              state = SPlus;
+              break;
             case '-':
+              if ((token->str = strNew()) == NULL)
+                handleLexError(token, ERR_INTERN);
+              if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
+                handleLexError(token, ERR_INTERN);
               state = SMinus;
               break;
             case '*':
               token->type = TT_multiply;
-              strFree(token->str);
               return ERR_OK;
             case '/':
               state = SDivide;
-              // no matter what SDivide results in, i won't be needing the string
-              strFree(token->str);
               break;
             case '<':
               state = SLess;
-              strFree(token->str);
               break;
             case '>':
               state = SGreater;
-              strFree(token->str);
               break;
             case '!':
               state = SExclamation;
-              // no matter what SExclamation results in, i won't be needing the string
-              strFree(token->str);
               break;
             case ';':
               token->type = TT_semicolon;
-              strFree(token->str);
               return ERR_OK;
             case '"':
               state = SString;
+              if ((token->str = strNew()) == NULL)
+                handleLexError(token, ERR_INTERN);
+              if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
+                handleLexError(token, ERR_INTERN);
               break;
             case ',':
               token->type = TT_comma;
-              strFree(token->str);
               return ERR_OK;
+            case '&':
+              state = SAnd;
+              break;
+            case '|':
+              state = SOr;
+              break;
             default:
               handleLexError(token, ERR_LEX);
           }
@@ -250,18 +307,28 @@ int8_t getToken(Token *token){
         return ERR_OK;
       }
       // Common umbrella for ints and doubles. If double detected, redirected to
-      // SDouble state
       case SNumber: {
         if (isdigit(iCurrentSymbol)){
           state = SNumber;
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
               handleLexError(token, ERR_INTERN);
           }
+          cPrevSymbol = iCurrentSymbol;
+        }
+        else if (iCurrentSymbol == '_'){
+          cPrevSymbol = iCurrentSymbol;
         }
         else if (iCurrentSymbol == '.'){
+          if (cPrevSymbol == '_')
+            handleLexError(token, ERR_LEX);
           state = SDouble;
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
-            handleLexError(token, iCurrentSymbol);
+            handleLexError(token, ERR_LEX);
+          }
+        }
+        else if (iCurrentSymbol >= 'A' && iCurrentSymbol <= 'F' && (strCharPos(token->str, 'x')==1)){
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_LEX);
           }
         }
         else if ((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E')){
@@ -270,10 +337,26 @@ int8_t getToken(Token *token){
             handleLexError(token, ERR_INTERN);
           }
         }
+        else if (iCurrentSymbol == 'p' && (strCharPos(token->str, 'x')==1)){
+          state = SDoubleExponent;
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_INTERN);
+          }
+        }
         else{
           ungetc(iCurrentSymbol, fSourceFile);
-
-          int32_t number = stringToInt(token->str);
+          int32_t number;
+          if (cPrevSymbol == '_')
+            handleLexError(token, ERR_LEX);
+          if (strCharPos(token->str, 'b') == 1)
+            number = binaryToInt(token->str);
+          else if (strCharPos(token->str, 'x') == 1)
+            number = hexToInt(token->str);
+          else if (strCharPos(token->str, '0') == 0)
+            number = octalToInt(token->str);
+          else{
+            number = stringToInt(token->str);
+          }
           if (number == INT_CONVERSION_ERROR){
             handleLexError(token, ERR_LEX);
           }
@@ -302,8 +385,14 @@ int8_t getToken(Token *token){
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
             handleLexError(token, ERR_INTERN);
           }
+          cPrevSymbol = iCurrentSymbol;
+        }
+        else if(iCurrentSymbol == '_'){
+          cPrevSymbol = iCurrentSymbol;
         }
         else if (iCurrentSymbol == 'e' || iCurrentSymbol == 'E'){
+          if (cPrevSymbol == '_')
+            handleLexError(token, ERR_LEX);
           state = SDoubleExponent;
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
             handleLexError(token, ERR_INTERN);
@@ -344,10 +433,14 @@ int8_t getToken(Token *token){
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
             handleLexError(token, ERR_INTERN);
           }
+          cPrevSymbol = iCurrentSymbol;
         }
+        else if (iCurrentSymbol == '_')
+          cPrevSymbol = iCurrentSymbol;
         else{
           ungetc(iCurrentSymbol, fSourceFile);
-
+          if(cPrevSymbol == '_')
+            handleLexError(token, ERR_LEX);
           double db = stringToDouble(token->str);
           if (fequal(db, DOUBLE_CONVERSION_ERROR)){
             handleLexError(token, ERR_LEX);
@@ -386,16 +479,7 @@ int8_t getToken(Token *token){
         }
         else {
           ungetc(iCurrentSymbol, fSourceFile);
-          if (strCmpCStr(token->str, "and") == 0){
-            token->type = TT_and;
-            strFree(token->str);
-            return ERR_OK;
-          }
-          if (strCmpCStr(token->str, "or") == 0){
-            token->type = TT_or;
-            strFree(token->str);
-            return ERR_OK;
-          }
+
           KeywordTokenType keywordType = getKeywordType(token->str);
           if (keywordType == KTT_none){
             token->type = TT_identifier;
@@ -539,6 +623,7 @@ int8_t getToken(Token *token){
           ungetc(iCurrentSymbol, fSourceFile);
           int32_t intFromOctal = octalToInt(octalString);
           strFree(octalString);
+          octalLength = 0;
           if (intFromOctal == INT_CONVERSION_ERROR){
             handleLexError(token, ERR_INTERN);
           }
@@ -603,6 +688,11 @@ int8_t getToken(Token *token){
           }
           state = SNumber;
         }
+        else if (iCurrentSymbol == '-'){
+          token->type = TT_decrement;
+          strFree(token->str);
+          return ERR_OK;
+        }
         else{
           ungetc(iCurrentSymbol, fSourceFile);
           token->type = TT_minus;
@@ -610,6 +700,78 @@ int8_t getToken(Token *token){
           return ERR_OK;
         }
         break;
+      }
+      //BASE: dealing with other number format adepts
+      case SZero: {
+        if (iCurrentSymbol == 'b'){
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_INTERN);
+          }
+          state = SNumber; // potom urobim search na b in token->str
+        }
+        else if (iCurrentSymbol == 'x'){
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_INTERN);
+          }
+          state = SNumber; // potom urobim search na b in token->str ALE pozor na iba digit v SNumber
+        }
+        // octal literal
+        else if(isdigit(iCurrentSymbol)){
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_INTERN);
+          }
+          state = SNumber; // potom urobim search 0 ako prvy char
+        }
+        else if (iCurrentSymbol == '.'){
+          state = SDouble;
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, iCurrentSymbol);
+          }
+        }
+        else if ((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E')){
+          state = SDoubleExponent;
+          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
+            handleLexError(token, ERR_INTERN);
+          }
+        }
+        // just plain 0
+        else {
+          ungetc(iCurrentSymbol, fSourceFile);
+          strFree(token->str);
+          token->iNum = 0;
+          token->type = TT_number;
+          return ERR_OK;
+        }
+        break;
+      }
+      case SAnd: {
+        if (iCurrentSymbol == '&'){
+          token->type = TT_and;
+          return ERR_OK;
+        }
+        else{
+          handleLexError(token, ERR_LEX);
+        }
+      }
+      case SOr: {
+        if (iCurrentSymbol == '|'){
+          token->type = TT_or;
+          return ERR_OK;
+        }
+        else{
+          handleLexError(token, ERR_LEX);
+        }
+      }
+      case SPlus: {
+        if (iCurrentSymbol != '+'){
+          ungetc(iCurrentSymbol, fSourceFile);
+          token->type = TT_plus;
+          return ERR_OK;
+        }
+        else{
+          token->type = TT_increment;
+          return ERR_OK;
+        }
       }
       default: {
         handleLexError(token, ERR_LEX);

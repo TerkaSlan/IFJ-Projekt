@@ -8,15 +8,22 @@ aaaaabbbbcccc
 veeeeeeeeeeeeeeeeeeeeeery_loooooooooooooooooooooooooong
 q
 9aaaa
-9_$
 0002
 2147483646
+0x1
+0xFF
+0xE1C
+0b010001101101
+0b1111
+0b0
+01
+037
+000000077
 -42
 _name._name
 _9999.$999
 sample.s$mple
 Upper.Upper
-
 
 
 // this awesome comment gets ignored, it's pretty long though so i hope it'll test the shit out of my scanner implementation and it won't disappoint me
@@ -30,9 +37,13 @@ Upper.Upper
 -0.0E-0
 123.456e-2
 -123.456e-2
+1_000
 ""
 ".@#)(!*$#()@_!)"
 "Ahoj\nSve'te\\\042"
+"Ahoj\nSve'te\t\"\155"
+"\164\145\162\153\141"
+"\041non-octal\040\057"
 break
 brea
 reak
@@ -43,6 +54,7 @@ boolean
 class
 return
 String string;while void None
-and or + == = {(*/)}<!>!=
+&& || + == = {(*/)}<!>!= ++ -- !
 <= >=
 -
+3.1_415

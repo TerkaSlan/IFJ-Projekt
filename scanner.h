@@ -8,35 +8,6 @@
 #include <stdio.h> // FILE* TO ERASE: Just for testing purposes, won't be included in final build
 extern FILE* fSourceFile; // TO ERASE: Just for testing purposes, won't be included in final build
 
-typedef enum
-{
-    SEmpty,
-    SId,
-    SFullId,
-    SEqual,
-    SNotEqual,
-    SNumber,
-    SDecimal,
-    SDouble,
-    SDoubleDecimalPart,
-    SDoubleExponentPart,
-    SDoubleExponentSign,
-    SDoubleExponent,
-    SAssignment,
-    SGreater,
-    SLess,
-    SDivide,
-    SBlockCommentStart,
-    SBlockCommentFinish,
-    SComment,
-    SExclamation,
-    SString,
-    SEscape,
-    SOctal,
-    SMinus
-} tFSMState;
-
-#define MIN_ASCII_VALUE 32  // min value to be recognized as an ASCII assocring to specs
 /**
  * Opens the file located at sFileLocation and loads global variable
  * fSourceFile with the filestream
@@ -44,7 +15,11 @@ typedef enum
  * @param      sFileLocation      Input file location
  * @return     ERR_OTHER if an error was encountered, ERR_OK otherwise
  */
-int8_t openFile(const char *sFileLocation);
+int32_t openFile(const char *sFileLocation);
+/**
+ * Closes the file loaded in global variable fSourceFile
+ */
+void closeFile();
 /**
  * Decides whether a token adept ready to be an identifier isn't a keyword
  *
@@ -59,18 +34,6 @@ KeywordTokenType keywordType(const dtStr *string);
  * @param      token     Token to be filled
  * @return     ERR_OK in the case of success, ERR_INTERN or ERR_LEX in the case of failure
  */
-int8_t getToken(Token *token);
+int32_t getToken(Token *token);
 
-/**
- * Handles any error encountered during lexical analysis
- */
-
-//fclose(fSourceFile);                                                TO ADD: Testing purposes, will be added before return to final build
-#define handleLexError(token, errorType)                                \
-do {                                                                    \
-    if (token->str != NULL)   strFree(token->str);                      \
-    freeToken(&token);                                                  \
-    printError(ERR_LEX, " in %s at line: %d", __FILE__, __LINE__);      \
-    return errorType;                                                   \
-} while (0)
 #endif

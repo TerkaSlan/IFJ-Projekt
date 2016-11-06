@@ -28,6 +28,8 @@ typedef enum {
 	TT_plus,
 	TT_and,
 	TT_or,
+	TT_increment,
+	TT_decrement,
 	TT_rightCurlyBracket,
 	TT_leftCurlyBracket,
 	TT_rightRoundBracket,
