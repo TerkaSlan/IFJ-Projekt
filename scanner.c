@@ -156,7 +156,7 @@ KeywordTokenType getKeywordType(dtStr *string){
       break;
     }
     default:
-      return KTT_none; // add to token.h
+      return KTT_none;
   }
   return KTT_none;
 }
@@ -196,7 +196,6 @@ int32_t getToken(Token *token){
           if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
             handleLexError(token, ERR_INTERN);
         }
-        // true for ' ', '\t', '\n', '\v', '\f', '\r'
         else if (iCurrentSymbol == EOF){
           token->type = TT_EOF;
           return ERR_OK;
