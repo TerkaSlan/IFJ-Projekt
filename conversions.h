@@ -35,4 +35,8 @@ bool fequal(double a, double b);
 * @return   Converted int
 */
 int32_t octalToInt(dtStr *octalString);
+
+int32_t binaryToInt(const dtStr *binaryString);
+
+int32_t hexToInt(const dtStr *hexadecimalString);
 #endif

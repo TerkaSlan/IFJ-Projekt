@@ -33,8 +33,7 @@ SHOULD_EQUAL("No support for unary plus", integer, INT_CONVERSION_ERROR);
 strClear(string);
 strAddCStr(string, "-12234");
 integer = stringToInt(string);
-// Failure expected
-SHOULD_EQUAL("No support for unary minus (and negative ints)", integer, INT_CONVERSION_ERROR);
+SHOULD_NOT_EQUAL("No support for unary minus (and negative ints)", integer, INT_CONVERSION_ERROR);
 
 strClear(string);
 strAddCStr(string, "2222222222222222222222222222222222"); // Very long int

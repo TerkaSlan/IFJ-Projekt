@@ -34,8 +34,7 @@ void cleanToken(Token **pToken) {
 				strFree((*pToken)->str);
 			}
 			(*pToken)->type = TT_empty;
+			(*pToken)->str  = NULL;
 		}
 	}
 }
-
-
