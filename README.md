@@ -14,7 +14,7 @@ _Week 1 [4.10. - 11.10]_
   
    #3 Simple error handling module + test file - **Michal** :white_check_mark:
   
-   #4 [Depends on #1 and #2] Scanner implementation + test file - **Terka** :white_medium_square:
+   #4 [Depends on #1 and #2] Scanner implementation + test file - **Terka** :white_check_mark:
    
 _Week 2 [12.10 - 18.10]_
   
@@ -45,3 +45,5 @@ _Week 4 [26.10 - 1.11]_
 _Week 5 [2.11 - 8.11]_
 
   #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_medium_square:
+  
+  #17 Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
