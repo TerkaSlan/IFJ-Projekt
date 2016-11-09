@@ -28,22 +28,23 @@ tInstructionListPtr instrListNew() {
 	ret->usedSize          = 0;
 	ret->allocatedSize     = INSTRUCTION_LIST_DEFAULT_SIZE;
 
+	//add iStop instruction on index 0
+	tInstruction stop = {iSTOP, NULL, NULL, NULL};
+	if(instrListInsertInstruction(ret, stop) != 0) {
+		free(ret->instructionArray);
+		free(ret);
+	}
+
 	return ret;
 
 }
 
 tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list) {
-	if(!list || !list->instructionArray)
+	if(!list || list->firstInstruction <
+	            0) //not checking for array != null, interpreting a corrupted instruction list should not happen
 		return NULL;
 
-	if(list->activeInstruction < 0) {
-		if(list->firstInstruction < 0)
-			return NULL;
-
-		//set active instruction to the first instruction
-		list->activeInstruction = list->firstInstruction - 1;
-	}
-
+	//increases active instruction index and returns pointer to the instruction
 	return &(list->instructionArray[++(list->activeInstruction)]);
 }
 
@@ -85,7 +86,7 @@ void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index) {
 		return;
 
 	list->firstInstruction  = (int64_t) index;
-	list->activeInstruction = (int64_t) index;
+	list->activeInstruction = (int64_t) index - 1;
 
 }
 
@@ -98,12 +99,11 @@ tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index
 }
 
 
-
 void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex) {
 	if(!list)
 		return;
 
-	list->activeInstruction = (int64_t) instructionIndex;
+	list->activeInstruction = (int64_t) instructionIndex - 1;
 }
 
 void instrListFree(tInstructionListPtr list) {
