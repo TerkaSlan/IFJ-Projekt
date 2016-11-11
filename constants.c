@@ -37,6 +37,9 @@ tSymbolPtr constInsertSymbol(tConstContainerPtr container, tSymbol symbol) {
 	if(!newSymbol)
 		return NULL;
 
+	//implicitly this is const. value - its real value is stored inside the symbol. Not in local frame.
+	newSymbol->Const = true;
+
 	container->constArray[container->usedSize] = newSymbol;
 
 

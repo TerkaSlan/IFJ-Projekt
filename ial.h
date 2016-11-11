@@ -52,7 +52,7 @@ typedef struct tArgumentListItem {
  */
 typedef struct {
 	tArgumentListItem *ArgumentList;         ///Pointer to Linked list of function arguments
-	uint32_t          NumberOfArguments;
+	uint32_t          NumberOfArguments;    ///Number of parameters the function has
 	eSymbolType       ReturnType;           ///Type of return value
 	uint32_t          InstructionIndex;     ///Pointer to the first instruction of this funtion
 	tHashTablePtr     LocalSymbolTable;     ///Pointer to the local symbol hash table.
@@ -72,9 +72,9 @@ typedef struct {
 typedef union {
 	tClassData ClassData;
 	tFuncData  FunctionData;
-	int32_t    Integer;
+	int32_t    Integer;     //64?
 	double     Double;
-	bool Bool;
+	bool       Bool;
 	dtStrPtr   String;
 } tSymbolData;
 
@@ -86,11 +86,10 @@ typedef struct tHashTableItem {
 	struct tHashTableItem *Next;            ///Pointer to the next symbol in the linked list
 	dtStrPtr              Name;             ///Pointer to string structure representing Name of the symbol
 	eSymbolType           Type;             ///Symbol Type
-	bool Defined;          ///Defined/initialized flag
-	bool Const;            ///Constant flag
-	bool Static;
+	bool                  Defined;          ///Defined - if static var/func is initialized/defined. note: initialized flag for local variables is stored in the local frame, not here
+	bool                  Const;            ///Constant/static flag - data are stored globaly (in the symbol): eg literals, static variables
 	int32_t               Index;            ///index to local frame, -1 not defined
-	tSymbolData           Data;             ///Symbol Data
+	tSymbolData           Data;             ///Symbol Data for literals/static variables
 } tSymbol, *tSymbolPtr;
 
 

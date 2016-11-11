@@ -8,23 +8,27 @@
 #include "ial.h"
 
 typedef struct {
-	tSymbolData Data;
+	eSymbolType Type;
 	bool Initialized;
+	tSymbolData Data;
 } tFrameItem, *tFrameItemPtr;
 
 typedef struct {
-	tFrameItem  *symbolArray;
-	uint32_t    ReturnInstruction;
-	uint32_t    CallInstruction;
-	tSymbolData Return;
+	tFrameItem *symbolArray;
+	uint32_t   ReturnInstruction;
+	uint32_t   CallInstruction;
+	uint32_t   Size;
 } tFrame;
 
 
 typedef struct {
-	int64_t  Top;
-	uint32_t Size;
-	tFrame   Poped;
-	tFrame   *FrameArray;
+	tFrame      *FrameArray;   //Dynamic array of frames (stack)
+	int64_t     Top;           //Which frame index is on top, -1 if empty
+	uint32_t    Size;            //Size of stack in frames
+	uint32_t    ArgumentIndex; //On which index will be pushed next argument
+	tFrame      Prepared;        //Frame being prepared for a func call
+	eSymbolType ReturnType; ///Type of return data currently holding
+	tSymbolData ReturnData; //Return data
 } tFrameStack;
 
 
@@ -38,9 +42,29 @@ tFrame *fstackPush(tFrameStack *stack, tFrame *frame);
 
 tFrame *fstackPop(tFrameStack *stack);
 
+
+
 inline tSymbolData *symbolGetData(tSymbolPtr symbol, tFrame *frame) {
 	return (symbol->Const) ? &(symbol->Data) : &(frame->symbolArray[symbol->Index].Data);
 }
 
+inline tSymbolData *symbolSetData(tSymbolPtr symbol, tFrame *frame) {
+	if (symbol->Const)
+	{
+		symbol->Defined = true;
+		return &(symbol->Data);
+	}
+	else
+	{
+		frame->symbolArray[symbol->Index].Initialized = true;
+		return &(frame->symbolArray[symbol->Index].Data);
+	}
+}
 
-#endif //FRAME_H
+inline bool symbolIsInitialized(tSymbolPtr symbol, tFrame *frame) {
+	return symbol->Const ? symbol->Defined : frame->symbolArray[symbol->Index].Initialized;
+}
+
+
+
+#endif

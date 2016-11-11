@@ -11,7 +11,12 @@
 #include "instruction.h"
 #include "constants.h"
 
-
-eError Interpret(tHashTablePtr globalClassTable, tConstContainerPtr constContainer, tInstructionListPtr instrList);
+/**
+ *
+ * @param globalClassTable Pointer to the hash table with class symbols
+ * @param instrList Instruction list to be interpreted
+ * @return Error enum
+ */
+eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList);
 
 #endif //INTERPRET_H

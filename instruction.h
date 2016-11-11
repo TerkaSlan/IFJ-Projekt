@@ -27,8 +27,12 @@ typedef enum {
 	iMUL,       ///Multiply             dst = arg1 * arg2
 	iDIV,       ///Divide               dst = arg1 / arg2
 	iNEG,       ///Negate               dst = -arg1
-	iLEQ,       ///Logical Equality     dst = arg1 == arg2
-	iLNEQ,      ///Logical Inequality   dst = arg1 != arg2
+	iLE,
+	iLT,
+	iGE,
+	iGT,
+	iEQ,       ///Logical Equality     dst = arg1 == arg2
+	iNEQ,      ///Logical Inequality   dst = arg1 != arg2
 	iLAND,      ///Logical And          dst = arg1 && arg2
 	iLOR,       ///Logical Or           dst = arg1 || arg2
 	iLNOT,      ///Logical Not          dst = !arg1
@@ -39,7 +43,6 @@ typedef enum {
 	iCONV2INT,  /// dst = (int)arg1
 	iCONV2BOOL,  /// dst = (boolean)arg1
 	iCONV2DOUBLE,/// dst = (double)arg1
-	iCAT,       ///concatenate string dst = cat(string arg1, string arg2)
 	iPRINT,     ///prints string arg1
 	iREAD,      ///Reads input to dst
 	iLEN,       ///dst = lenght(arg1)
