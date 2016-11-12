@@ -178,4 +178,18 @@ tSymbolPtr symbolNewCopy(tSymbolPtr symbol);
 */
 void symbolFree(tSymbolPtr symbol);
 
+//-------------------------------------------------------------------
+//-----------------------------QuickSort-----------------------------
+//-------------------------------------------------------------------
+
+/**
+ * 	Sorts characters in string s. Sign with lower ordinal value
+ *  is always preceded by a character with a higher ordinal value.
+ *
+ * @param      s     unsorted dtStr
+ *
+ * @return     New sorted dtStr, or NULL if something went wrong.
+ */
+dtStr *sort(dtStr *s);	
+
 #endif

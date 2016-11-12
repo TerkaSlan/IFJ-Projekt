@@ -88,7 +88,7 @@ dtStr *strNewFromCStr(char *str);
 
 /**
  * @brief      Compares the string pointed to, by s1->str to the string pointed to by s2->str
- * 
+ *
  *
  * @param      s1    dtStr
  * @param      s2    dtStr
@@ -129,13 +129,13 @@ int32_t strGetLength(dtStr *s);
 
 
 /**
- * Checks wheter given char is in dtStr.
+ * Check for char's presence and position
  *
  * @param      s     dtStr
  * @param[in]  c     char, which is searched in dtStr
  *
- * @return     Returns true if char was found in string, otherwise returns false.
+ * @return     Returns the position if char was found in string, otherwise returns -1.
  */
-bool strIsCharIn(dtStr *s, const char c);
+int32_t strCharPos(dtStr *s, const char c);
 
 #endif
