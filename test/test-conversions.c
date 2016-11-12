@@ -285,6 +285,5 @@ symbol->Type = 100;
 SHOULD_EQUAL("symbolToInt() Unknown eTYPE", symbolToString(symbol), NULL);
 
 strFree(returnedString);
-//strFree(symbol->Data.String);
 symbolFree(symbol);
 TEST_SUITE_END
