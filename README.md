@@ -48,6 +48,6 @@ _Week 5 [2.11 - 8.11]_
   
   #17 Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
   
-_Week 5 [9.11 - 15.11]_
+_Week 6 [9.11 - 15.11]_
   
   #18 Initial expressions module implementation - **Katka** :white_medium_square:
