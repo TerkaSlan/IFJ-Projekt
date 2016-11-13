@@ -26,7 +26,7 @@ _Week 2 [12.10 - 18.10]_
   
   #10 Instruction set - **Michal** :white_check_mark:
   
-  #11 Grammar, basic parser implementation - **Katka** :white_medium_square:
+  #11 Grammar, basic parser implementation - **Katka** :white_check_mark:
   
   #12 Builtins - **Jakub + Marek** :white_medium_square:
   
@@ -44,6 +44,10 @@ _Week 4 [26.10 - 1.11]_
 
 _Week 5 [2.11 - 8.11]_
 
-  #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_medium_square:
+  #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_check_mark:
   
   #17 Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
+  
+_Week 5 [9.11 - 15.11]_
+  
+  #18 Initial expressions module implementation - **Katka** :white_medium_square:
