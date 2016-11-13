@@ -70,28 +70,32 @@ dtStrPtr doubleToString(double number);
 /**
 * Converts the data portion of symbol to an integer
 * @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
 * @return   Converted int, ERR_INTERN on failure
 */
-int32_t *symbolToInt(const tSymbolPtr symbol, int32_t *convertedInt);
+int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData data, int32_t *convertedInt);
 
 /**
 * Converts the data portion of symbol to a double
 * @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
 * @return   Converted double, ERR_INTERN on failure
 */
-double *symbolToDouble(const tSymbolPtr symbol, double *convertedDouble);
+double *symbolToDouble(const tSymbolPtr symbol, tSymbolData data, double *convertedDouble);
 
 /**
 * Converts the bool portion of symbol to a double
 * @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
 * @return   Converted bool, ERR_INTERN on failure
 */
-bool *symbolToBool(const tSymbolPtr symbol, bool *convertedBool);
+bool *symbolToBool(const tSymbolPtr symbol, tSymbolData data, bool *convertedBool);
 
 /**
 * Converts the symbol to a newly created string (type dtStrPtr)
 * @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
 * @return   Converted string on success, NULL on failure
 */
-dtStrPtr symbolToString(const tSymbolPtr symbol);
+dtStrPtr symbolToString(const tSymbolPtr symbol, tSymbolData data);
 #endif
