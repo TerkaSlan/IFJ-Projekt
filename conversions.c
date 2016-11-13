@@ -194,7 +194,7 @@ double stringToDouble(const dtStr *string) {
   return DOUBLE_CONVERSION_ERROR;
 }
 
-int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData *data, int32_t *convertedInt) {
+int32_t *symbolToInt(const tSymbolPtr symbol, const tSymbolData *data, int32_t *convertedInt) {
   switch (symbol->Type) {
     case eINT:
       *convertedInt = data->Integer;
@@ -214,7 +214,7 @@ int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData *data, int32_t *conver
   return convertedInt;
 }
 
-double *symbolToDouble(const tSymbolPtr symbol, tSymbolData *data, double *convertedDouble) {
+double *symbolToDouble(const tSymbolPtr symbol, const tSymbolData *data, double *convertedDouble) {
   switch (symbol->Type) {
     case eINT:
       *convertedDouble = (double)data->Integer;
@@ -234,7 +234,7 @@ double *symbolToDouble(const tSymbolPtr symbol, tSymbolData *data, double *conve
   return convertedDouble;
 }
 
-bool *symbolToBool(const tSymbolPtr symbol, tSymbolData *data, bool *convertedBool) {
+bool *symbolToBool(const tSymbolPtr symbol, const tSymbolData *data, bool *convertedBool) {
   switch (symbol->Type) {
     case eINT:
       *convertedBool = data->Integer != 0;
@@ -254,7 +254,7 @@ bool *symbolToBool(const tSymbolPtr symbol, tSymbolData *data, bool *convertedBo
   return convertedBool;
 }
 
-dtStrPtr symbolToString(const tSymbolPtr symbol, tSymbolData *data) {
+dtStrPtr symbolToString(const tSymbolPtr symbol, const tSymbolData *data) {
   dtStrPtr string = NULL;
   switch (symbol->Type) {
     case eINT:
