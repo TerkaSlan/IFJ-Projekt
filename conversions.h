@@ -73,7 +73,7 @@ dtStrPtr doubleToString(double number);
 * @param    data     The actual data that need to be converted
 * @return   Converted int, ERR_INTERN on failure
 */
-int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData data, int32_t *convertedInt);
+int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData *data, int32_t *convertedInt);
 
 /**
 * Converts the data portion of symbol to a double
@@ -81,7 +81,7 @@ int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData data, int32_t *convert
 * @param    data     The actual data that need to be converted
 * @return   Converted double, ERR_INTERN on failure
 */
-double *symbolToDouble(const tSymbolPtr symbol, tSymbolData data, double *convertedDouble);
+double *symbolToDouble(const tSymbolPtr symbol, tSymbolData *data, double *convertedDouble);
 
 /**
 * Converts the bool portion of symbol to a double
@@ -89,7 +89,7 @@ double *symbolToDouble(const tSymbolPtr symbol, tSymbolData data, double *conver
 * @param    data     The actual data that need to be converted
 * @return   Converted bool, ERR_INTERN on failure
 */
-bool *symbolToBool(const tSymbolPtr symbol, tSymbolData data, bool *convertedBool);
+bool *symbolToBool(const tSymbolPtr symbol, tSymbolData *data, bool *convertedBool);
 
 /**
 * Converts the symbol to a newly created string (type dtStrPtr)
@@ -97,5 +97,5 @@ bool *symbolToBool(const tSymbolPtr symbol, tSymbolData data, bool *convertedBoo
 * @param    data     The actual data that need to be converted
 * @return   Converted string on success, NULL on failure
 */
-dtStrPtr symbolToString(const tSymbolPtr symbol, tSymbolData data);
+dtStrPtr symbolToString(const tSymbolPtr symbol, tSymbolData *data);
 #endif

@@ -194,19 +194,19 @@ double stringToDouble(const dtStr *string) {
   return DOUBLE_CONVERSION_ERROR;
 }
 
-int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData data, int32_t *convertedInt) {
+int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData *data, int32_t *convertedInt) {
   switch (symbol->Type) {
     case eINT:
-      *convertedInt = data.Integer;
+      *convertedInt = data->Integer;
       break;
     case eDOUBLE:
-      *convertedInt = (int32_t)data.Double;
+      *convertedInt = (int32_t)data->Double;
       break;
     case eBOOL:
-      *convertedInt = data.Bool;
+      *convertedInt = data->Bool;
       break;
     case eSTRING:
-      *convertedInt = stringToInt(data.String);
+      *convertedInt = stringToInt(data->String);
       break;
     default:
       convertedInt = NULL;
@@ -214,19 +214,19 @@ int32_t *symbolToInt(const tSymbolPtr symbol, tSymbolData data, int32_t *convert
   return convertedInt;
 }
 
-double *symbolToDouble(const tSymbolPtr symbol, tSymbolData data, double *convertedDouble) {
+double *symbolToDouble(const tSymbolPtr symbol, tSymbolData *data, double *convertedDouble) {
   switch (symbol->Type) {
     case eINT:
-      *convertedDouble = (double)data.Integer;
+      *convertedDouble = (double)data->Integer;
       break;
     case eDOUBLE:
-      *convertedDouble = data.Double;
+      *convertedDouble = data->Double;
       break;
     case eBOOL:
-      *convertedDouble = (double)data.Bool;
+      *convertedDouble = (double)data->Bool;
       break;
     case eSTRING:
-      *convertedDouble = stringToDouble(data.String);
+      *convertedDouble = stringToDouble(data->String);
       break;
     default:
       convertedDouble = NULL;
@@ -234,19 +234,19 @@ double *symbolToDouble(const tSymbolPtr symbol, tSymbolData data, double *conver
   return convertedDouble;
 }
 
-bool *symbolToBool(const tSymbolPtr symbol, tSymbolData data, bool *convertedBool) {
+bool *symbolToBool(const tSymbolPtr symbol, tSymbolData *data, bool *convertedBool) {
   switch (symbol->Type) {
     case eINT:
-      *convertedBool = data.Integer != 0;
+      *convertedBool = data->Integer != 0;
       break;
     case eDOUBLE:
-      *convertedBool = data.Double != 0.0;
+      *convertedBool = data->Double != 0.0;
       break;
     case eBOOL:
-      *convertedBool = data.Bool;
+      *convertedBool = data->Bool;
       break;
     case eSTRING:
-      *convertedBool = data.String->uiLength != 0;
+      *convertedBool = data->String->uiLength != 0;
       break;
     default:
       convertedBool = NULL;
@@ -254,25 +254,25 @@ bool *symbolToBool(const tSymbolPtr symbol, tSymbolData data, bool *convertedBoo
   return convertedBool;
 }
 
-dtStrPtr symbolToString(const tSymbolPtr symbol, tSymbolData data) {
+dtStrPtr symbolToString(const tSymbolPtr symbol, tSymbolData *data) {
   dtStrPtr string = NULL;
   switch (symbol->Type) {
     case eINT:
-      if ((string = intToString(data.Integer)) == NULL)
+      if ((string = intToString(data->Integer)) == NULL)
         handleConversionError(string);
       break;
     case eDOUBLE:
-      if ((string = doubleToString(data.Double)) == NULL)
+      if ((string = doubleToString(data->Double)) == NULL)
         handleConversionError(string);
       break;
     case eBOOL:
       string = strNew();
-      if (strAddChar(string,data.Bool + '0') == STR_ERROR)
+      if (strAddChar(string,data->Bool + '0') == STR_ERROR)
         handleConversionError(string);
       break;
     case eSTRING:
       string = strNew();
-      if(strCopyStr(string, data.String) == STR_ERROR)
+      if(strCopyStr(string, data->String) == STR_ERROR)
         handleConversionError(string);
       break;
     default:
