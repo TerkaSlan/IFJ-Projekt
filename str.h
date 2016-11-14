@@ -1,5 +1,6 @@
 
 #include <stdint.h>				//for "uint32_t"
+#include <stdbool.h>
 
 #ifndef STR_H
 #define STR_H
@@ -87,7 +88,7 @@ dtStr *strNewFromCStr(char *str);
 
 /**
  * @brief      Compares the string pointed to, by s1->str to the string pointed to by s2->str
- * 
+ *
  *
  * @param      s1    dtStr
  * @param      s2    dtStr
@@ -125,5 +126,16 @@ char *strGetCStr(dtStr *s);
  * @return     Length of string
  */
 int32_t strGetLength(dtStr *s);
+
+
+/**
+ * Check for char's presence and position
+ *
+ * @param      s     dtStr
+ * @param[in]  c     char, which is searched in dtStr
+ *
+ * @return     Returns the position if char was found in string, otherwise returns -1.
+ */
+int32_t strCharPos(dtStr *s, const char c);
 
 #endif

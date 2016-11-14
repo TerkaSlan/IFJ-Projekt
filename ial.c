@@ -4,6 +4,7 @@
 
 
 static uint32_t htabHashFunc(char *name, uint32_t htabSize);
+void partition(dtStr *s, int32_t low, int32_t high);
 
 
 tHashTablePtr htabInit(uint32_t size) {
@@ -357,4 +358,48 @@ void symbolFree(tSymbolPtr symbol) {
 
 	//dealloc symbol
 	free(symbol);
+}
+
+//-------------------------------------------------------------------
+//-----------------------------QuickSort-----------------------------
+//-------------------------------------------------------------------
+
+dtStr *sort(dtStr *s) {
+	if (s == NULL) {
+		return NULL;
+	}
+	dtStr *sortStr = strNewFromStr(s);
+	if (sortStr == NULL) {
+		return NULL;
+	}
+	if (sortStr->uiLength == 0) {
+		return sortStr;
+	}
+	partition(sortStr, 0, sortStr->uiLength - 1);
+	return sortStr;
+}
+
+void partition(dtStr *s, int32_t low, int32_t high) {
+	int32_t i = low;
+	int32_t j = high;
+	uint32_t pMedian = s->str[(i+j) / 2];
+	char tmpChar;
+	//pMedian is pseudo median
+	do	{
+		while (s->str[i] < pMedian)
+			i++;
+		while (s->str[j] > pMedian)
+			j--;
+		if (i <= j) {
+			tmpChar = s->str[i];
+			s->str[i] = s->str[j];
+			s->str[j] = tmpChar;
+			i++;
+			j--;
+		}
+	} while (i <= j);
+	if (i < high)
+		partition(s, i, high);
+	if (j > low)
+		partition(s, low, j);
 }

@@ -21,6 +21,13 @@ TEST_SUITE(InstructionListTest)
 
 TEST_SUITE(ConversionsTest)
 
+TEST_SUITE(ScannerTest)
+
+TEST_SUITE(ialTest)
+
+TEST_SUITE(BuiltinTest)
+
+
 int main(int argc, char **argv)
 {
     int32_t opt;
@@ -63,6 +70,10 @@ int main(int argc, char **argv)
     REGISTER_TEST_SUITE(SymbolHashTableTest)
     REGISTER_TEST_SUITE(InstructionListTest)
     REGISTER_TEST_SUITE(ConversionsTest)
+    REGISTER_TEST_SUITE(ScannerTest)
+    REGISTER_TEST_SUITE(ialTest)
+    REGISTER_TEST_SUITE(BuiltinTest)
+
     RUN_TEST_SUITES
 
     if (!(testFlags & OnlyFailed)) {

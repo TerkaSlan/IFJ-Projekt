@@ -12,6 +12,8 @@ strAddChar(string, 'A');
 SHOULD_EQUAL("strAddChar()", (strcmp(string->str, "A") || (string->uiLength != 1) ), 0);
 strAddChar(string, 'H');
 SHOULD_EQUAL("strAddChar()", (strcmp(string->str, "AH") || strcmp( &(string->str[string->uiLength]), "\0") || (string->uiLength != 2) ), 0);
+bool isIn = false;
+isIn = strCharPos(string, 'H');
 
 dtStr *string2 = strNewFromCStr("String c2.");
 SHOULD_EQUAL("strNewFromCStr()", (strcmp( &(string2->str[10]), "\0")  || (string2->uiLength != 10) ), 0);
@@ -28,6 +30,9 @@ SHOULD_EQUAL("strGetCStr()", strcmp(cStr, "String c2."), 0);
 char *LoremIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec libero felis, porttitor ac porttitor sit amet, pharetra id sem. Sed vel dolor sem. Ut scelerisque et elit et posuere. Nam eros elit, placerat at varius vitae, bibendum in velit. Nam condimentum velit ac porttitor laoreet. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Etiam elementum vel massa sed dictum.";
 strAddCStr(string, LoremIpsum);
 SHOULD_EQUAL("strAddCStr()", (strcmp( &(string->str[string->uiLength]), "\0") || (string->uiLength != 410) ), 0);
+isIn = isIn && (strCharPos(string, 'z') == -1);
+isIn = isIn && (strCharPos(string, 'f') != -1);
+SHOULD_EQUAL("strIsCharIn()", isIn, true);
 
 SHOULD_EQUAL("strGetLength()", strGetLength(string), 410);
 

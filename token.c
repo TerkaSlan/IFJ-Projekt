@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include "str.h"
 #include "token.h"
 
 Token* newToken() {
@@ -16,8 +15,7 @@ void freeToken(Token **pToken) {
 		if (*pToken != NULL) {
 			if (((*pToken)->type == TT_fullIdentifier)
 	        	|| ((*pToken)->type == TT_identifier)
-				|| ((*pToken)->type == TT_string)
-				|| ((*pToken)->type) == TT_keyword) {
+			|| ((*pToken)->type == TT_string)) {
 				strFree((*pToken)->str);
 			}
 			free(*pToken);
@@ -32,13 +30,11 @@ void cleanToken(Token **pToken) {
 		if (*pToken != NULL) {
 			if (((*pToken)->type == TT_fullIdentifier)
 	        	|| ((*pToken)->type == TT_identifier)
-				|| ((*pToken)->type == TT_string)
-				|| ((*pToken)->type) == TT_keyword) {
+			|| ((*pToken)->type == TT_string)) {
 				strFree((*pToken)->str);
 			}
 			(*pToken)->type = TT_empty;
+			(*pToken)->str  = NULL;
 		}
 	}
 }
-
-

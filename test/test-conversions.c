@@ -33,8 +33,7 @@ SHOULD_EQUAL("No support for unary plus", integer, INT_CONVERSION_ERROR);
 strClear(string);
 strAddCStr(string, "-12234");
 integer = stringToInt(string);
-// Failure expected
-SHOULD_EQUAL("No support for unary minus (and negative ints)", integer, INT_CONVERSION_ERROR);
+SHOULD_NOT_EQUAL("No support for unary minus (and negative ints)", integer, INT_CONVERSION_ERROR);
 
 strClear(string);
 strAddCStr(string, "2222222222222222222222222222222222"); // Very long int
@@ -50,7 +49,7 @@ SHOULD_NOT_EQUAL("Zero", integer, INT_CONVERSION_ERROR);
 
 // DOUBLES
 
-dbString = strNew();
+strClear(dbString);
 strAddCStr(dbString, "3.14");
 db = stringToDouble(dbString);
 // One does not simply rely on == with doubles, using my double comparison function
@@ -140,4 +139,30 @@ SHOULD_EQUAL("Decimal part overflow", fequal(db, 1232002000.34), 1);
 strFree(dbString);
 strFree(string);
 
+// octalToInt
+dtStr *dbStringOctal = strNew();
+strAddCStr(dbStringOctal, "000"); // NULL
+SHOULD_EQUAL("Empty string", (unsigned char)octalToInt(dbStringOctal), 0);
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "011"); // tab
+SHOULD_EQUAL("Tab", (unsigned char)octalToInt(dbStringOctal), '\t');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "040"); // space
+SHOULD_EQUAL("Space", (unsigned char)octalToInt(dbStringOctal), ' ');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "044"); // $
+SHOULD_EQUAL("Dollar sign", (unsigned char)octalToInt(dbStringOctal), '$');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "057"); // /
+SHOULD_EQUAL("Slash", (unsigned char)octalToInt(dbStringOctal), '/');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "160"); // symbol
+SHOULD_EQUAL("p", (unsigned char)octalToInt(dbStringOctal), 'p');
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "200");
+SHOULD_EQUAL("Extended ASCII: (200)8->(128)10", (unsigned char)octalToInt(dbStringOctal), 128);
+strClear(dbStringOctal);
+strAddCStr(dbStringOctal, "888"); // not valid
+SHOULD_EQUAL("Not valid", octalToInt(dbStringOctal), INT_CONVERSION_ERROR);
+strFree(dbStringOctal);
 TEST_SUITE_END
