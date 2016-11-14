@@ -8,11 +8,11 @@ dtStr *unord = strNew();
 char *ord = "abcdefghijklmnopqrstuvwxyz";
 strAddCStr(unord, "ofvimgwknbhjxclsrteqyapuzd");
 dtStr *unordSort = sort(unord);
-SHOULD_EQUAL("QuickSort (unorder alphabet)", strCmpCStr(unordSort, ord), 0);
+SHOULD_EQUAL("QuickSort (unordered alphabet)", strCmpCStr(unordSort, ord), 0);
 
 dtStr *empty = strNew();
 dtStr *emptySort = sort(empty);
-SHOULD_EQUAL("QuickSort on empty str", strCmpCStr(empty, ""), 0);
+SHOULD_EQUAL("QuickSort on empty str", strCmpCStr(emptySort, ""), 0);
 
 strFree(unord);
 strFree(unordSort);

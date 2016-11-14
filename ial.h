@@ -183,7 +183,7 @@ void symbolFree(tSymbolPtr symbol);
 //-------------------------------------------------------------------
 
 /**
- * 	Sorts characters in string s. Sign with lower ordinal value
+ * 	Sorts characters in string s. Character with lower ordinal value
  *  is always preceded by a character with a higher ordinal value.
  *
  * @param      s     unsorted dtStr
