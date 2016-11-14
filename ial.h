@@ -192,4 +192,18 @@ void symbolFree(tSymbolPtr symbol);
  */
 dtStr *sort(dtStr *s);	
 
+//-------------------------------------------------------------------
+//-------------------------------Find--------------------------------
+//-------------------------------------------------------------------
+
+/**
+ * Searches for the first appearance of substring 'search' in string 's'.
+ *
+ * @param      s     	dtStr, string in which we want to find substring 'search'
+ * @param      search 	dtStr, substring to be found in 's'
+ *
+ * @return     Starting index of found substring in 's' or -1 when 's' does not contain substring 'search'.
+ */
+int find(dtStr* s, dtStr* search);
+
 #endif

@@ -1,4 +1,5 @@
 #include "ial.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -311,4 +312,45 @@ void partition(dtStr *s, int32_t low, int32_t high) {
 		partition(s, i, high);
 	if (j > low)
 		partition(s, low, j);
+}
+
+
+//-------------------------------------------------------------------
+//-----------------------------Find----------------------------------
+//-------------------------------------------------------------------
+
+int find(dtStr* s, dtStr* search) {
+	if (s == NULL || search == NULL) {
+		return -1;
+	}
+
+	// At first we must get a vector fail, wchich represents targets of back arrows
+	uint32_t fail[s->uiLength+1];
+	uint32_t r;
+	fail[0] = 0;
+	for (uint32_t k = 1; k < s->uiLength; k++) {		
+		// printf("%d. Bol som tu\n", k);			//this must be deleted!!!!!!
+		r = fail[k-1];
+		while ((r>0) && (s->str[r-1] != s->str[k-1])) {
+			r = fail[r-1];
+		}
+		fail[k] = r + 1;
+	}
+
+
+	uint32_t searchIndex = 1;
+	uint32_t sIndex = 1;
+	while ((sIndex <= s->uiLength) && searchIndex <= search->uiLength) {
+		if ((searchIndex == 0) || (s->str[sIndex-1] == search->str[searchIndex-1])) {
+			sIndex++;
+			searchIndex++;
+		} else {
+			searchIndex = fail[searchIndex-1];
+		}
+	}
+	if (searchIndex > search->uiLength) {
+		return sIndex - search->uiLength - 1;
+	}
+	// s doesn't contains substring search, so return -1 according to documentation
+	return -1;
 }
