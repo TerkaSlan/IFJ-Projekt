@@ -1,10 +1,10 @@
 
 #include <stdint.h>				//for "uint32_t"
 #include "str.h"
+#include "error.h"
 
 #ifndef BUILTIN_H
 #define BUILTIN_H
-
 
 
 /**
@@ -15,9 +15,10 @@
  * @param      s           dtStr
  * @param[in]  beginIndex  The begin index
  * @param[in]  endIndex    The end index
+ * @param      subStr      New substring (uses strNew())
  *
- * @return     Pointer to a new dtStr, or NULL if something went wrong.
+ * @return     Error values
  */
-dtStr *substr(dtStr *s, uint32_t beginIndex, uint32_t endIndex);
+eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *subStr);
 
 #endif
