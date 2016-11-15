@@ -319,7 +319,7 @@ void partition(dtStr *s, int32_t low, int32_t high) {
 //-----------------------------Find----------------------------------
 //-------------------------------------------------------------------
 
-int find(dtStr* s, dtStr* search) {
+uint32_t find(dtStr* s, dtStr* search) {
 	if (s == NULL || search == NULL) {
 		return -1;
 	}
@@ -329,7 +329,6 @@ int find(dtStr* s, dtStr* search) {
 	uint32_t r;
 	fail[0] = 0;
 	for (uint32_t k = 1; k < s->uiLength; k++) {		
-		// printf("%d. Bol som tu\n", k);			//this must be deleted!!!!!!
 		r = fail[k-1];
 		while ((r>0) && (s->str[r-1] != s->str[k-1])) {
 			r = fail[r-1];
