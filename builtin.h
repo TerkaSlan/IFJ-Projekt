@@ -2,6 +2,7 @@
 #include <stdint.h>				//for "uint32_t"
 #include "str.h"
 #include "error.h"
+#include "ial.h"
 
 #ifndef BUILTIN_H
 #define BUILTIN_H
@@ -17,8 +18,18 @@
  * @param[in]  endIndex    The end index
  * @param      subStr      New substring (uses strNew())
  *
- * @return     Error values
+ * @return     Error code
  */
 eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *subStr);
+
+/**
+ * Reads data from stdin, and saves it to 'data' according to data type on 'symbol->Type'
+ *
+ * @param[in]  symbol  tSymbolPtr
+ * @param      data    tSymbolData*
+ *
+ * @return     Error code
+ */
+eError readData(tSymbolPtr symbol, tSymbolData* data);
 
 #endif

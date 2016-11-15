@@ -31,4 +31,32 @@ SHOULD_EQUAL("SubString6 (beginIndex < 0)", (substr(string, -1, 5, &substring6) 
 
 strFree(string);
 
+/*tSymbolPtr symbol_1 = symbolNew();
+symbol_1->Type = eINT; 
+printf("readInt()\n");
+if (readData(symbol_1, &symbol_1->Data) != ERR_OK) {
+	printf("Invalid input\n");
+}
+else printf("Integer on stdin\n");
+symbolFree(symbol_1);*/
+
+/*tSymbolPtr symbol_2 = symbolNew();
+symbol_2->Type = eDOUBLE; 
+printf("readDouble()\n");
+if (readData(symbol_2, &symbol_2->Data) != ERR_OK) {
+	printf("Invalid input\n");
+}
+else printf("Double on stdin\n");
+symbolFree(symbol_2);*/
+
+/*tSymbolPtr symbol_3 = symbolNew();
+symbol_3->Type = eSTRING; 
+printf("readString()\n");
+if (readData(symbol_3, &symbol_3->Data) != ERR_OK) {
+	printf("Invalid input\n");
+}
+else printf("String on stdin\n");
+symbolFree(symbol_3);*/
+
+
 TEST_SUITE_END
