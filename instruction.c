@@ -33,6 +33,7 @@ tInstructionListPtr instrListNew() {
 	if(instrListInsertInstruction(ret, stop) != 0) {
 		free(ret->instructionArray);
 		free(ret);
+		return NULL;
 	}
 
 	return ret;
@@ -54,6 +55,12 @@ tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list) {
 		return NULL;
 
 	return &(list->instructionArray[list->activeInstruction]);
+}
+int64_t instrListGetActiveInstructionIndex(tInstructionListPtr list)
+{
+	if(!list)
+		return -2;
+	return list->activeInstruction;
 }
 
 
@@ -86,7 +93,7 @@ void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index) {
 		return;
 
 	list->firstInstruction  = (int64_t) index;
-	list->activeInstruction = (int64_t) index - 1;
+	list->activeInstruction = ((int64_t) index) - 1;
 
 }
 
