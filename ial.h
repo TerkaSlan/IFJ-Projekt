@@ -178,4 +178,32 @@ tSymbolPtr symbolNewCopy(tSymbolPtr symbol);
 */
 void symbolFree(tSymbolPtr symbol);
 
+//-------------------------------------------------------------------
+//-----------------------------QuickSort-----------------------------
+//-------------------------------------------------------------------
+
+/**
+ * 	Sorts characters in string s. Character with lower ordinal value
+ *  is always preceded by a character with a higher ordinal value.
+ *
+ * @param      s     unsorted dtStr
+ *
+ * @return     New sorted dtStr, or NULL if something went wrong.
+ */
+dtStr *sort(dtStr *s);
+
+//-------------------------------------------------------------------
+//-------------------------------Find--------------------------------
+//-------------------------------------------------------------------
+
+/**
+ * Searches for the first appearance of substring 'search' in string 's'.
+ *
+ * @param      s     	dtStr, string in which we want to find substring 'search'
+ * @param      search 	dtStr, substring to be found in 's'
+ *
+ * @return     Starting index of found substring in 's' or -1 when 's' does not contain substring 'search'.
+ */
+int32_t find(dtStr* s, dtStr* search);
+
 #endif

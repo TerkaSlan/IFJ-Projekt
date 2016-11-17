@@ -1,8 +1,10 @@
 #include "ial.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static uint32_t htabHashFunc(char *name, uint32_t htabSize);
+static void partition(dtStr *s, int32_t low, int32_t high);
 
 
 tHashTablePtr htabInit(uint32_t size) {
@@ -266,4 +268,88 @@ void symbolFree(tSymbolPtr symbol) {
 
 	//dealloc symbol
 	free(symbol);
+}
+
+//-------------------------------------------------------------------
+//-----------------------------QuickSort-----------------------------
+//-------------------------------------------------------------------
+
+dtStr *sort(dtStr *s) {
+	if (s == NULL) {
+		return NULL;
+	}
+	dtStr *sortStr = strNewFromStr(s);
+	if (sortStr == NULL) {
+		return NULL;
+	}
+	if (sortStr->uiLength == 0) {
+		return sortStr;
+	}
+	partition(sortStr, 0, sortStr->uiLength - 1);
+	return sortStr;
+}
+
+void partition(dtStr *s, int32_t low, int32_t high) {
+	int32_t i = low;
+	int32_t j = high;
+	char pMedian = s->str[(i+j) / 2];
+	char tmpChar;
+	//pMedian is pseudo median
+	do	{
+		while (s->str[i] < pMedian)
+			i++;
+		while (s->str[j] > pMedian)
+			j--;
+		if (i <= j) {
+			tmpChar = s->str[i];
+			s->str[i] = s->str[j];
+			s->str[j] = tmpChar;
+			i++;
+			j--;
+		}
+	} while (i <= j);
+	if (i < high)
+		partition(s, i, high);
+	if (j > low)
+		partition(s, low, j);
+}
+
+
+//-------------------------------------------------------------------
+//-----------------------------Find----------------------------------
+//-------------------------------------------------------------------
+
+int32_t find(dtStr* s, dtStr* search) {
+	if (s == NULL || search == NULL) {
+		return -1;
+	}
+
+	// At first we must get a vector fail, wchich represents targets of back arrows
+	uint32_t fail[s->uiLength+1];
+	uint32_t r;
+	fail[0] = 0;
+	for (uint32_t k = 1; k < s->uiLength; k++) {		
+		r = fail[k-1];
+		while ((r>0) && (s->str[r-1] != s->str[k-1])) {
+			r = fail[r-1];
+		}
+		fail[k] = r + 1;
+	}
+
+
+	uint32_t searchIndex = 1;
+	uint32_t sIndex = 1;
+	while ((sIndex <= s->uiLength) && searchIndex <= search->uiLength) {
+		if ((searchIndex == 0) || (s->str[sIndex-1] == search->str[searchIndex-1])) {
+			sIndex++;
+			searchIndex++;
+		} else {
+			searchIndex = fail[searchIndex-1];
+		}
+	}
+	if (searchIndex > search->uiLength) {
+		return sIndex - search->uiLength - 1;
+	}
+	// s doesn't contains substring search, so return -1 according to documentation
+	return -1;
 }
