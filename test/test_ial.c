@@ -4,6 +4,7 @@
 
 TEST_SUITE_START(ialTest);
 
+/* QuickSort */
 dtStr *unord = strNew();
 char *ord = "abcdefghijklmnopqrstuvwxyz";
 strAddCStr(unord, "ofvimgwknbhjxclsrteqyapuzd");
@@ -19,6 +20,8 @@ strFree(unordSort);
 strFree(empty);
 strFree(emptySort);
 
+
+/* Find */
 dtStr* string = strNew();
 dtStr* substring = strNew();
 SHOULD_EQUAL("Find empty string in empty string", find(string, substring), 0);
@@ -40,6 +43,5 @@ SHOULD_EQUAL("Find ABCD in ABABABCB", find(string, substring), -1);
 
 strFree(string);
 strFree(substring);
-
 
 TEST_SUITE_END

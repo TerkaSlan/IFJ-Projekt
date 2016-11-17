@@ -204,6 +204,6 @@ dtStr *sort(dtStr *s);
  *
  * @return     Starting index of found substring in 's' or -1 when 's' does not contain substring 'search'.
  */
-uint32_t find(dtStr* s, dtStr* search);
+int32_t find(dtStr* s, dtStr* search);
 
 #endif

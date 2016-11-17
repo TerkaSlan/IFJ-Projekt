@@ -4,7 +4,7 @@
 #include <string.h>
 
 static uint32_t htabHashFunc(char *name, uint32_t htabSize);
-void partition(dtStr *s, int32_t low, int32_t high);
+static void partition(dtStr *s, int32_t low, int32_t high);
 
 
 tHashTablePtr htabInit(uint32_t size) {
@@ -292,7 +292,7 @@ dtStr *sort(dtStr *s) {
 void partition(dtStr *s, int32_t low, int32_t high) {
 	int32_t i = low;
 	int32_t j = high;
-	uint32_t pMedian = s->str[(i+j) / 2];
+	char pMedian = s->str[(i+j) / 2];
 	char tmpChar;
 	//pMedian is pseudo median
 	do	{
@@ -319,7 +319,7 @@ void partition(dtStr *s, int32_t low, int32_t high) {
 //-----------------------------Find----------------------------------
 //-------------------------------------------------------------------
 
-uint32_t find(dtStr* s, dtStr* search) {
+int32_t find(dtStr* s, dtStr* search) {
 	if (s == NULL || search == NULL) {
 		return -1;
 	}
