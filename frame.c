@@ -13,10 +13,10 @@ int32_t fstackInit(tFrameStack *stack) {
 	stack->Top            = -1;
 	stack->Size           = 0;
 	stack->ArgumentIndex  = 0;
-	stack->ReturnData     = {0};
+	stack->ReturnData     = (const tSymbolData) {{0}};
 	stack->ReturnType     = eNULL;
-	stack->Prepared       = {NULL, 0, 0};
-	if((stack->FrameArray = calloc(STACK_DEFAULT_SIZE, sizeof(tFrame))))
+	stack->Prepared       = (const tFrame){NULL, 0, 0, 0};
+	if((stack->FrameArray = calloc(STACK_DEFAULT_SIZE, sizeof(tFrame))) == NULL)
 		return 0;
 
 	stack->Size = STACK_DEFAULT_SIZE;
@@ -25,7 +25,7 @@ int32_t fstackInit(tFrameStack *stack) {
 
 void fstackDeinit(tFrameStack *stack) {
 	if(stack->FrameArray) {
-		for(uint32_t i = 0; i < stack->Top; i++) {
+		for(int64_t i = 0; i < stack->Top; i++) {
 			if(stack->FrameArray[i].symbolArray) {
 				//check for strings in frame
 				for(uint32_t j = 0; j < stack->FrameArray[i].Size; j++)
@@ -46,10 +46,11 @@ void fstackDeinit(tFrameStack *stack) {
 			strFree(stack->ReturnData.String);
 
 		free(stack->FrameArray);
+		stack->FrameArray = NULL;
 	}
 
 
-	stack->Top  = 0;
+	stack->Top  = -1;
 	stack->Size = 0;
 }
 
@@ -57,7 +58,10 @@ tFrame *fstackPush(tFrameStack *stack, tFrame *frame) {
 	if(!frame || !stack)
 		return NULL;
 
-	memcpy(&(stack->FrameArray[stack->Top++]), frame, sizeof(tFrame));
+
+	memcpy(&(stack->FrameArray[++(stack->Top)]), frame, sizeof(tFrame));
+
+
 	//clear pointer to symbolarray in source frame preventing multiple frees
 	frame->symbolArray = NULL;
 
@@ -79,11 +83,11 @@ tFrame *fstackPop(tFrameStack *stack) {
 	if(!stack)
 		return NULL;
 
-	if(stack->Top > 0) {
+	if(stack->Top >= 0) {
 		if(stack->FrameArray[stack->Top].symbolArray) {
 
 			//check for strings in frame
-			for(uint32_t j = 0; j <stack->FrameArray[stack->Top].Size; j++) ///TODO::shit we need to fill dis
+			for(uint32_t j = 0; j <stack->FrameArray[stack->Top].Size; j++)
 			{
 				if(stack->FrameArray[stack->Top].symbolArray[j].Type == eSTRING && stack->FrameArray[stack->Top].symbolArray[j].Data.String != NULL)
 					strFree(stack->FrameArray[stack->Top].symbolArray[j].Data.String);
@@ -93,7 +97,7 @@ tFrame *fstackPop(tFrameStack *stack) {
 			stack->FrameArray[stack->Top].symbolArray = NULL;
 		}
 
-		return &(stack->FrameArray[--(stack->Top)]);
+		return (--(stack->Top) < 0) ? NULL : &(stack->FrameArray[stack->Top]);
 	}
 
 	stack->Top = -1;

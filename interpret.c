@@ -8,6 +8,9 @@
 #include "ial.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include "conversions.h"
+#include "builtin.h"
 
 
 //use assert for debugging, for speed without checks use compile flag NDEBUG
@@ -64,7 +67,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 #define GD symbolGetData        //Gets pointer to tSymbolData where data of the symbol are stored
 #define SD symbolSetData        //Gets pointer to tSybmolData where data of the symbol are stored and sets it as initialized
-#define SDS SD                  //TODO::cant remember why i needed to add it, for strings specifically, if I don't find out, I will delete this
+#define SDS symbolSetDataString //Gets pointer to tSymbolData where data of the symbol are stored and sets it as initialized and if local, sets type as String (prevent memory leaks)
 #define CHECK_INIT(symbol, frame) do{if(!symbolIsInitialized((symbol), (frame))) EXIT(ERR_RUN_UNINITIALIZED, "Accessing uninitialized variable %s.\n", strGetCStr(((tSymbolPtr)(symbol))->Name)); }while(0) //checks if variable is initialized
 
 
@@ -72,7 +75,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 		switch(i->type) {
 
 			case iMOV: {
-				ASSERT(((tSymbolPtr) i->dst)->Type == ((tSymbolPtr) i->arg1)->Type);
+				ASSERT(((tSymbolPtr) (i->dst))->Type == ((tSymbolPtr) (i->arg1))->Type);
 
 				CHECK_INIT(i->arg1, curFrame);
 
@@ -90,14 +93,14 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					case eSTRING: {
-						dtStrPtr tmpDst = SDS(i->dst, curFrame)->String;
+						dtStrPtr *tmpDst = &(SDS(i->dst, curFrame)->String);
 						dtStrPtr tmpSrc = GD(i->arg1, curFrame)->String;
-						if(tmpDst) {
-							strClear(tmpDst);
-							if(strCopyStr(tmpDst, tmpSrc) == STR_ERROR)
+						if(*tmpDst) {
+							strClear(*tmpDst);
+							if(strCopyStr(*tmpDst, tmpSrc) == STR_ERROR)
 								EXIT(ERR_INTERN, "Cannot copy string. Out of memory.\n");
 						} else {
-							if((tmpDst = strNewFromStr(tmpSrc)) == NULL)
+							if((*tmpDst = strNewFromStr(tmpSrc)) == NULL)
 								EXIT(ERR_INTERN, "Cannot copy string. Out of memory.\n");
 						}
 						break;
@@ -169,12 +172,15 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				if((curFrame = fstackPush(&frames, &(frames.Prepared))) == NULL)
 					EXIT(ERR_INTERN, "Cant create new function frame. Out of memory.\n");
 
+				//set return instruction index
+				curFrame->ReturnInstruction  = (uint32_t)(instrListGetActiveInstructionIndex(instrList) + 1);
+
 				//set next instruction
 				instrListGoto(instrList, curFrame->CallInstruction);
 				break;
 
 			case iRET:{
-				eSymbolType type = ((tSymbolPtr) i->arg1)->Type;
+				tSymbolPtr retval = i->arg1;
 
 				//if replacing string, free first
 				if(frames.ReturnData.String && frames.ReturnData.String != NULL)
@@ -183,8 +189,13 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 					frames.ReturnData.String = NULL;
 				}
 
+				if(!retval) {
+					frames.ReturnType = eNULL;
+					goto ret_void;
+					}
+
 				CHECK_INIT(i->arg1, curFrame);
-				switch(type) {
+				switch(retval->Type) {
 					case eINT:
 						frames.ReturnData.Integer = GD(i->arg1, curFrame)->Integer;
 						break;
@@ -208,9 +219,10 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						EXIT(ERR_OTHER, "Trying to return class or func.\n");
 				}
 
-				//set return type
-				frames.ReturnType = type;
 
+				//set return type
+				frames.ReturnType = retval->Type;
+			ret_void:
 
 				instrListGoto(instrList, curFrame->ReturnInstruction);
 				curFrame = fstackPop(&frames);
@@ -285,7 +297,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					case eSTRING: {
-						dtStrPtr tmpDst = SDS(i->dst, curFrame)->String;
+						dtStrPtr *tmpDst = &(SDS(i->dst, curFrame)->String);
 						dtStrPtr tmpSrc1 = GD(i->arg1, curFrame)->String;
 						dtStrPtr tmpSrc2 = GD(i->arg2, curFrame)->String;
 
@@ -296,10 +308,10 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						if(strAddCStr(newString, strGetCStr(tmpSrc2)) != STR_SUCCESS)
 							EXIT(ERR_INTERN, "Cannot copy string. Out of memory.\n");
 
-						if(tmpDst)
-							strFree(tmpDst);
+						if(*tmpDst)
+							strFree(*tmpDst);
 
-						tmpDst = newString;
+						*tmpDst = newString;
 
 						break;
 					}
@@ -520,7 +532,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 					case eSTRING: {
 						int32_t result =  strCmpStr(GD(i->arg1, curFrame)->String, GD(i->arg2, curFrame)->String);
 
-						SDS(i->dst, curFrame)->Bool = (result == 0);
+						SD(i->dst, curFrame)->Bool = (result == 0);
 						break;
 					}
 					default:
@@ -556,7 +568,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						if(result == STR_ERROR)
 							EXIT(ERR_INTERN, "Error occured during string comparasion.\n");
 
-						SDS(i->dst, curFrame)->Bool = (result != 0);
+						SD(i->dst, curFrame)->Bool = (result != 0);
 						break;
 					}
 					default:
@@ -598,56 +610,118 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				SD(i->dst, curFrame)->Bool = !(GD(i->arg1, curFrame)->Bool);
 				break;
 			case iGOTO:
-				ASSERT((uint32_t)(i->dst) != NULL);
+				ASSERT((i->dst) != NULL);
 
-				instrListGoto(instrList, (uint32_t)(i->dst));
+				instrListGoto(instrList, (uint32_t)((uintptr_t)(i->dst)));
 				break;
 			case iIFGOTO:
-				ASSERT((uint32_t)(i->dst) != NULL);
-				ASSERT((uint32_t)(i->arg1) != NULL);
+				ASSERT((i->dst) != NULL);
 				ASSERT(((tSymbolPtr)i->arg1)->Type == eBOOL);
 
 				CHECK_INIT(i->arg1, curFrame);
 
 				if(GD(i->arg1, curFrame)->Bool)
-					instrListGoto(instrList, (uint32_t)(i->dst));
+					instrListGoto(instrList, (uint32_t)((uintptr_t)(i->dst)));
 				break;
 			case iIFNGOTO:
-				ASSERT((uint32_t)(i->dst) != NULL);
-				ASSERT((uint32_t)(i->arg1) != NULL);
+				ASSERT((i->dst) != NULL);
 				ASSERT(((tSymbolPtr)i->arg1)->Type == eBOOL);
 
 				CHECK_INIT(i->arg1, curFrame);
 
 				if(!(GD(i->arg1, curFrame)->Bool))
-					instrListGoto(instrList, (uint32_t)(i->dst));
+					instrListGoto(instrList, (uint32_t)((uintptr_t)(i->dst)));
 				break;
 
 			case iCONV2STR: {
-				dtStrPtr tmp = GD(i->dst, curFrame)->String; //TODO:REDO!
-				if(((tSymbolPtr)i->dst)->Type == eSTRING && tmp);
+
+				ASSERT(((tSymbolPtr)i->dst)->Type == eSTRING);
+
+				CHECK_INIT(i->arg1, curFrame);
+
+				dtStrPtr *dst = &(SDS(i->dst, curFrame)->String);
+
+				//if replacing string free first
+				if((*dst))
 				{
-					strFree(tmp);
-					tmp = NULL;
+					strFree(*dst);
+					*dst = NULL;
 				}
-					///TODO::tmp = call(SD(i->arg1, curFrame), ((tSymbolPtr)(i->arg1))->Type);
+
+				*dst = symbolToString(i->arg1, GD(i->arg1, curFrame));
+
+				ASSERT((*dst) != NULL); //should not happen
+
 				break;
 			}
-			case iCONV2INT:
-				///TODO::SD(i->dst, curFrame)->Integer = call(GD(i->arg1, curFrame), ((tSymbolPtr)(i->arg1))->Type);
+			case iCONV2INT:{
+				ASSERT(((tSymbolPtr)i->dst)->Type == eINT);
+
+				CHECK_INIT(i->arg1, curFrame);
+
+				int32_t val;
+				void* result = symbolToInt(i->arg1, GD(i->arg1, curFrame), &val);
+
+				ASSERT(result != NULL);
+
+				SD(i->dst, curFrame)->Integer = val;
 				break;
-			case iCONV2BOOL:
-				///TODO::SD(i->dst, curFrame)->Boolean = call(GD(i->arg1, curFrame), ((tSymbolPtr)(i->arg1))->Type);
+			}
+			case iCONV2BOOL: {
+				ASSERT(((tSymbolPtr) i->dst)->Type == eBOOL);
+
+				CHECK_INIT(i->arg1, curFrame);
+
+				bool val;
+				void *result = symbolToBool(i->arg1, GD(i->arg1, curFrame), &val);
+
+				ASSERT(result != NULL);
+
+				SD(i->dst, curFrame)->Bool = val;
 				break;
-			case iCONV2DOUBLE:
-				///TODO::SD(i->dst, curFrame)->Double = call(GD(i->arg1, curFrame), ((tSymbolPtr)(i->arg1))->Type);
+			}
+			case iCONV2DOUBLE: {
+				ASSERT(((tSymbolPtr) i->dst)->Type == eDOUBLE);
+
+				CHECK_INIT(i->arg1, curFrame);
+
+				double val;
+				void *result = symbolToDouble(i->arg1, GD(i->arg1, curFrame), &val);
+
+				ASSERT(result != NULL);
+
+				SD(i->dst, curFrame)->Double = val;
 				break;
+			}
 			case iPRINT:
-				//call
+				ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
+				CHECK_INIT(i->arg1, curFrame);
+
+				printf("%s", strGetCStr(GD(i->arg1, curFrame)->String));
+
 				break;
-			case iREAD:
-				//call
+			case iREAD: {
+
+				dtStrPtr *dst = &(GD(i->dst, curFrame)->String);
+				if(((tSymbolPtr) i->dst)->Type == eSTRING)
+				{
+					if(*dst)
+					{
+						strFree(*dst);
+						*dst = NULL;
+					}
+					curFrame->symbolArray[((tSymbolPtr) i->dst)->Index].Type = eSTRING;
+				}
+
+				eError result = readData(i->dst, SD(i->dst, curFrame));
+
+
+				if(result != ERR_OK)
+					{ret = result; goto lbFinish;}
+
 				break;
+			}
+
 			case iLEN:
 				ASSERT(((tSymbolPtr) i->dst)->Type == eINT);
 				ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
@@ -666,15 +740,64 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 				SD(i->dst, curFrame)->Integer = strCmpStr(GD(i->arg1, curFrame)->String, GD(i->arg2, curFrame)->String);
 				break;
-			case iFIND:
-				//call
+			case iFIND: {
+				ASSERT(((tSymbolPtr) i->dst)->Type == eINT);
+				ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
+				ASSERT(((tSymbolPtr) i->arg2)->Type == eSTRING);
+
+				CHECK_INIT(i->arg1, curFrame);
+				CHECK_INIT(i->arg2, curFrame);
+
+				SD(i->dst, curFrame)->Integer = find(GD(i->arg1, curFrame)->String, GD(i->arg2, curFrame)->String);
+
 				break;
-			case iSORT:
-				//call
+			}
+			case iSORT: {
+				ASSERT(((tSymbolPtr) i->dst)->Type == eSTRING);
+				ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
+
+				CHECK_INIT(i->arg1, curFrame);
+
+				dtStrPtr *dst = &(SDS(i->dst, curFrame)->String);
+
+				//if replacing string, free first
+				if(*dst)
+					strFree(*dst);
+
+				*dst = sort(GD(i->arg1, curFrame)->String);
+
+				if(*dst == NULL)
+					EXIT(ERR_INTERN, "Cannot copy string. Out of memory.\n");
+
 				break;
-			case iSUBSTR:
-				//call
-				break;
+			}
+			case iSUBSTR:{
+				ASSERT(((tSymbolPtr) i->dst)->Type == eSTRING);
+				ASSERT(((tSymbolPtr) i->arg1)->Type == eINT);
+				ASSERT(((tSymbolPtr) i->arg2)->Type == eINT);
+				CHECK_INIT(i->dst, curFrame);
+				CHECK_INIT(i->arg1, curFrame);
+				CHECK_INIT(i->arg2, curFrame);
+
+
+				//if replacing string, free first
+				if(frames.ReturnType == eSTRING && frames.ReturnData.String != NULL)
+				{
+					strFree(frames.ReturnData.String);
+					frames.ReturnData.String = NULL;
+				}
+
+				frames.ReturnType = eSTRING;
+				eError result = substr(GD(i->dst, curFrame)->String, GD(i->arg1, curFrame)->Integer, GD(i->arg2, curFrame)->Integer, &(frames.ReturnData.String));
+
+				if(result != ERR_OK)
+				{
+					if(result == ERR_INTERN)
+						frames.ReturnType = eNULL;
+					ret = result;
+					goto lbFinish;
+				}
+			}
 
 			case iSTOP:
 				goto lbFinish;

@@ -44,11 +44,11 @@ tFrame *fstackPop(tFrameStack *stack);
 
 
 
-inline tSymbolData *symbolGetData(tSymbolPtr symbol, tFrame *frame) {
+static inline tSymbolData *symbolGetData(tSymbolPtr symbol, tFrame *frame) {
 	return (symbol->Const) ? &(symbol->Data) : &(frame->symbolArray[symbol->Index].Data);
 }
 
-inline tSymbolData *symbolSetData(tSymbolPtr symbol, tFrame *frame) {
+static inline tSymbolData *symbolSetData(tSymbolPtr symbol, tFrame *frame) {
 	if (symbol->Const)
 	{
 		symbol->Defined = true;
@@ -61,7 +61,22 @@ inline tSymbolData *symbolSetData(tSymbolPtr symbol, tFrame *frame) {
 	}
 }
 
-inline bool symbolIsInitialized(tSymbolPtr symbol, tFrame *frame) {
+static inline tSymbolData *symbolSetDataString(tSymbolPtr symbol, tFrame *frame) {
+	if (symbol->Const)
+	{
+		symbol->Defined = true;
+		return &(symbol->Data);
+	}
+	else
+	{
+		frame->symbolArray[symbol->Index].Initialized = true;
+		frame->symbolArray[symbol->Index].Type = eSTRING;
+		return &(frame->symbolArray[symbol->Index].Data);
+	}
+}
+
+
+static inline bool symbolIsInitialized(tSymbolPtr symbol, tFrame *frame) {
 	return symbol->Const ? symbol->Defined : frame->symbolArray[symbol->Index].Initialized;
 }
 

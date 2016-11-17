@@ -82,6 +82,7 @@ static tSymbolPtr indexGenerator(tSymbolPtr sym, void* param)
 	if(sym->Index == -1)
 		sym->Index = (*counter)++;
 
+	return sym;
 }
 void htabGenerateIndexes(tHashTablePtr table)
 {
@@ -295,13 +296,16 @@ tSymbolPtr symbolNewCopy(const tSymbolPtr symbol) {
 	if(memcpy(ret, symbol, sizeof(tSymbol)) == NULL)
 		goto ERRORsymbolNewCopy;
 
-	if((ret->Name = strNew()) == NULL)
-		goto ERRORsymbolNewCopy;
 
-	if(strCopyStr(ret->Name, symbol->Name) == STR_SUCCESS)
-		return ret;
+	//if has name, copy
+	if(symbol->Name) {
 
-	free(ret->Name);
+		if((ret->Name = strNewFromStr(symbol->Name)) == NULL)
+			goto ERRORsymbolNewCopy;
+
+	}
+
+	return ret;
 
 	ERRORsymbolNewCopy:
 	free(ret);
@@ -355,6 +359,8 @@ void symbolFree(tSymbolPtr symbol) {
 		}
 
 	}
+	if(symbol->Type == eSTRING && symbol->Data.String)
+		strFree(symbol->Data.String);
 
 	//dealloc symbol
 	free(symbol);

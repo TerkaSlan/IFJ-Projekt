@@ -7,7 +7,7 @@
 #include "constants.h"
 
 
-#define CONST_CONTAINER_DEFAULT_SIZE 512
+#define CONST_CONTAINER_DEFAULT_SIZE 128
 
 tConstContainerPtr constNew() {
 	tConstContainerPtr ret = malloc(sizeof(tConstContainer));
