@@ -20,18 +20,24 @@
 #define ASSERT(c) ;
 #endif
 
+static tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param);
+
+
 
 eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) {
 	//lets start this shit
 #define EXIT(err, ...) do{ret = err; printError(err, __VA_ARGS__); goto lbFinish;}while(0)
 	eError ret = ERR_OK;
 
+	//go through all tables and if a symbol is undefined throw semantic err, while doing dis, build indexes local variables in functions
+	if(!htabForEach(globalClassTable, prepareForInterpret, NULL))
+		return ERR_SEM; //undefined symbol found
 
 	//create frame stack
 	tFrameStack frames;
 	fstackInit(&frames);
 
-	///TODO::loop through classes and functions and build indexes or maybe parser do it after finishing definition?
+
 
 	//do we have main?
 	dtStrPtr   string = strNewFromCStr("Main");
@@ -42,7 +48,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 	//do we have function run?
 	strClear(string);
-	strAddCStr(string, "Run");
+	strAddCStr(string, "run");
 	if((mainSymbol = htabGetSymbol(mainSymbol->Data.ClassData.LocalSymbolTable, string)) == NULL ||
 	   mainSymbol->Type != eFUNCTION || !mainSymbol->Defined)
 		EXIT(ERR_SEM, "In class Main there is no Run method.\n"); //3?
@@ -816,3 +822,28 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 }
 
 
+
+tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param)
+{
+	if(!symbol || !symbol->Defined)
+	{
+		printError(ERR_SEM, "Symbol \"%s\" is undefined.\n", strGetCStr(symbol->Name));
+		return NULL;
+	}
+
+	switch(symbol->Type)
+	{
+		case eCLASS:
+			htabForEach(symbol->Data.ClassData.LocalSymbolTable, prepareForInterpret, NULL);
+			break;
+
+		case eFUNCTION:
+			htabGenerateIndexes(symbol->Data.FunctionData.LocalSymbolTable);
+			break;
+
+		default:
+			break;
+	}
+
+	return symbol;
+}

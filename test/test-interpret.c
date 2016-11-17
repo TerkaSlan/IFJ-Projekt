@@ -55,7 +55,7 @@ TEST_SUITE_START(InterpretTEST)
 	sym->Const = true;
 	sym->Defined = true;
 	strClear(sym->Name);
-	strAddCStr(sym->Name, "Run");
+	strAddCStr(sym->Name, "run");
 	sym->Data.FunctionData.ReturnType = eNULL;
 	sym->Data.FunctionData.ArgumentList = NULL;
 	sym->Data.FunctionData.InstructionIndex = 1;
@@ -172,9 +172,6 @@ TEST_SUITE_START(InterpretTEST)
 	{tInstruction instr = {iCONV2STR, CatLocalStr2, Static7, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iADD, CatLocalStr, CatLocalStr, CatLocalStr2}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iRET, NULL , CatLocalStr, NULL}; instrListInsertInstruction(list, instr);}
-
-	htabGenerateIndexes(RunTable);
-	htabGenerateIndexes(CatTable);
 
 	instrListSetFirstInstruction(list ,1);
 	Interpret(globalTable, list);
