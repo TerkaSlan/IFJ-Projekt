@@ -135,8 +135,9 @@ Test_TT_number("0b0", TT_number, getToken(token), token, 0);
 Test_TT_number("01", TT_number, getToken(token), token, 1);
 Test_TT_number("037", TT_number, getToken(token), token, 31);
 Test_TT_number("000000077", TT_number, getToken(token), token, 63);
-// BONUS: Support for negative
-Test_TT_number("-42", TT_number, getToken(token), token, -42);
+
+TestOperator("-42 -> -", TT_minus, getToken(token), token);
+Test_TT_number("-42 -> 42", TT_number, getToken(token), token, 42);
 // TT_fullIdentifier
 Test_TT_id_fullId("_name._name", TT_fullIdentifier, getToken(token), token, string);
 Test_TT_id_fullId("_9999.$999", TT_fullIdentifier, getToken(token), token, string);
@@ -149,9 +150,11 @@ printf("\nA lot of space right now, then a simple comment, then block comment\n"
 Test_TT_double("0.0", TT_double, getToken(token), token, 0.0);
 Test_TT_double("2.13", TT_double, getToken(token), token, 2.13);
 Test_TT_double("0.0E-0", TT_double, getToken(token), token, 0);
-Test_TT_double("-0.0E-0", TT_double, getToken(token), token, 0);
+TestOperator("-0.0E-0 -> -", TT_minus, getToken(token), token);
+Test_TT_double("-0.0E-0 -> 0.0E-0", TT_double, getToken(token), token, 0);
 Test_TT_double("123.456e-2", TT_double, getToken(token), token, 12345.6);
-Test_TT_double("-123.456e-2", TT_double, getToken(token), token, -12345.6);
+TestOperator("-123.456e-2 -> -", TT_minus, getToken(token), token);
+Test_TT_double("-123.456e-2 -> 123.456e-2", TT_double, getToken(token), token, 12345.6);
 cleanToken(&token);
 Test_TT_number("1_000", TT_number, getToken(token), token, 1000);
 // Strings
