@@ -33,7 +33,7 @@ SHOULD_EQUAL("No support for unary plus", integer, INT_CONVERSION_ERROR);
 strClear(string);
 strAddCStr(string, "-12234");
 integer = stringToInt(string);
-SHOULD_NOT_EQUAL("No support for unary minus (and negative ints)", integer, INT_CONVERSION_ERROR);
+SHOULD_NOT_EQUAL("Support for unary minus", integer, INT_CONVERSION_ERROR);
 
 strClear(string);
 strAddCStr(string, "2222222222222222222222222222222222"); // Very long int
@@ -165,4 +165,128 @@ strClear(dbStringOctal);
 strAddCStr(dbStringOctal, "888"); // not valid
 SHOULD_EQUAL("Not valid", octalToInt(dbStringOctal), INT_CONVERSION_ERROR);
 strFree(dbStringOctal);
+
+// [#16]
+tSymbolPtr symbol = symbolNew();
+tSymbolData data;
+// symbolToInt
+int32_t IntForConversion;
+symbol->Type = eINT;
+data.Integer = 2;
+SHOULD_EQUAL("symbolToInt() Simple symbol to int", *symbolToInt(symbol, &data, &IntForConversion), 2);
+symbol->Type = 100;
+SHOULD_EQUAL("symbolToInt() Unknown eTYPE", symbolToInt(symbol, &data, &IntForConversion), NULL);
+symbol->Type = eDOUBLE;
+data.Double = -123.456e-2;
+SHOULD_EQUAL("symbolToInt() Simple double", *symbolToInt(symbol, &data, &IntForConversion), -1);
+data.Double = 2147483649.0;
+SHOULD_EQUAL("symbolToInt() Overflow double", *symbolToInt(symbol, &data, &IntForConversion), -2147483648);
+symbol->Type = eBOOL;
+data.Bool = false;
+SHOULD_EQUAL("symbolToInt() Simple double", *symbolToInt(symbol, &data, &IntForConversion), 0);
+symbol->Type = eSTRING;
+data.String = strNewFromCStr("-1231");
+SHOULD_EQUAL("symbolToInt() Simple string", *symbolToInt(symbol, &data, &IntForConversion), -1231);
+strFree(data.String);
+// symbolToDouble
+double DoubleForConversion;
+symbol->Type = eDOUBLE;
+data.Double = 123.456e2;
+SHOULD_EQUAL("symbolToDouble() Symbol with 'e'", *symbolToDouble(symbol, &data, &DoubleForConversion), 12345.6);
+data.Double = -123.456e-2;
+SHOULD_EQUAL("symbolToDouble() Symbol with '-' and 'e'", *symbolToDouble(symbol, &data, &DoubleForConversion), -1.23456);
+data.Double = 0;
+SHOULD_EQUAL("symbolToDouble() Symbol with 0", *symbolToDouble(symbol, &data, &DoubleForConversion), 0.0);
+symbol->Type = 100;
+SHOULD_EQUAL("symbolToInt() Unknown eTYPE", symbolToDouble(symbol, &data, &DoubleForConversion), NULL);
+symbol->Type = eINT;
+data.Integer = -2147483647;
+SHOULD_EQUAL("symbolToDouble() INT_MIN", *symbolToDouble(symbol, &data, &DoubleForConversion), -2147483647.0);
+symbol->Type = eBOOL;
+data.Bool = true;
+SHOULD_EQUAL("symbolToDouble() INT_MIN", *symbolToDouble(symbol, &data, &DoubleForConversion), 1.0);
+symbol->Type = eSTRING;
+data.String = strNewFromCStr("-1231.1e-2");
+SHOULD_EQUAL("symbolToInt() Simple string", *symbolToDouble(symbol, &data, &DoubleForConversion), -12.311);
+strFree(data.String);
+// symbolToBool
+bool BoolForConversion;
+symbol->Type = eBOOL;
+data.Bool = true;
+SHOULD_EQUAL("symbolToBool() True", *symbolToBool(symbol, &data, &BoolForConversion), true);
+data.Bool = false;
+SHOULD_EQUAL("symbolToBool() False", *symbolToBool(symbol, &data, &BoolForConversion), false);
+symbol->Type = 100;
+SHOULD_EQUAL("symbolToInt() Unknown eTYPE", symbolToBool(symbol, &data, &BoolForConversion), NULL);
+symbol->Type = eDOUBLE;
+data.Double = -123.456e-2;
+SHOULD_EQUAL("symbolToBool() Double", *symbolToBool(symbol, &data, &BoolForConversion), true);
+data.Double = 0.0;
+SHOULD_EQUAL("symbolToBool() Double", *symbolToBool(symbol, &data, &BoolForConversion), false);
+symbol->Type = eINT;
+data.Integer = 2147483647;
+SHOULD_EQUAL("symbolToBool() Int", *symbolToBool(symbol, &data, &BoolForConversion), true);
+data.Integer = 0;
+SHOULD_EQUAL("symbolToBool() Int", *symbolToBool(symbol, &data, &BoolForConversion), false);
+symbol->Type = eSTRING;
+data.String = strNew();
+SHOULD_EQUAL("symbolToBool() String", *symbolToBool(symbol, &data, &BoolForConversion), false);
+strFree(data.String);
+// toString
+symbol->Type = eSTRING;
+data.String = strNewFromCStr("12");
+dtStrPtr returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() STRING simple", strcmp(returnedString->str, "12"), 0);
+strClear(data.String);
+strFree(returnedString);
+
+strAddCStr(data.String, "-}?{>!@:!@#>?>A{dwianaaaaaaaaaaaaaaaaa}}");
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() STRING junk", strcmp(returnedString->str, "-}?{>!@:!@#>?>A{dwianaaaaaaaaaaaaaaaaa}}"), 0);
+strFree(data.String);
+strFree(returnedString);
+
+symbol->Type = eBOOL;
+data.Bool = true;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() BOOL true", strcmp(returnedString->str, "1"), 0);
+strFree(returnedString);
+
+data.Bool = false;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() BOOL false", strcmp(returnedString->str, "0"), 0);
+strFree(returnedString);
+
+symbol->Type = eNULL;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() eNULL", returnedString, NULL);
+strFree(returnedString);
+
+symbol->Type = eDOUBLE;
+data.Double = -12.982301;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() eDOUBLE negative", strcmp(returnedString->str, "-12.982301"), 0);
+strFree(returnedString);
+
+data.Double = -123.456e-2;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() eDOUBLE negative with e", strcmp(returnedString->str, "-1.234560"), 0);
+strFree(returnedString);
+
+symbol->Type = eINT;
+data.Integer = 2147483647;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() eINT INT_MAX", strcmp(returnedString->str, "2147483647"), 0);
+strFree(returnedString);
+
+symbol->Type = eINT;
+data.Integer = -2147483647;
+returnedString = symbolToString(symbol, &data);
+SHOULD_EQUAL("symbolToString() eINT INT_MIN", strcmp(returnedString->str, "-2147483647"), 0);
+
+symbol->Type = 100;
+SHOULD_EQUAL("symbolToInt() Unknown eTYPE", symbolToString(symbol, &data), NULL);
+
+strFree(returnedString);
+symbolFree(symbol);
 TEST_SUITE_END

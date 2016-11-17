@@ -55,7 +55,7 @@ typedef struct {
  */
 typedef union {
 	tFuncData FunctionData;
-	int32_t   Integer; //should behave liek regular INT? 32?64?...
+	int32_t   Integer; //should behave like Java's int -> 32bit.
 	double    Double;
 	bool      Bool;
 	dtStrPtr  String;
@@ -84,23 +84,23 @@ typedef struct tHashTableItem {
  *
  *	\param [in] size, Size of hash table created (number of rows), should be prime number
  *  \return tHashTablePtr, Returns pointer to the new hash table. If an error occures, NULL is returned.
- *  
+ *
  */
 tHashTablePtr htabInit(uint32_t size);
 
 /**
  *  \brief Creates a new hash table identic to the hash table passed as an argument.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to a hash table to be copied.
  *  \return tHashTablePtr, Returns a pointer to the new hashtable. If an error occures, NULL is returned.
- *  
+ *
  *  \details If table param is NULL, nothing happens and NULL is returned.
  */
 tHashTablePtr htabCopy(tHashTablePtr table);
 
 /**
  *  \brief Adds Symbol to the hash table.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] symbol tSymbolPtr, Pointer to the symbol to be added.
  *  \return tSymbolPtr, Returns pointer to the added symbol. If symbol with the same name already exists, or other error occures, nothing happens and NULL is returned.
@@ -111,35 +111,35 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol);
 
 /**
  *  \brief Looks up a symbol in the hash table with the name specified.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] name dtStrPtr, Pointer to a string structure representing name of symbol.
  *  \return tSymbolPtr, Returns pointer to the symbol, if no symbol with such name exists, NULL is returned.
- *  
+ *
  */
 tSymbolPtr htabGetSymbol(tHashTablePtr table, dtStrPtr name);
 
 /**
  *  \brief Executes function for each symbol in the hash table.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] func void(*)(tSymbolPtr), Pointer to a function to be executed for each symbol in the hash table.
- *  
+ *
  */
 void htabForEach(tHashTablePtr table, void (*func)(tSymbolPtr));
 
 /**
  *  \brief Removes symbol of the name specified from the hash table.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] name dtStrPtr, Pointer to a string structure representing name of the symbol to be removed.
- * 
+ *
  */
 void htabRemoveSymbol(tHashTablePtr table, dtStrPtr name);
 
 /**
  *  \brief Removes all symbols from the hash table.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *
  */
@@ -147,17 +147,17 @@ void htabClear(tHashTablePtr table);
 
 /**
  *  \brief Deallocates the hash table.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
- *  
+ *
  */
 void htabFree(tHashTablePtr table);
 
 /**
  *  \brief Allocates a new Symbol.
- *  
+ *
  *  \return tSymbolPtr, Returnes newly allocated symbol. If an error occures, NULL is returned.
- *  
+ *
  *  \details Allocates a new symbol on heap and returnes pointer to it. Symbol is also initialized to default.
  */
 tSymbolPtr symbolNew(void);
@@ -190,7 +190,7 @@ void symbolFree(tSymbolPtr symbol);
  *
  * @return     New sorted dtStr, or NULL if something went wrong.
  */
-dtStr *sort(dtStr *s);	
+dtStr *sort(dtStr *s);
 
 //-------------------------------------------------------------------
 //-------------------------------Find--------------------------------
