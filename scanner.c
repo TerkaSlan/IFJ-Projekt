@@ -681,13 +681,7 @@ int32_t getToken(Token *token){
         return ERR_OK;
       }
       case SMinus: {
-        if (isdigit(iCurrentSymbol)){
-          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
-            handleLexError(token, ERR_INTERN);
-          }
-          state = SNumber;
-        }
-        else if (iCurrentSymbol == '-'){
+        if (iCurrentSymbol == '-'){
           token->type = TT_decrement;
           strFree(token->str);
           return ERR_OK;

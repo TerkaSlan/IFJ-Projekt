@@ -1,9 +1,12 @@
 #ifndef CONVERSIONS_H
 #define CONVERSIONS_H
 #include <stdbool.h> // for fequal()
-#include <float.h> // for -DBL_MAX
+#include <float.h> // DBL_MAX_10_EXP, -DBL_MAX
 #include "str.h"
+#include "ial.h"
+#include "error.h"
 
+// TODO Improvement: Get rid of number contants denoting error and create a better mechanism so that 1 number from a given data type is not reserved as an error indicator and can be used
 #define DOUBLE_CONVERSION_ERROR -DBL_MAX
 #define INT_CONVERSION_ERROR    INT32_MIN
 
@@ -36,7 +39,63 @@ bool fequal(double a, double b);
 */
 int32_t octalToInt(dtStr *octalString);
 
+/**
+* Converts binary number stored as a dtStr to integer
+* @param    binaryString   String containing the binary number to be converted
+* @return   Converted int
+*/
 int32_t binaryToInt(const dtStr *binaryString);
 
+/**
+* Converts hexadecimal number stored as a dtStr to integer
+* @param    hexadecimalString   String containing the hexadecimal number to be converted
+* @return   Converted int
+*/
 int32_t hexToInt(const dtStr *hexadecimalString);
+
+/**
+* Converts an integer to string (type dtStrPtr)
+* @param    number   An int to-be converted
+* @return   Converted string
+*/
+dtStrPtr intToString(int32_t number);
+
+/**
+* Converts a double to string (type dtStrPtr)
+* @param    number   A double to-be converted
+* @return   Converted string
+*/
+dtStrPtr doubleToString(double number);
+
+/**
+* Converts the data portion of symbol to an integer
+* @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
+* @return   Converted int, ERR_INTERN on failure
+*/
+int32_t *symbolToInt(const tSymbolPtr symbol, const tSymbolData *data, int32_t *convertedInt);
+
+/**
+* Converts the data portion of symbol to a double
+* @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
+* @return   Converted double, ERR_INTERN on failure
+*/
+double *symbolToDouble(const tSymbolPtr symbol, const tSymbolData *data, double *convertedDouble);
+
+/**
+* Converts the bool portion of symbol to a double
+* @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
+* @return   Converted bool, ERR_INTERN on failure
+*/
+bool *symbolToBool(const tSymbolPtr symbol, const tSymbolData *data, bool *convertedBool);
+
+/**
+* Converts the symbol to a newly created string (type dtStrPtr)
+* @param    symbol   Pointer to the symbol located in Symbol table
+* @param    data     The actual data that need to be converted
+* @return   Converted string on success, NULL on failure
+*/
+dtStrPtr symbolToString(const tSymbolPtr symbol, const tSymbolData *data);
 #endif

@@ -2,7 +2,9 @@
 
  **Stage 1: Basic data structures, supporting modules, simple lexical analysis**
 
-We're at **Stage 2: Symbol table, grammar, basic scanner implementation, elaborate lexical analysis**
+ **Stage 2: Symbol table, grammar, basic scanner implementation, elaborate lexical analysis**
+
+We're at **Stage 3: Parser, interpret, expressions and instruction modules implementation.**
 
 _Week 1 [4.10. - 11.10]_
   
@@ -26,7 +28,7 @@ _Week 2 [12.10 - 18.10]_
   
   #10 Instruction set - **Michal** :white_check_mark:
   
-  #11 Grammar, basic parser implementation - **Katka** :white_medium_square:
+  #11 Grammar, basic parser implementation - **Katka** :white_check_mark:
   
   #12 Builtins - **Jakub + Marek** :white_medium_square:
   
@@ -44,6 +46,27 @@ _Week 4 [26.10 - 1.11]_
 
 _Week 5 [2.11 - 8.11]_
 
-  #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_medium_square:
+  #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_check_mark:
   
   #17 Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
+  
+_Week 6 [9.11 - 15.11]_
+  
+  #18 Initial expressions module implementation - **Katka** :white_medium_square:
+  
+_Week 7 [16.11 - 22.11]_
+  
+  #19 Deal with the newly-found need for 2 runs of parser - **Terka** :white_medium_square:
+  
+  #20 Internal documentation on how to work and communicate with symbol table - **Michal** :white_medium_square:
+  
+  #21 Mechanism to print out the instruction in our internal code for debugging purposes - **Jakub, Marek** :white_medium_square:
+  
+  #22 Mechanism to roll back to the beginning of the file after finishing the first read - **Jakub, Marek** :white_medium_square:
+
+  #23 Main.c file - **Jakub, Marek** :white_medium_square:
+  
+  #24 New Makefile for 1. submission - **Michal** :white_medium_square:
+  
+  
+  
