@@ -23,7 +23,7 @@ TEST_SUITE(ConversionsTest)
 
 TEST_SUITE(ScannerTest)
 
-TEST_SUITE(InterpretTEST)
+TEST_SUITE(InterpretTest)
 
 int main(int argc, char **argv)
 {

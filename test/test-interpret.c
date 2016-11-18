@@ -7,7 +7,7 @@
 #include "../instruction.h"
 #include "../constants.h"
 
-TEST_SUITE_START(InterpretTEST)
+TEST_SUITE_START(InterpretTest)
 
 	tHashTablePtr globalTable = htabInit(13);
 	tHashTablePtr MainTable = htabInit(31);

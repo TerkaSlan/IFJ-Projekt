@@ -48,7 +48,7 @@ typedef enum {
 	iLEN,       ///dst = lenght(arg1)
 	iCOMPARE,   ///dst = strcmp(arg1, arg2)
 	iFIND,      ///int find(string s, string substr) finds first occurance dst = find(arg1, arg2)
-	iSORT,      ///Sorts string dst - new sorted string, arg1 string to be sorted
+	iSORT,      ///Sorts string: dst - new sorted string, arg1 string to be sorted
 	iSUBSTR,    ///Finds substring in string string substr(string, index, index)    RET = substr(dst, arg1,arg2) - required to add instruciton iGETRETVAL!!!
 } eInstructionType;
 

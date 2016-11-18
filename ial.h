@@ -72,7 +72,7 @@ typedef struct {
 typedef union {
 	tClassData ClassData;
 	tFuncData  FunctionData;
-	int32_t    Integer;     //64?
+	int32_t    Integer;
 	double     Double;
 	bool       Bool;
 	dtStrPtr   String;
