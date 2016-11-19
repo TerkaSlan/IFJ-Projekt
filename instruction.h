@@ -13,31 +13,43 @@
  * Arguments have structure arg1, arg2, dst (destination)
  */
 typedef enum {
-	iSTOP = 0,  ///End of program ///TODO::maybe magic with return, who knows
+	iSTOP = 0,  ///End of program
 	iMOV,       ///Move                 dst = arg1
+	iFRAME,     ///creates new frame for func - call arg1-dtStrPtr of func name
+	iPUSH,      ///sets Argument before calling function, iFRAME must be called first! arg1-tSymbolPtr with data to be copied to new frame
+	iCALL,      ///calls function from
+	iRET,       ///Return arg1, can be null
+	iGETRETVAL, ///Gets return value from last function dst = retval
 	iINC,       ///Increment            dst = arg1 + 1
 	iDEC,       ///Decrement            dst = arg1 - 1
 	iADD,       ///Add                  dst = arg1 + arg2
 	iSUB,       ///Subtract             dst = arg1 - arg2
 	iMUL,       ///Multiply             dst = arg1 * arg2
 	iDIV,       ///Divide               dst = arg1 / arg2
-	iMOD,       ///Modulo               dst = arg1 % arg2
 	iNEG,       ///Negate               dst = -arg1
-	iNOT,       ///Bit inverse          dst = ~arg1
-	iAND,       ///Bit And              dst = arg1 & arg2
-	iOR,        ///Bit Or               dst = arg1 | arg2
-	iXOR,       ///Bit Xor              dst = arg1 ^ arg2
-	iLEQ,       ///Logical Equality     dst = arg1 == arg2
-	iLNEQ,      ///Logical Inequality   dst = arg1 != arg2
+	iLE,        ///<=                   dst(bool) = arg1 <= arg2
+	iLT,        ///<                    dst(bool) = arg1 < arg2
+	iGE,        ///>=                   dst(bool) = arg1 >= arg2
+	iGT,        ///>                    dst(bool) = arg1 > arg2
+	iEQ,        ///Logical Equality     dst = arg1 == arg2
+	iNEQ,       ///Logical Inequality   dst = arg1 != arg2
 	iLAND,      ///Logical And          dst = arg1 && arg2
 	iLOR,       ///Logical Or           dst = arg1 || arg2
 	iLNOT,      ///Logical Not          dst = !arg1
-	iGOTO,      ///Goto                 goto dst
-	iCALL,      ///Call                 call dst
-	iRET,       ///Return
+	iGOTO,      ///Goto instr index     goto (uint32_t)dst
 	iIFGOTO,    ///if(arg1) goto dst
 	iIFNGOTO,   ///if(!arg1) goto dst
-	iLABEL      ///Label for gotos
+	iCONV2STR,  /// dst = (string)arg1
+	iCONV2INT,  /// dst = (int)arg1
+	iCONV2BOOL,  /// dst = (boolean)arg1
+	iCONV2DOUBLE,/// dst = (double)arg1
+	iPRINT,     ///prints string arg1
+	iREAD,      ///Reads input to dst
+	iLEN,       ///dst = lenght(arg1)
+	iCOMPARE,   ///dst = strcmp(arg1, arg2)
+	iFIND,      ///int find(string s, string substr) finds first occurance dst = find(arg1, arg2)
+	iSORT,      ///Sorts string: dst - new sorted string, arg1 string to be sorted
+	iSUBSTR,    ///Finds substring in string string substr(string, index, index)    RET = substr(dst, arg1,arg2) - required to add instruciton iGETRETVAL!!!
 } eInstructionType;
 
 /*
@@ -45,17 +57,17 @@ typedef enum {
  */
 typedef struct {
 	eInstructionType type;
+	void             *dst;
 	void             *arg1;
 	void             *arg2;
-	void             *dst;
 } tInstruction, *tInstructionPtr;
 
 /*
  * Typedef struct of Instruction List
  */
 typedef struct {
-	int64_t         firstInstruction;   ///pointer to the entry point instruction
-	int64_t         activeInstruction;  ///pointer to the instruction currently being processed
+	int64_t         firstInstruction;   ///index of the entry point instruction
+	int64_t         activeInstruction;  ///index of the instruction currently being processed
 	uint32_t        usedSize;           ///number of instructions currently in use
 	uint32_t        allocatedSize;      ///maximum number of instructions
 	tInstructionPtr instructionArray;   ///pointer to the array of instructions
@@ -66,7 +78,7 @@ typedef struct {
  *  
  *  \return tInstructionListPtr, Returns pointer to the new instruction list, if an error occures, NULL is returned
  *  
- *  \details Allocates tInstructionList structure and internal structures. Sets all instructionArray to NULL aswell as first instruction and allocated instruction.
+ *  \details Allocates tInstructionList structure and internal structures. Sets all instructionArray to NULL and inserts first instruction iSTOP,NULL,NULL,NULL
  */
 tInstructionListPtr instrListNew();
 
@@ -88,6 +100,16 @@ tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list);
  * \details Returns pointer to the instruction after active instruction making the instruction returned active.
  */
 tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list);
+
+
+
+/**
+ * \brief Returns index of an instruction currently active
+ * @param list Pointer to instruction list
+ * @return returns index of currently active instruction, on error returns -2
+ */
+int64_t instrListGetActiveInstructionIndex(tInstructionListPtr list);
+
 
 /**
  *  \brief Sets first instruction in the instruction list and make it also active. NOTE:Should be of type label

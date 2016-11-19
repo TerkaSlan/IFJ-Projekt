@@ -1,7 +1,7 @@
 #include "ial.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 static uint32_t htabHashFunc(char *name, uint32_t htabSize);
 static void partition(dtStr *s, int32_t low, int32_t high);
@@ -20,7 +20,7 @@ tHashTablePtr htabInit(uint32_t size) {
 
 }
 
-tHashTablePtr htabCopy(tHashTablePtr table) {
+tHashTablePtr htabCopy(const tHashTablePtr table) {
 	if(!table)
 		return NULL;
 
@@ -75,34 +75,83 @@ tHashTablePtr htabCopy(tHashTablePtr table) {
 }
 
 
-tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol) {
+
+static tSymbolPtr indexGenerator(tSymbolPtr sym, void* param)
+{
+	int *counter = (int*) param;
+	if(sym->Index == -1)
+		sym->Index = (*counter)++;
+
+	return sym;
+}
+void htabGenerateIndices(tHashTablePtr table)
+{
+	int32_t counter = 0;
+
+	//For function local table
+	if(table->Parent->Type == eFUNCTION)
+	{
+		//lets start with arguments
+		for(tArgumentListItem* argItem = table->Parent->Data.FunctionData.ArgumentList; argItem != NULL; argItem = argItem->Next)
+		{
+			if(argItem->Symbol->Const)
+				abort(); //if this happens, something is really wrong with the code.
+
+			//give index
+			if(argItem->Symbol->Index == -1)
+				argItem->Symbol->Index = counter++;
+		}
+
+		//fill the rest
+		htabForEach(table, indexGenerator, &counter); //pointer to local var, but should be safe
+	}
+
+}
+
+
+tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol, bool overwrite) {
 	if(!table || !symbol)
 		return NULL;
 
 	//check if element exists
-	if(htabGetSymbol(table, symbol->Name) != NULL)
-		return NULL;
+	tSymbolPtr foundSymbol = htabGetSymbol(table, symbol->Name);
 
-	//create a copy of a symbol
-	tSymbolPtr symbolCopy = symbolNewCopy(symbol);
+	if(foundSymbol)
+	{
+		if(!overwrite)
+			return NULL;
 
-	//hash name to get index into the hash table
-	uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
+		//overwriting found symbol
+		tSymbolPtr nextBkup = foundSymbol->Next;
+		dtStrPtr nameBkup = foundSymbol ->Name;
+		memcpy(foundSymbol, symbol, sizeof(tSymbol));
+		foundSymbol->Next = nextBkup;
+		foundSymbol->Name = nameBkup;
+
+		return foundSymbol;
+	}
+	else {
+
+		//create a copy of a symbol
+		tSymbolPtr symbolCopy = symbolNewCopy(symbol);
+
+		//hash name to get index into the hash table
+		uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
 
 
-	//first item in the list will become second
-	symbolCopy->Next = table->Data[index];
+		//first item in the list will become second
+		symbolCopy->Next = table->Data[index];
 
 
-	//insert new item to the beginning of the list	
-	table->Data[index] = symbolCopy;
-	table->NumberOfItems++;
+		//insert new item to the beginning of the list
+		table->Data[index] = symbolCopy;
+		table->NumberOfItems++;
 
-	return symbolCopy;
-
+		return symbolCopy;
+	}
 }
 
-tSymbolPtr htabGetSymbol(tHashTablePtr table, dtStrPtr name) {
+tSymbolPtr htabGetSymbol(const tHashTablePtr table, dtStrPtr name) {
 	if(!table || !name)
 		return NULL;
 
@@ -121,20 +170,24 @@ tSymbolPtr htabGetSymbol(tHashTablePtr table, dtStrPtr name) {
 
 }
 
-void htabForEach(tHashTablePtr table, void (*func)(tSymbolPtr)) {
+bool htabForEach(tHashTablePtr table, tSymbolPtr (*func)(tSymbolPtr, void*), void* param) {
 	if(!table || !func)
-		return;
+		return false;
 
+
+	bool ret = true;
 	for(uint32_t htabIndex = 0; htabIndex < table->Size; htabIndex++) {
 
 		for(tSymbolPtr symbolIterator = table->Data[htabIndex];
 		    symbolIterator != NULL; symbolIterator = symbolIterator->Next) {
 			//call a func for each item
-			func(symbolIterator);
+			if(func(symbolIterator, param) == NULL)
+				ret = false;
 		}
 
 	}
 
+	return ret;
 }
 
 void htabRemoveSymbol(tHashTablePtr table, dtStrPtr name) {
@@ -214,7 +267,7 @@ void htabFree(tHashTablePtr table) {
 	free(table);
 }
 
-
+//CREDIT IJC 2015/2016
 uint32_t htabHashFunc(char *name, uint32_t htabSize) {
 	uint32_t h = 0;
 	const unsigned char *p;
@@ -227,11 +280,11 @@ uint32_t htabHashFunc(char *name, uint32_t htabSize) {
 
 tSymbolPtr symbolNew() {
 	tSymbolPtr ret = calloc(1, sizeof(*ret));
-
+	ret->Index = -1;
 	return ret;
 }
 
-tSymbolPtr symbolNewCopy(tSymbolPtr symbol) {
+tSymbolPtr symbolNewCopy(const tSymbolPtr symbol) {
 	if(!symbol)
 		return NULL;
 
@@ -243,19 +296,49 @@ tSymbolPtr symbolNewCopy(tSymbolPtr symbol) {
 	if(memcpy(ret, symbol, sizeof(tSymbol)) == NULL)
 		goto ERRORsymbolNewCopy;
 
-	if((ret->Name = strNew()) == NULL)
-		goto ERRORsymbolNewCopy;
 
-	if(strCopyStr(ret->Name, symbol->Name) == STR_SUCCESS)
-		return ret;
+	//if has name, copy
+	if(symbol->Name) {
 
-	free(ret->Name);
+		if((ret->Name = strNewFromStr(symbol->Name)) == NULL)
+			goto ERRORsymbolNewCopy;
+
+	}
+
+	return ret;
 
 	ERRORsymbolNewCopy:
 	free(ret);
 	return NULL;
 }
 
+tSymbolPtr symbolFuncAddArgument(tSymbolPtr symbolFunc, const tSymbolPtr argument)
+{
+	if(symbolFunc->Type != eFUNCTION)
+		return NULL;
+
+	//new argument item
+	tArgumentListItem *newItem = calloc(1, sizeof(tArgumentListItem));
+	if(!newItem)
+		return NULL;
+
+	//insert argument item into funcdata
+	if(symbolFunc->Data.FunctionData.ArgumentList == NULL)
+		symbolFunc->Data.FunctionData.ArgumentList = newItem; //first argument
+
+	else
+	{
+		tArgumentListItem *lastItem = symbolFunc->Data.FunctionData.ArgumentList;
+		//get to the last argument and add new one
+		for(; lastItem->Next != NULL; lastItem = lastItem->Next);
+		lastItem->Next = newItem;
+	}
+
+	newItem->Symbol = argument;
+	symbolFunc->Data.FunctionData.NumberOfArguments++;
+	return argument;
+
+}
 
 
 void symbolFree(tSymbolPtr symbol) {
@@ -265,6 +348,19 @@ void symbolFree(tSymbolPtr symbol) {
 	//dealloc name
 	if(symbol->Name)
 		strFree(symbol->Name);
+
+	if(symbol->Type == eFUNCTION)
+	{
+		while(symbol->Data.FunctionData.ArgumentList)
+		{
+			tArgumentListItem *nextArg = symbol->Data.FunctionData.ArgumentList->Next;
+			free(symbol->Data.FunctionData.ArgumentList);
+			symbol->Data.FunctionData.ArgumentList = nextArg;
+		}
+
+	}
+	if(symbol->Type == eSTRING && symbol->Data.String)
+		strFree(symbol->Data.String);
 
 	//dealloc symbol
 	free(symbol);
