@@ -5,36 +5,40 @@
 
 typedef enum {
 
-	TT_empty,
-	TT_identifier,
+	TT_plus,
+	TT_minus,
+	TT_multiply,
+	TT_divide,
+	TT_less,
+	TT_greater,
+	TT_lessEqual,
+	TT_greaterEqual,
+	TT_equal,
+	TT_notEqual,
+	TT_identifier,	//10
+	TT_fullIdentifier,
 	TT_string,
 	TT_double,
 	TT_number,
-	TT_keyword,
-	TT_notEqual,
-	TT_equal,
-	TT_not,
-	TT_divide,
-	TT_fullIdentifier,
-	TT_assignment,
-	TT_less,
-	TT_lessEqual,
-	TT_greater,
-	TT_greaterEqual,
-	TT_comma,
-	TT_multiply,
-	TT_semicolon,
-	TT_minus,
-	TT_plus,
-	TT_and,
-	TT_or,
+	TT_boolean,
 	TT_increment,
 	TT_decrement,
+	TT_not,
+	TT_and,
+	TT_or,
+	TT_leftRoundBracket,
+	TT_rightRoundBracket,
+	TT_comma,
+	TT_semicolon,
+	TT_dolar, // 25
+	TT_keyword,
+	TT_assignment,
 	TT_rightCurlyBracket,
 	TT_leftCurlyBracket,
-	TT_rightRoundBracket,
-	TT_leftRoundBracket,
-	TT_EOF
+	TT_empty, // 30
+	TT_EOF,
+	TT_E,
+	TT_start
 
 } TokenType;
 
