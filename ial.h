@@ -119,7 +119,7 @@ tHashTablePtr htabCopy(const tHashTablePtr table);
  * \brief Generates frame index for each symbol
  * \param [in] table tHashTablePtr, Pointer to the hash table
  */
-void htabGenerateIndexes(tHashTablePtr table);
+void htabGenerateIndices(tHashTablePtr table);
 
 /**
  *  \brief Adds Symbol to the hash table.

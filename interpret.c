@@ -825,7 +825,10 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param)
 {
-	if(!symbol || !symbol->Defined)
+	if(!symbol)
+		return NULL;
+
+	if(!symbol->Defined)
 	{
 		printError(ERR_SEM, "Symbol \"%s\" is undefined.\n", strGetCStr(symbol->Name));
 		return NULL;
@@ -838,7 +841,7 @@ tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param)
 			break;
 
 		case eFUNCTION:
-			htabGenerateIndexes(symbol->Data.FunctionData.LocalSymbolTable);
+			htabGenerateIndices(symbol->Data.FunctionData.LocalSymbolTable);
 			break;
 
 		default:

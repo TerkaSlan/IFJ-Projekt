@@ -84,7 +84,7 @@ static tSymbolPtr indexGenerator(tSymbolPtr sym, void* param)
 
 	return sym;
 }
-void htabGenerateIndexes(tHashTablePtr table)
+void htabGenerateIndices(tHashTablePtr table)
 {
 	int32_t counter = 0;
 
