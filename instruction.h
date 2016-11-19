@@ -26,6 +26,7 @@ typedef enum {
 	iSUB,       ///Subtract             dst = arg1 - arg2
 	iMUL,       ///Multiply             dst = arg1 * arg2
 	iDIV,       ///Divide               dst = arg1 / arg2
+	iMOD,       ///Modulo               dst = arg1 % arg2
 	iNEG,       ///Negate               dst = -arg1
 	iLE,        ///<=                   dst(bool) = arg1 <= arg2
 	iLT,        ///<                    dst(bool) = arg1 < arg2
@@ -60,6 +61,7 @@ typedef struct {
 	void             *dst;
 	void             *arg1;
 	void             *arg2;
+	void             *dst;
 } tInstruction, *tInstructionPtr;
 
 /*

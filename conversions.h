@@ -5,6 +5,7 @@
 #include "str.h"
 #include "ial.h"
 #include "error.h"
+#include "token.h"
 
 // TODO Improvement: Get rid of number contants denoting error and create a better mechanism so that 1 number from a given data type is not reserved as an error indicator and can be used
 #define DOUBLE_CONVERSION_ERROR -DBL_MAX
@@ -98,4 +99,5 @@ bool *symbolToBool(const tSymbolPtr symbol, const tSymbolData *data, bool *conve
 * @return   Converted string on success, NULL on failure
 */
 dtStrPtr symbolToString(const tSymbolPtr symbol, const tSymbolData *data);
+
 #endif

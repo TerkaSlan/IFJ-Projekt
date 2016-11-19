@@ -1,4 +1,3 @@
-
 #include "builtin.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,7 +13,7 @@ eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *su
 		printError(ERR_OTHER, "In substr: String index is out of range\n");
 		return ERR_OTHER;
 	}
-	
+
 	if (beginIndex > endIndex) {
 		printError(ERR_OTHER, "In substr: String index is out of range\n");
 		return ERR_OTHER;
@@ -45,7 +44,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 			tmp = next;
 			while (tmp != '\n' && tmp != EOF) {
 				tmp = getchar();
-			}		
+			}
 			if (next != '\n' && next != EOF) {
 				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
 				return ERR_RUN_INPUT;
@@ -59,7 +58,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				tmp = getchar();
 			}
 			if (next != '\n'&& next != EOF) {
-				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");				
+				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");
 				return ERR_RUN_INPUT;
 			}
 			break;

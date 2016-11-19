@@ -138,6 +138,9 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol, bool over
 		//hash name to get index into the hash table
 		uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
 
+	//insert new item to the beginning of the list	
+	table->Data[index] = symbolCopy;
+	table->NumberOfItems++;
 
 		//first item in the list will become second
 		symbolCopy->Next = table->Data[index];
@@ -296,6 +299,8 @@ tSymbolPtr symbolNewCopy(const tSymbolPtr symbol) {
 	if(memcpy(ret, symbol, sizeof(tSymbol)) == NULL)
 		goto ERRORsymbolNewCopy;
 
+	if((ret->Name = strNew()) == NULL)
+		goto ERRORsymbolNewCopy;
 
 	//if has name, copy
 	if(symbol->Name) {
