@@ -42,7 +42,7 @@ _Week 4 [26.10 - 1.11]_
 
   #14 Extend conversions to deal with octal numbers in string escape sequences - **Terka** :white_check_mark:
   
-  #15 Basic interpreter implementation - **Michal** :white_medium_square:
+  #15 Basic interpreter implementation - **Michal** :white_check_mark:
 
 _Week 5 [2.11 - 8.11]_
 
