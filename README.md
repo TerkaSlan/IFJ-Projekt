@@ -58,15 +58,15 @@ _Week 7 [16.11 - 22.11]_
   
   #19 Deal with the newly-found need for 2 runs of parser - **Terka** :white_medium_square:
   
-  #20 Internal documentation on how to work and communicate with symbol table - **Michal** :white_medium_square:
+  #20 Internal documentation on how to work and communicate with symbol table - **Michal** :white_check_mark:
   
   #21 Mechanism to print out the instruction in our internal code for debugging purposes - **Jakub, Marek** :white_medium_square:
-  
-  #22 Mechanism to roll back to the beginning of the file after finishing the first read - **Jakub, Marek** :white_medium_square:
 
-  #23 Main.c file - **Jakub, Marek** :white_medium_square:
+  #22 Main.c file - **Jakub, Marek** :white_medium_square:
   
-  #24 New Makefile for 1. submission - **Michal** :white_medium_square:
+  #23 New Makefile for 1. submission - **Michal** :white_medium_square:
   
+  #24 Implement recursive freeing of globalSymbolTable in Main.c for 1. submission - **Michal** :white_medium_square:
   
+  #25 Solve leaks originating at interpret module for 2. submission - **Michal** :white_medium_square:
   
