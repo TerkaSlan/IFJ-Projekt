@@ -18,7 +18,7 @@ strFree(substring2);
 dtStr *substring3;
 substr(string, 5, 5, &substring3);
 SHOULD_EQUAL("SubString3 (beginIndex = endIndex)", strCmpCStr(substring3, ""), 0);
-strFree(substring3);	
+strFree(substring3);
 
 dtStr *substring4;
 SHOULD_EQUAL("SubString4 (beginIndex > endIndex)", (substr(string, 6, 2, &substring4) == ERR_OTHER), 1);
@@ -32,7 +32,7 @@ SHOULD_EQUAL("SubString6 (beginIndex < 0)", (substr(string, -1, 5, &substring6) 
 strFree(string);
 
 tSymbolPtr symbol_1 = symbolNew();
-symbol_1->Type = eINT; 
+symbol_1->Type = eINT;
 printf("readInt()\n");
 if (readData(symbol_1, &symbol_1->Data) != ERR_OK) {
 	printf("Invalid input\n");
@@ -41,7 +41,7 @@ else printf("Integer on stdin\n");
 symbolFree(symbol_1);
 
 tSymbolPtr symbol_2 = symbolNew();
-symbol_2->Type = eDOUBLE; 
+symbol_2->Type = eDOUBLE;
 printf("readDouble()\n");
 if (readData(symbol_2, &symbol_2->Data) != ERR_OK) {
 	printf("Invalid input\n");
@@ -50,7 +50,7 @@ else printf("Double on stdin\n");
 symbolFree(symbol_2);
 
 tSymbolPtr symbol_3 = symbolNew();
-symbol_3->Type = eSTRING; 
+symbol_3->Type = eSTRING;
 printf("readString()\n");
 if (readData(symbol_3, &symbol_3->Data) != ERR_OK) {
 	printf("Invalid input\n");
@@ -58,7 +58,6 @@ if (readData(symbol_3, &symbol_3->Data) != ERR_OK) {
 else printf("String on stdin:\n");
 printf("%s\n", symbol_3->Data.String->str);
 
-strFree(symbol_3->Data.String);
 symbolFree(symbol_3);
 
 
