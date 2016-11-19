@@ -70,3 +70,6 @@ _Week 7 [16.11 - 22.11]_
   
   #25 Solve leaks originating at interpret module for 2. submission - **Michal** :white_medium_square:
   
+  #26 Add additinal tests to cover all instructions for 2. submission - **Michal** :white_medium_square:
+  
+  #27 Create as much general tests as possible for 2. submission - **ALL** :white_medium_square:
