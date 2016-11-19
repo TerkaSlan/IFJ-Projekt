@@ -10,6 +10,19 @@
 #include "interpret.h"
 
 /*
+ * Checks if given adept for identifier collides with any builtin
+ */
+#define isBuiltin(string)\
+do{                                                                                     \
+  if (   (strCmpCStr(string, "substr") == 0) || (strCmpCStr(string, "readDouble") == 0) \
+      || (strCmpCStr(string, "readInt") == 0) || (strCmpCStr(string, "readString") == 0) \
+      || (strCmpCStr(string, "print") == 0) || (strCmpCStr(string, "length") == 0)      \
+      || (strCmpCStr(string, "compare") == 0) || (strCmpCStr(string, "find") == 0)      \
+      || (strCmpCStr(string, "sort") == 0) )                                            \
+      strFree(string);          \
+      string = NULL;      \
+}while(0)\
+/*
  *  Converts between token type and symbol type
  */
 #define TTtoeSymbolType(ktt, eSymbol)\
@@ -28,8 +41,8 @@ do{                                  \
   }                                    \
 }while(0)
 
-#define printSymbol(what_symbol, symbol)do{\
-  printf("%s symbol living at: %p\nSymbol->Const: %d\nSymbol->Defined: %d\nSymbol->Name: %s\nGST: %p \nCST: %p\nCurrent symbol: %p\n\n", what_symbol, symbol, symbol->Const, symbol->Defined, symbol->Name->str, globalScopeTable, currentScopeTable, currentSymbol);\
+#define printSymbol(what_symbol, saved_into, symbol)do{\
+  printf("%s symbol living at: %p\nSymbol->Const: %d\nSymbol->Defined: %d\nSymbol->Name: %s\nGST: %p \nCST: %p\n Current symbol: %p\nSaved Into table: %p\n\n", what_symbol, symbol, symbol->Const, symbol->Defined, symbol->Name->str, globalScopeTable, currentScopeTable, currentSymbol, saved_into);\
 }while (0);
 
 // Borrowed from interpret.c
@@ -50,9 +63,9 @@ do {																								\
   classSymbol->Name = strNewFromStr(name);						\
   classSymbol->Data.ClassData.LocalSymbolTable = newTable;\
 	newTable->Parent = classSymbol;						\
-  printSymbol("Class", classSymbol);     \
 	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL) \
 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);} \
+  printSymbol("Class", globalScopeTable, classSymbol);     \
 	currentScopeTable = classSymbol->Data.ClassData.LocalSymbolTable;\
 	currentSymbol = classSymbol;\
 } while (0)
@@ -76,9 +89,9 @@ do{																										\
 	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
 	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
 	newTable->Parent = functionSymbol;\
-  printSymbol("Function", functionSymbol);\
 	if (htabAddSymbol(currentScopeTable, functionSymbol, true) == NULL) \
 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(functionSymbol);} \
+  printSymbol("Function", currentScopeTable, functionSymbol);\
 	currentScopeTable = functionSymbol->Data.FunctionData.LocalSymbolTable;\
 	currentSymbol = functionSymbol;\
 } while (0)
@@ -94,9 +107,9 @@ do{																										\
 	currentVariable->Const = true;																\
 	currentVariable->Defined = defined;															\
 	currentVariable->Name = name;\
-  printSymbol("Variable", currentVariable);						\
 	if (htabAddSymbol(currentScopeTable, currentVariable, true) == NULL){errCode = ERR_INTERN; symbolFree(currentVariable);}\
 		errCode = ERR_INTERN;														\
+  printSymbol("Variable", currentScopeTable, currentVariable);						\
 } while (0)
 
 #define getNewToken(token, errCode)\
@@ -121,9 +134,12 @@ tHashTablePtr currentScopeTable;
 // global variables - used in multiple functions in parser.c and expr.c
 Token *token;
 tSymbolPtr currentSymbol;
+tSymbolPtr testSymbol;
+tHashTablePtr testHash;
 bool firstRun = true;
 tSymbolPtr result;
 dtStrPtr symbolName;
+tInstruction instr;
 
 tHashTablePtr globalScopeTable;
 tInstructionListPtr instructionList;
@@ -151,11 +167,22 @@ eError parse(){
       htabFree(globalScopeTable);
       instrListFree(instructionList);
 		}
+    firstRun = false;
+    //currentSymbol = NULL;
+    //currentScopeTable = globalScopeTable;
 	}
-	else{
-		// secondRun stuff
+	if (! firstRun){
+    rewind(fSourceFile);
+    //tSymbolPtr testSymbol;
+    //tHashTablePtr testHash;
 		errCode = prog();
 	}
+  /*
+  dtStrPtr   string = strNewFromCStr("Main");
+  tSymbolPtr mainSymbol;
+  mainSymbol = htabGetSymbol(globalScopeTable, string);
+  //mainSymbol++;*/
+  Interpret(globalScopeTable, instructionList);
   return errCode;
 }
 
@@ -186,6 +213,7 @@ eError prog() {
     symbolFree(currentSymbol);
     if (firstRun)
   		strFree(symbolName);
+    return errCode;
   }
   else{
     EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {PROG -> CLASS_LIST eof}\n",  __FILE__, __LINE__);
@@ -211,12 +239,21 @@ eError classList() {
 		if (strCopyStr(symbolName, token->str) != STR_SUCCESS)
       return ERR_INTERN;
   }
+  // updating the currentScope variable in second run
+  if (!firstRun){
+    //htabGetSymbol(globalScopeTable, token->str) should NOT return nothing
+    testSymbol = htabGetSymbol(globalScopeTable, token->str);
+    testHash = testSymbol->Data.ClassData.LocalSymbolTable;
+    //printSymbol("In 2. run class update", NULL, currentSymbol);
+    //printf("a");
+  }
 	//[<KTT_CLASS>][<TT_identifier>]3. Token -> [{]
 	getNewToken(token, errCode);
 	if (token->type == TT_leftCurlyBracket){
 		if (firstRun){
       // Creating our first class symbol! This one will go to globalScopeTable and currentScopeTable will be changed
 			createClass(symbolName);
+
       // TODO: If i encounter error after this, can I rely on htabFree(globalScopeTable) to free the symbol?
 		}
 	}
@@ -234,6 +271,13 @@ eError classList() {
 	if (token->type == TT_rightCurlyBracket){
 		//[<KTT_CLASS>][<TT_identifier>][{][}]5. Token -> [fist token of CLASS_LIST]
 		getNewToken(token, errCode);
+    if (!firstRun){
+      instr.type = iRET;
+      instr.dst  = NULL;
+      instr.arg1 = NULL; // [TODO] map to a class ?
+      instr.arg2 = NULL;
+      instrListInsertInstruction(instructionList, instr);
+    }
 		if (token->type == TT_keyword && token->keywordType == KTT_class) {
 			// I'm over with first class, let's go to another one !
 			// Recursive call of classList()
@@ -280,12 +324,22 @@ eError classBody() {
 	getNewToken(token, errCode);
   if (token->type != TT_identifier)
 		return ERR_SYNTAX;
-  // Checking if token->str doesn't collide with builtins
+  if (!firstRun){
+    //htabGetSymbol(globalScopeTable, token->str) should NOT return nothing
+    testSymbol = htabGetSymbol(testHash, token->str);
+    testHash = testSymbol->Data.ClassData.LocalSymbolTable;
+    //printSymbol("In 2. run function update", NULL, currentSymbol);
+  }
 	if (firstRun){
-    if ((strCmpCStr(token->str, "substr") == 0) || (strCmpCStr(token->str, "readData") == 0))
-      return ERR_SEM;
-		if ((helperString = strNewFromStr(token->str)) == NULL)
-			return ERR_INTERN;
+		if ((helperString = strNewFromStr(token->str)) == NULL){
+      return ERR_INTERN;
+      // Checking if token->str doesn't collide with builtins
+      isBuiltin(helperString);
+      if (helperString == NULL){
+        EXIT(ERR_SYNTAX, "Identifier collides with a builtin in %s at %d \n",  __FILE__, __LINE__);
+        return ERR_SEM;
+      }
+    }
 	}
 	//read next token - now we will find out, if it is function or identifier
 	//if next token will be semicolon or assigment - it is variable
@@ -351,11 +405,26 @@ eError classBody() {
 			//we have function
 			if (firstRun){
 				createFunction(eFUNCTION, true, helperString);
+        /*
+        dtStrPtr   string = strNewFromCStr("Main");
+        tSymbolPtr mainSymbol;
+        mainSymbol = htabGetSymbol(globalScopeTable, string);
+        strClear(string);
+        strAddCStr(string, "run");
+        mainSymbol = htabGetSymbol(mainSymbol->Data.ClassData.LocalSymbolTable, string);
+        mainSymbol++;*/
         if (errCode != ERR_OK){
           strFree(helperString);
           return errCode;
         }
 			}
+      if (!firstRun){
+        instr.type = iFRAME;
+        instr.dst  = NULL;
+        instr.arg1 = currentSymbol->Name;
+        instr.arg2 = NULL;
+        instrListInsertInstruction(instructionList, instr);
+      }
 			//reading all parameters
 			getNewToken(token, errCode);
 			//stops, when right round bracket is read - end of parameters
@@ -399,6 +468,15 @@ eError classBody() {
 					symbolFuncAddArgument(currentSymbol, htabGetSymbol(currentScopeTable, helperString));
 				}
 			}
+      // Completing the fuction by adding iCALL
+      if (!firstRun){
+        instr.type = iCALL;
+        instr.dst  = NULL;
+        instr.arg1 = NULL;
+        instr.arg2 = NULL;
+        instrListInsertInstruction(instructionList, instr);
+        //currentSymbol->Data.FunctionData.InstructionIndex = instructionList->usedSize - 1;
+      }
 			//read next token - it should be left curly bracket
 			//RULE: VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
  			getNewToken(token, errCode);
@@ -416,6 +494,15 @@ eError classBody() {
 				if (token->type != TT_rightCurlyBracket) {
 					return ERR_SYNTAX;
 				}
+        else{
+          if (!firstRun){
+            instr.type = iRET;
+            instr.dst  = NULL;
+            instr.arg1 = NULL;
+            instr.arg2 = NULL;
+            instrListInsertInstruction(instructionList, instr);
+          }
+        }
 			}
 
 			getNewToken(token, errCode);

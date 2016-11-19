@@ -14,10 +14,6 @@
 #include "../interpret.h"
 #include "test.h"
 
-extern tHashTablePtr globalScopeTable;
-extern tInstructionListPtr instructionList;
-extern tConstContainerPtr constTable;
-
 TEST_SUITE_START(ExprTest);
 /*
 tPrecedenceStackPtr stack = precedenceStackNew();
@@ -62,7 +58,6 @@ precedenceStackFree(stack);
 
 openFile("3");
 printf("Retcode: %d \n", parse());
-//Interpret(globalScopeTable, instructionList);
 closeFile();
 
 /*

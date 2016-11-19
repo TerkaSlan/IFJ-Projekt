@@ -1,6 +1,5 @@
 class Main {
 	static void run() {
-		int a = 15;
-		int vysl = --a;
+		
 	}
 }
