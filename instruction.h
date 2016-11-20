@@ -61,7 +61,6 @@ typedef struct {
 	void             *dst;
 	void             *arg1;
 	void             *arg2;
-	void             *dst;
 } tInstruction, *tInstructionPtr;
 
 /*
@@ -77,16 +76,16 @@ typedef struct {
 
 /**
  *  \brief Allocates and initilizes new instruction list
- *  
+ *
  *  \return tInstructionListPtr, Returns pointer to the new instruction list, if an error occures, NULL is returned
- *  
+ *
  *  \details Allocates tInstructionList structure and internal structures. Sets all instructionArray to NULL and inserts first instruction iSTOP,NULL,NULL,NULL
  */
 tInstructionListPtr instrListNew();
 
 /**
  *  \brief Gets pointer to the next instruction in the instruction list.
- *  
+ *
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be read from
  *  \return tInstructionPtr, Returns pointer to the next instruction in the instruction list. On error NULL is returned.
  *
@@ -133,18 +132,18 @@ tInstructionPtr instrListGetInstruction(tInstructionListPtr list, uint32_t index
 
 /**
  *  \brief Inserts instruction into the instruction list (at the end)
- *  
+ *
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be written to
  *  \param [in] instr tInstruction, instruction to be inserted
  *  \return int64_t, Returns index of the inserted instruction. Returns -1 if failed.
- *  
+ *
  *  \details Function copies instruction passed as a value into the instruction list after the last inserted instruction.
  */
 int64_t instrListInsertInstruction(tInstructionListPtr list, tInstruction instr);
 
 /**
  *  \brief Makes instruction with index specified active
- *  
+ *
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list
  *  \param [in] instructionIndex uint32_t, index of the instruction to be jumped to
  */
@@ -152,7 +151,7 @@ void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex);
 
 /**
  *  \brief Deallocates instruction list including its inner structures.
- *  
+ *
  *  \param [in] list tInstructionListPtr, Pointer to the instruction list to be deallocated
  *
  */

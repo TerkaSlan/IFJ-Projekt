@@ -8,7 +8,7 @@
 #include "error.h"
 #include <stdint.h>
 
-typedef struct { 
+typedef struct {
 
 	int64_t top;
 	uint32_t capacity;
@@ -20,13 +20,13 @@ typedef struct {
 
 	TokenType type;
 	union {
-			
+
 		dtStrPtr stringOrId;
 		double dNum;
 		int32_t iNum;
 		int32_t boolean;
 		tSymbolPtr symbol;
-		
+
 	};
 
 } tPrecedenceSymbol, *tPrecedenceSymbolPtr;
@@ -42,22 +42,24 @@ typedef struct {
 
 
 /**
- * Allocates and initializes new precedence stack
- * 
- * @return 
+ * Allocates and initializes new precedence stack.
+ *
+ * @return new precedence stack, NULL if error
  */
 tPrecedenceStackPtr precedenceStackNew();
 
 /**
- * [precedenceStackFree description]
- * @param stack [description]
+ * Deallocates precedence stack and its data.
+ *
+ * @param pointer to stack to be freed
  */
 void precedenceStackFree(tPrecedenceStackPtr stack);
 
 /**
- * [precedenceStackTop description]
- * @param  stack [description]
- * @return       terminal closest to top
+ * Finds terminal closest to top of given precedence stack.
+ *
+ * @param  stack pointer to precedence stack
+ * @return       terminal closest to top, or ERR_INTERN if error (ERR_INTERS is equal to 99 and terminal is less then 25)
  */
 uint32_t precedenceStackTopTerminal(tPrecedenceStackPtr stack);
 
@@ -69,20 +71,20 @@ uint32_t precedenceStackTopTerminal(tPrecedenceStackPtr stack);
  * @param  item  [description]
  * @return       [description]
  */
-int64_t precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item); 
+eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item);
 
 
-uint32_t precedenceStackPop(tPrecedenceStackPtr stack);
+int64_t precedenceStackPop(tPrecedenceStackPtr stack);
 
 eError precedenceStackShift(tPrecedenceStackPtr stack);
 
-tPrecedenceSymbolPtr newPrecedenceSymbol();
+tPrecedenceSymbolPtr precedenceSymbolNew();
 
-void freePrecedenceSymbol(tPrecedenceSymbolPtr symbol);
+void precedenceSymbolFree(tPrecedenceSymbolPtr symbol);
 
-void cleanPrecedenceSymbol(tPrecedenceSymbolPtr symbol);
+void precedenceSymbolClean(tPrecedenceSymbolPtr symbol);
 
-tSymbolStackPtr SymbolStackNew();
+tSymbolStackPtr symbolStackNew();
 
 void symbolStackFree(tSymbolStackPtr stack);
 
@@ -97,5 +99,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 void printStack(tPrecedenceStackPtr stack);
 
 eError precedenceParsing(Token* helpToken);
+
+eError parsing(Token* helpToken);
 
 #endif

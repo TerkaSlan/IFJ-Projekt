@@ -5,21 +5,31 @@
 #include "parser.h"
 #include "expr.h"
 #include "scanner.h"
-#include "interpret.h"
-#include "parser_SecondRun.h"
+#include "ial.h"
 /*
  * Checks if given adept for identifier collides with any builtin
  */
 #define isBuiltin(string)\
-do{                                                                                     \
-  if (   (strCmpCStr(string, "substr") == 0) || (strCmpCStr(string, "readDouble") == 0) \
-      || (strCmpCStr(string, "readInt") == 0) || (strCmpCStr(string, "readString") == 0) \
-      || (strCmpCStr(string, "print") == 0) || (strCmpCStr(string, "length") == 0)      \
-      || (strCmpCStr(string, "compare") == 0) || (strCmpCStr(string, "find") == 0)      \
-      || (strCmpCStr(string, "sort") == 0) )                                            \
-      strFree(string);          \
-      string = NULL;      \
-}while(0)\
+do{                                                    \
+  if (strCmpCStr(helperString, "substr") == 0)     \
+    {string = NULL; strFree(string);}                     \
+  if (strCmpCStr(helperString, "readDouble") == 0)   \
+    {string = NULL; strFree(string);}                 \
+  if (strCmpCStr(helperString, "readInt") == 0)    \
+    {string = NULL; strFree(string);}                 \
+  if (strCmpCStr(helperString, "readString") == 0) \
+    {string = NULL; strFree(string);}                  \
+  if (strCmpCStr(helperString, "print") == 0)      \
+    {string = NULL; strFree(string);}               \
+  if (strCmpCStr(helperString, "length") == 0)     \
+    {string = NULL; strFree(string);}                 \
+  if (strCmpCStr(helperString, "compare") == 0)    \
+    {string = NULL; strFree(string);}                 \
+  if (strCmpCStr(helperString, "find") == 0)       \
+    {string = NULL; strFree(string);}                 \
+  if (strCmpCStr(helperString, "sort") == 0)       \
+    {string = NULL; strFree(string);}                 \
+}while(0)
 /*
  *  Converts between token type and symbol type
  */
@@ -59,12 +69,12 @@ do {																								\
   classSymbol->Const = true;																\
   classSymbol->Defined = true;															\
   classSymbol->Name = strNewFromStr(name);						\
+  classSymbol->Next = NULL;						\
   classSymbol->Data.ClassData.LocalSymbolTable = newTable;\
 	newTable->Parent = classSymbol;						\
 	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL) \
 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);} \
 	currentClass = classSymbol;\
-  printSymbol("Class", currentClass);\
 } while (0)
 
 /*
@@ -137,7 +147,6 @@ do{\
 
 /*
  */
-eError prog();
 eError classList();
 eError classBody();
 eError funcBody();
@@ -153,56 +162,59 @@ dtStrPtr symbolName;
 dtStrPtr helperString;
 eSymbolType helperTokenType;
 
-tHashTablePtr globalScopeTable;
-tConstContainerPtr constTable;
+extern tInstructionListPtr instructionList;
+extern tHashTablePtr globalScopeTable;
+extern tConstContainerPtr constTable;
 
-eError parse(){
-
-	eError errCode;
-  currentFunction = symbolNew();
-  currentClass = symbolNew();
-  if((globalScopeTable = htabInit(HTAB_DEFAULT_SIZE)) == NULL){
+eError initializeHelperVariables(){
+  if ((currentFunction = symbolNew()) == NULL)
+    return ERR_INTERN;
+  if((currentClass = symbolNew()) == NULL){
+    symbolFree(currentFunction);
     return ERR_INTERN;
   }
-  if((constTable = constNew()) == NULL) {
-    htabFree(globalScopeTable);
+  if ((token = newToken()) == NULL){
+    symbolFree(currentFunction);
+    symbolFree(currentClass);
     return ERR_INTERN;
   }
-	if((errCode = prog()) == ERR_OK){
-    parse_2();
+  if ((symbolName = strNew()) == NULL){
+    freeToken(&token);
+    return ERR_INTERN;
   }
-  else{
-    constFree(constTable);
-    htabFree(globalScopeTable);
-  }
-  return errCode;
+  return ERR_OK;
+}
+
+void freeHelperVariables(){
+  freeToken(&token);
+  //symbolFree(currentFunction);
+  //symbolFree(currentClass);
+  strFree(symbolName);
 }
 
 eError prog() {
 
 	eError errCode;
-	if ((token = newToken()) == NULL)
-		return ERR_INTERN;
-	if ((symbolName = strNew()) == NULL){
-		freeToken(&token);
-		return ERR_INTERN;
-  }
+  if((errCode = initializeHelperVariables()) != ERR_OK)
+    return errCode;
 	//1. Token -> [<KTT_CLASS>]
 	getNewToken(token, errCode);
 	if (token->type == TT_keyword && token->keywordType == KTT_class) {
-		errCode = classList();
+		if ((errCode = classList()) != ERR_OK)
+      goto freeResourcesAndFinish;
 	}
 	//if 1. Token != [<KTT_CLASS>] I'm expecting EOF, otherwise syntactic error
-	if (token->type == TT_EOF){
-    freeToken(&token);
-  	strFree(symbolName);
-    return errCode;
-  }
+	if (token->type == TT_EOF)
+    goto freeResourcesAndFinish;
   else{
     EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {PROG -> CLASS_LIST eof}\n",  __FILE__, __LINE__);
     errCode = ERR_SYNTAX;
   }
-  freeToken(&token);
+  dtStrPtr string;
+  freeResourcesAndFinish:
+  string = strNewFromCStr("Main");
+  currentClass = htabGetSymbol(globalScopeTable, string);
+  freeHelperVariables();
 	return errCode;
 }
 
@@ -224,7 +236,9 @@ eError classList() {
 	if (token->type == TT_leftCurlyBracket){
       // Creating our first class symbol! This one will go to globalScopeTable and currentScopeTable will be changed
 			createClass(symbolName);
-      // TODO: If i encounter error after this, can I rely on htabFree(globalScopeTable) to free the symbol?
+      currentClass = htabGetSymbol(globalScopeTable, symbolName);
+      if (errCode != ERR_OK)
+        return errCode;
 	}
 	else{
 		return ERR_SYNTAX;
@@ -246,7 +260,6 @@ eError classList() {
 			errCode = classList();
 			if (errCode != ERR_OK)
 				return errCode;
-				// TODO: Aren't i missing some kind of free?
 		}
 		//[<KTT_CLASS>][<TT_identifier>][{][}]5. Token -> [not fist token of CLASS_LIST], returning to prog()
 		// Current token be other than EOF, the check is in prog()
@@ -291,12 +304,8 @@ eError classBody() {
     EXIT(ERR_SYNTAX, "Identifier collides with a builtin in %s at %d \n",  __FILE__, __LINE__);
     return ERR_SEM;
   }
+
 	//read next token - now we will find out, if it is function or identifier
-	//if next token will be semicolon or assigment - it is variable
-	//VAR_OR_FUNC -> INITIALIZE
-	//	INITIALIZE -> ;
-	//	INITIALIZE -> = EXPR ;
-	//if next token will be left round bracket - it is function
 	//VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
 	getNewToken(token, errCode);
 	switch(token->type) {
@@ -311,7 +320,6 @@ eError classBody() {
         return ERR_SYNTAX;
       }
 			createStaticVariable(helperTokenType, true, helperString);
-
 			getNewToken(token, errCode);
 			break;
 
@@ -346,6 +354,7 @@ eError classBody() {
 
 		case TT_leftRoundBracket:
 			createFunction(eFUNCTION, true, helperString);
+      currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, helperString);
       if (errCode != ERR_OK){
         strFree(helperString);
         return errCode;

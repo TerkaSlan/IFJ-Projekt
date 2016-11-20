@@ -7,13 +7,31 @@
 #include "expr.h"
 #include "scanner.h"
 #include "interpret.h"
-
+/*
 #define printSymbol(what_symbol, symbol)do{\
   printf("%s symbol living at: %p\nSymbol->Const: %d\nSymbol->Defined: %d\nSymbol->Name: %s\nGST: %p \n Current symbol: %p\n\n", what_symbol, symbol, symbol->Const, symbol->Defined, symbol->Name->str, globalScopeTable, symbol);\
-}while (0);
+}while (0);*/
 
 // Borrowed from interpret.c
 #define EXIT(err, ...) do{errCode = err; printError(err, __VA_ARGS__);}while(0)
+
+eError prog_2();
+eError classList_2();
+eError classBody_2();
+eError funcBody_2();
+eError stmt_2();
+eError var_2();
+
+extern tInstructionListPtr instructionList;
+extern tConstContainerPtr constTable;
+extern tHashTablePtr globalScopeTable;
+Token *token;
+extern tSymbolPtr currentFunction;
+extern tSymbolPtr currentClass;
+dtStrPtr className;
+tSymbolPtr result;
+tInstruction instr;
+
 
 #define getNewToken(token, errCode)\
 do{\
@@ -23,64 +41,86 @@ do{\
 		return errCode;							\
 } while (0)
 
-/*
- */
-eError prog_2();
-eError classList_2();
-eError classBody_2();
-eError funcBody_2();
-eError stmt_2();
-eError var_2();
+eError initializeHelperVariables_2(){
+  if ((currentFunction = symbolNew()) == NULL)
+    return ERR_INTERN;
+  if((currentClass = symbolNew()) == NULL){
+    symbolFree(currentFunction);
+    return ERR_INTERN;
+  }
+  if ((token = newToken()) == NULL){
+    symbolFree(currentFunction);
+    symbolFree(currentClass);
+    return ERR_INTERN;
+  }
+  if ((className = strNew()) == NULL){
+    symbolFree(currentFunction);
+    symbolFree(currentClass);
+    freeToken(&token);
+    return ERR_INTERN;
+  }
+  return ERR_OK;
+}
 
-extern tHashTablePtr globalScopeTable;
-Token *token;
-tSymbolPtr currentFunction;
-tSymbolPtr currentClass;
-dtStrPtr className;
-tSymbolPtr result;
-tInstruction instr;
-tInstructionListPtr instructionList;
-extern tConstContainerPtr constTable;
+void freeHelperVariables_2(){
+  freeToken(&token);
+  symbolFree(currentFunction);
+  symbolFree(currentClass);
+  strFree(className);
+}
+
+/*
+tSymbolPtr findUndefinedSymbol(tSymbolPtr symbol, void *param){
+	if(!symbol)
+		return NULL;
+
+	if(!symbol->Defined){
+		printf("Found Undefined: %s", symbol->Name->str);
+		return symbol;
+	}
+	switch(symbol->Type){
+		case eCLASS:
+			htabForEach(symbol->Data.ClassData.LocalSymbolTable, findUndefinedSymbol, NULL);
+			break;
+
+		/*case eFUNCTION:
+			htabForEach(symbol->Data.FunctionData.LocalSymbolTable, findUndefinedSymbol, NULL);
+			break;
+
+		default:
+			break;
+	}
+	return symbol;
+}*/
 
 eError parse_2(){
-
+  dtStrPtr string = strNewFromCStr("Main");
+  htabGetSymbol(globalScopeTable, string);
 	eError errCode;
-  if ((instructionList = instrListNew()) == NULL){
-    errCode = ERR_INTERN;
-    goto lbFreeAndFinish;
-  }
+  if ((errCode = initializeHelperVariables_2()) != ERR_OK)
+    return errCode;
   rewind(fSourceFile);
-	if((errCode = prog_2()) != ERR_OK)
-    goto lbFreeAndFinish;
+	errCode = prog_2();
 
-  errCode = Interpret(globalScopeTable, instructionList);
-
-  lbFreeAndFinish:
-  constFree(constTable);
-  htabFree(globalScopeTable);
+  freeHelperVariables_2();
   return errCode;
 }
 
 eError prog_2() {
 
 	eError errCode;
-	if ((token = newToken()) == NULL)
-		return ERR_INTERN;
-	//1. Token -> [<KTT_CLASS>]
+  //htabForEach(globalScopeTable, findUndefinedSymbol, NULL);
 	getNewToken(token, errCode);
 	if (token->type == TT_keyword && token->keywordType == KTT_class) {
 		errCode = classList_2();
 	}
-	//if 1. Token != [<KTT_CLASS>] I'm expecting EOF, otherwise syntactic error
 	if (token->type == TT_EOF){
-    freeToken(&token);
     return errCode;
   }
   else{
     EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {prog_2 -> CLASS_LIST eof}\n",  __FILE__, __LINE__);
     errCode = ERR_SYNTAX;
   }
-  freeToken(&token);
 	return errCode;
 }
 
@@ -96,9 +136,9 @@ eError classList_2() {
   }
   // updating the currentScope var_2iable in second run
   // htabGetSymbol(globalScopeTable, token->str) should NOT return nothing
-  currentClass = htabGetSymbol(globalScopeTable, token->str);
+  //currentClass = htabGetSymbol(globalScopeTable, token->str);
   className = strNewFromStr(token->str);
-  printSymbol("In 2. run class update", currentClass);
+  //printSymbol("In 2. run class update", currentClass);
 	getNewToken(token, errCode);
 	if (token->type == TT_leftCurlyBracket){
     ;
@@ -153,7 +193,7 @@ eError classBody_2() {
   if (token->type != TT_identifier)
 		return ERR_SYNTAX;
   //tSymbolPtr helperSymbol = (tSymbolPtr)htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, className);
-  currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, token->str);
+  //currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, token->str);
 	getNewToken(token, errCode);
 	switch(token->type) {
 		case TT_semicolon:

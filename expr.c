@@ -1,12 +1,11 @@
 //TODO
-//
-//	unary ++,--
-//
-//	unary -
+//	unary ++,--, -
 
 #include "expr.h"
 #include "scanner.h"
 #include "error.h"
+#include "builtin.h"
+#include "constants.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,42 +13,111 @@
 #define SYMBOL_STACK_DEFAULT_SIZE 32
 #define NONTERMINALBORDER 25
 
-// global variable from parser.c
+// global variables from parser.c
 extern Token* token;
 extern tSymbolPtr result;
+extern tHashTablePtr globalScopeTable;
+extern tInstructionListPtr instructionList;
+extern tConstContainerPtr constTable;
+extern tSymbolPtr currentClass;
+extern tSymbolPtr currentFunction;
 
-const uint32_t precedenceTable[27][27] =
+// global variables for unique temporary variable names
+dtStrPtr tmpString;
+dtStrPtr tmpInt;
+dtStrPtr tmpDouble;
+dtStrPtr tmpBool;
+
+#define convert(table, operand, instr, symbolTmp, dType)		\
+do{																\
+	dtStrPtr name;												\
+	if (dType == eDOUBLE) {										\
+		name = strNewFromCStr("@double");						\
+		instr.type = iCONV2DOUBLE;								\
+	} else { 													\
+		name = strNewFromCStr("@string");						\
+		instr.type = iCONV2STR;									\
+	}															\
+	symbolTmp = htabGetSymbol(table, name);						\
+	if (symbolTmp == NULL) {									\
+		tSymbolPtr tmp = symbolNew();							\
+		tmp->Defined = false;									\
+		tmp->Const = false;										\
+		tmp->Type = dType;										\
+		tmp->Name = strNewFromStr(name);						\
+		symbolTmp = htabAddSymbol(table, tmp, false);			\
+		symbolFree(tmp);										\
+	}															\
+	strFree(name);												\
+	instr.dst = symbolTmp;										\
+	instr.arg1 = operand;										\
+	instr.arg2 = NULL;											\
+} while (0);
+
+/*
+ * Creates new variable with given type, stores it into given table and returns pointer to variable in symbolExprTmp
+ */
+#define tmpVariable(table, symbolExprTmp, type)					\
+do {															\
+	tSymbolPtr exprTmp = symbolNew();							\
+	exprTmp->Defined = false;									\
+	exprTmp->Const = false;										\
+	exprTmp->Type = type;										\
+	switch(type) {												\
+		case eSTRING:											\
+			exprTmp->Name = strNewFromStr(tmpString);			\
+			strAddChar(tmpString, '@');							\
+			break;												\
+		case eDOUBLE:											\
+			exprTmp->Name = strNewFromStr(tmpDouble);			\
+			strAddChar(tmpString, '.');							\
+			break;												\
+		case eINT:												\
+			exprTmp->Name = strNewFromStr(tmpInt);				\
+			strAddChar(tmpString, '#');							\
+			break;												\
+		case eBOOL:												\
+			exprTmp->Name = strNewFromStr(tmpBool);				\
+			strAddChar(tmpString, '0');							\
+			break;												\
+		default:												\
+			return ERR_INTERN;									\
+	}															\
+	symbolExprTmp = htabAddSymbol(table, exprTmp, false);		\
+	symbolFree(exprTmp);										\
+} while (0);
+
+const uint32_t precedenceTable[26][26] =
 {
-
-//    +   -   *   /   <   >  <=  >=  ==  !=  id f.id str  d   i   b  ++  --  not and or   (   )   ,   $   ;   {
-	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','<','<','<','>','>','<','>','>','x','>','x'}, //TT_plus,
-	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_minus,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_multiply,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_divide,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_less,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_greater,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_lessEqual,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_greaterEqual,
-	{'<','<','<','<','<','<','<','<','x','x','<','<','x','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_equal,
-	{'<','<','<','<','<','<','<','<','x','x','<','<','x','<','<','x','<','<','<','>','>','<','>','>','x','>','x'}, //TT_notEqual,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','>','>','x','>','>','f','>','>','x','>','x'}, //TT_identifier,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','>','>','x','>','>','f','>','>','x','>','x'}, //TT_fullIdentifier,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','>','>','x','>','>','x','>','x'}, //TT_string,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','>','>','x','>','>','x','>','x'}, //TT_double,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','>','x','>','>','x','>','>','x','>','x'}, //TT_number,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','>','>','x','>','>','x','>','x'}, //TT_boolean,
-	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','>','>','<','>','>','<','>','>','x','>','x'}, //TT_increment,
-	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','>','>','<','>','>','<','>','>','x','>','x'}, //TT_decrement,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','x','x','x','<','<','<','<','>','>','<','>','>','x','>','x'}, //TT_not,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','x','x','x','<','<','<','<','>','>','<','>','>','x','>','x'}, //TT_and,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','x','x','x','<','<','<','<','>','>','<','>','>','x','>','x'}, //TT_or,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','=','x','x','>','x'}, //TT_leftRoundBracket,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','>','>','>','>','>','x','>','x','x','>','x'}, //TT_rightRoundBracket,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','x','>','x','x','>','x'}, //TT_comma,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','e','e','x','e','x'},  //TT_dolar
-	{'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','x'}, //TT_semicolon
-	{'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'} //TT_leftCurlyBracket
-
+// columns represent token->type
+//    +   -   *   /   <   >  <=  >=  ==  !=  id f.id str  d   i   b  ++  --  not and or   (   )   ,   ;   $
+	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_plus,
+	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_minus,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_multiply,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_divide,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_less,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_greater,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_lessEqual,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_greaterEqual,
+	{'<','<','<','<','<','<','<','<','x','x','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_equal,
+	{'<','<','<','<','<','<','<','<','x','x','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_notEqual,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','x','>','>','f','>','>','>','x'}, //TT_identifier,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','x','>','>','f','>','>','>','x'}, //TT_fullIdentifier,
+	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_string,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_double,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_number,
+	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','x','>','>','>','x'}, //TT_boolean,
+	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','x','x','<','>','>','<','>','>','>','x'}, //TT_increment,
+	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','x','x','<','>','>','<','>','>','>','x'}, //TT_decrement,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','x','x','x','<','u','u','<','>','>','<','>','>','>','x'}, //TT_not,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','x','x','x','<','u','u','<','>','>','<','>','>','>','x'}, //TT_and,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','x','x','x','<','u','u','<','>','>','<','>','>','>','x'}, //TT_or,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','=','x','>','x'}, //TT_leftRoundBracket,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','>','>','>','x','>','x','>','x'}, //TT_rightRoundBracket,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','x','>','x','>','x'}, //TT_comma,
+	{'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','x'}, //TT_semicolon
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','e','e','e','x'}  //TT_dolar
+																											   //rows represent stackTop
 };
 
 tPrecedenceStackPtr precedenceStackNew() {
@@ -81,7 +149,7 @@ void precedenceStackFree(tPrecedenceStackPtr stack) {
 
 uint32_t precedenceStackTopTerminal(tPrecedenceStackPtr stack) {
 
-	if (stack == NULL || stack->data == NULL) {
+	if (stack == NULL || stack->data == NULL || stack->top == -1) {
 		return ERR_INTERN;
 	}
 
@@ -91,11 +159,11 @@ uint32_t precedenceStackTopTerminal(tPrecedenceStackPtr stack) {
 		}
 	}
 
-	return ERR_INTERN; // does this have to be here? there should always be at least $ sign
+	return ERR_INTERN;
 
 }
 
-int64_t precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item) {
+eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item) {
 
 	if (stack == NULL || stack->data == NULL) {
 		return ERR_INTERN;
@@ -111,11 +179,11 @@ int64_t precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item) {
 	stack->top = stack->top + 1;
 	stack->data[stack->top] = item;
 
-	return stack->top;
+	return ERR_OK;
 
 }
 
-uint32_t precedenceStackPop(tPrecedenceStackPtr stack) {
+int64_t precedenceStackPop(tPrecedenceStackPtr stack) {
 
 	uint32_t topValue = -1;
 
@@ -156,28 +224,36 @@ eError precedenceStackShift(tPrecedenceStackPtr stack) {
 }
 
 
-tPrecedenceSymbolPtr newPrecedenceSymbol() {
+tPrecedenceSymbolPtr precedenceSymbolNew() {
 
 	tPrecedenceSymbolPtr symbol = calloc(1, sizeof(tPrecedenceSymbol));
 	return symbol;
 
 }
 
-void freePrecedenceSymbol(tPrecedenceSymbolPtr symbol) {
+void precedenceSymbolFree(tPrecedenceSymbolPtr symbol) {
 	if (symbol != NULL) {
-		cleanPrecedenceSymbol(symbol);
+		if ((symbol->type == TT_string)
+		 || (symbol->type == TT_identifier
+		 || (symbol->type == TT_fullIdentifier))) {
+			strFree(symbol->stringOrId);
+		}
 		free(symbol);
 	}
 }
 
 
-void cleanPrecedenceSymbol(tPrecedenceSymbolPtr symbol) {
+void precedenceSymbolClean(tPrecedenceSymbolPtr symbol) {
 
 	if ((symbol->type == TT_string)
 	 || (symbol->type == TT_identifier
 	 || (symbol->type == TT_fullIdentifier))) {
 		strFree(symbol->stringOrId);
 	}
+//	if (symbol->type == TT_E) {
+//		symbolFree(symbol->symbol);
+//	}
+	symbol->type = TT_empty;
 
 }
 
@@ -204,15 +280,8 @@ tSymbolStackPtr symbolStackNew() {
 void symbolStackFree(tSymbolStackPtr stack) {
 
 	for(int32_t i = stack->top; i > -1; i--) {
-		if ((stack->data[i].type == TT_string)
-	 	 || (stack->data[i].type == TT_identifier)
-	 	 || (stack->data[i].type == TT_fullIdentifier)) {
-
-	 		strFree(stack->data[i].stringOrId);
-
-		}
+		precedenceSymbolClean(&(stack->data[stack->top]));
 	}
-	//TODO treba uvolnovat aj symbol?
 
 	free(stack->data);
 	free(stack);
@@ -235,13 +304,17 @@ int64_t symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item) {
 	stack->top = stack->top + 1;
 
 	stack->data[stack->top].type = item->type;
-	//TODO pridat pracu so symbol
+
 	if ((item->type == TT_string)
 	 || (item->type == TT_identifier
 	 || (item->type == TT_fullIdentifier))) {
 
 		stack->data[stack->top].stringOrId = strNew();
 		strCopyStr(stack->data[stack->top].stringOrId, item->stringOrId);
+
+	} else if(item->type == TT_E) {
+
+		stack->data[stack->top].symbol = item->symbol;
 
 	} else {
 
@@ -257,13 +330,13 @@ tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack) {
 
 	if (stack->top > -1) {
 
-		tPrecedenceSymbolPtr symbol = newPrecedenceSymbol();
+		tPrecedenceSymbolPtr symbol = precedenceSymbolNew();
 		if (symbol == NULL) {
 			return NULL;
 		}
 
 		symbol->type = stack->data[stack->top].type;
-		//TODO: spracovat symbol
+
 		if ((symbol->type == TT_string)
 		 || (symbol->type == TT_identifier
 		 || (symbol->type == TT_fullIdentifier))) {
@@ -271,12 +344,18 @@ tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack) {
 			symbol->stringOrId = strNew();
 			strCopyStr(symbol->stringOrId, stack->data[stack->top].stringOrId);
 
+		} else if(symbol->type == TT_E) {
+
+			symbol->symbol = stack->data[stack->top].symbol;
+
 		} else {
 
 			symbol->stringOrId = stack->data[stack->top].stringOrId;
 
 		}
 
+		precedenceSymbolClean(&(stack->data[stack->top]));
+		stack->top = stack->top -1;
 		return symbol;
 
 	}
@@ -289,28 +368,160 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	eError errCode;
 
-	precedenceStackPop(stack);
+	int64_t funcId = precedenceStackPop(stack);
+	if (funcId != TT_identifier && funcId != TT_fullIdentifier) {
+		return ERR_SYNTAX;
+	}
+	if (precedenceStackPop(stack) != TT_start) {
+		return ERR_SYNTAX;
+	}
 
-	//vybrat nazov funkcie zo zasobnika symbolov
+	tPrecedenceSymbolPtr funcName = symbolStackPop(symbolStack);
 
-	printStack(stack);
-	while (token->type != TT_rightRoundBracket) {
+	tSymbolPtr funcSymbol;
+	if (funcId == TT_fullIdentifier) {
 
-		errCode = precedenceParsing(NULL);
+		//get class name from fullIdentifier
+		dtStrPtr className;
+		errCode = substr(funcName->stringOrId, 0, strCharPos(funcName->stringOrId, '.'), &className);
+		if (errCode != ERR_OK) {
+			precedenceSymbolFree(funcName);
+			return errCode;
+		}
+
+		//look up class table in global scope table
+		tSymbolPtr classSymbol = htabGetSymbol(globalScopeTable, className);
+		strFree(className);
+		if (classSymbol == NULL) {
+			precedenceSymbolFree(funcName);
+			return ERR_SEM;
+		}
+		tHashTablePtr classTable = classSymbol->Data.ClassData.LocalSymbolTable;
+
+		//get function name from fullIdentifier
+		dtStrPtr func;
+		errCode = substr(funcName->stringOrId, strCharPos(funcName->stringOrId, '.') + 1, strGetLength(funcName->stringOrId), &func);
+		precedenceSymbolFree(funcName);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
-		//mam parameter
+
+		//look up function in current class table
+		funcSymbol = htabGetSymbol(classTable, func);
+		strFree(func);
+		if (funcSymbol == NULL) {
+			return ERR_SEM;
+		}
+
+	} else {
+
+		//function have to be in current class
+		funcSymbol = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, funcName->stringOrId);
+		precedenceSymbolFree(funcName);
+
+	}
+
+	tInstruction instr = {iFRAME, NULL, funcSymbol, NULL};
+	errCode =  instrListInsertInstruction(instructionList, instr);
+	if (errCode == -1) {
+		symbolFree(funcSymbol);
+		return ERR_INTERN;
+	}
+
+	int32_t paramCount = funcSymbol->Data.FunctionData.NumberOfArguments;
+	tArgumentListItem* argument = funcSymbol->Data.FunctionData.ArgumentList;
+
+	while (token->type != TT_rightRoundBracket) {
+
+		errCode = parsing(NULL);
+		if (errCode != ERR_OK) {
+			symbolFree(funcSymbol);
+			return errCode;
+		}
+
+		if (paramCount > 0 ) {
+			if (result->Type == eINT && argument->Symbol->Type == eDOUBLE) {
+				//convert result from expressions parsing to double
+				tSymbolPtr symbolTmp;
+				convert(funcSymbol->Data.FunctionData.LocalSymbolTable, result, instr, symbolTmp, eDOUBLE);
+
+				//add instr to instructionList
+				errCode =  instrListInsertInstruction(instructionList, instr);
+				if (errCode == -1) {
+					symbolFree(funcSymbol);
+					return ERR_SEM_TYPE;
+				}
+				result = symbolTmp;
+			}
+			if (result->Type == argument->Symbol->Type) {
+
+				instr.type = iPUSH;
+				instr.dst = NULL;
+				instr.arg1 = result;
+				instr.arg2 = NULL;
+				errCode =  instrListInsertInstruction(instructionList, instr);
+				if (errCode == -1) {
+					symbolFree(funcSymbol);
+					return ERR_INTERN;
+				}
+				paramCount--;
+				argument = argument->Next;
+			} else {
+
+				symbolFree(funcSymbol);
+				return ERR_SEM_TYPE;
+
+			}
+
+		} else {
+			symbolFree(funcSymbol);
+			return ERR_SEM_TYPE;
+		}
 
 		//expressions parsing stoped on something else then right round bracket or comma - syntax error
 		if (token->type != TT_rightRoundBracket && token->type != TT_comma) {
 			return ERR_SYNTAX;
 		}
-		printStack(stack);
 
 	}
 
-	printStack(stack);
+	instr.type = iCALL;
+	instr.dst = NULL;
+	instr.arg1 = NULL;
+	instr.arg2 = NULL;
+
+	errCode =  instrListInsertInstruction(instructionList, instr);
+	if (errCode == -1) {
+		symbolFree(funcSymbol);
+		return ERR_INTERN;
+	}
+
+	precedenceStackPush(stack, TT_E);
+
+	tPrecedenceSymbolPtr funcPrecedenceSymbol = precedenceSymbolNew();
+	funcPrecedenceSymbol->type = TT_E;
+
+	tSymbolPtr symbolExprTmp;
+	tmpVariable(funcSymbol->Data.FunctionData.LocalSymbolTable, symbolExprTmp, funcSymbol->Data.FunctionData.ReturnType)
+
+	instr.type = iGETRETVAL;
+	instr.dst = symbolExprTmp;
+	instr.arg1 = NULL;
+	instr.arg2 = NULL;
+
+	errCode =  instrListInsertInstruction(instructionList, instr);
+	if (errCode == -1) {
+		precedenceSymbolFree(funcPrecedenceSymbol);
+		symbolFree(funcSymbol);
+		return ERR_INTERN;
+	}
+
+	funcPrecedenceSymbol->symbol = symbolExprTmp;
+
+	symbolStackPush(symbolStack, funcPrecedenceSymbol);
+	symbolFree(funcSymbol);
+	precedenceSymbolFree(funcPrecedenceSymbol);
+
 	cleanToken(&token);
 	errCode = getToken(token);
 	if (errCode != ERR_OK) {
@@ -322,15 +533,15 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
+	eError errCode;
+	tHashTablePtr currentFuncTable = currentFunction->Data.ClassData.LocalSymbolTable;
+
 	switch(precedenceStackTopTerminal(stack)) {
 
 		//E -> ID
-		case TT_identifier:
-		case TT_fullIdentifier: {
+		case TT_identifier: {
 
-
-			int64_t id = precedenceStackPop(stack);
-			if (id != TT_identifier && id != TT_fullIdentifier){
+			if (precedenceStackPop(stack) != TT_identifier) {
 				return ERR_INTERN;
 			}
 
@@ -338,12 +549,85 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				return ERR_SYNTAX;
 			}
 
-			// vybrat hornu hodnotu zo zasobnika premennych
-			// spravit semanticke kontroly
-			// do zasobnika premennych dat odkaz na premennu
+			//get precedence symbol representing current id from symbol stack
+			tPrecedenceSymbolPtr id = symbolStackPop(symbolStack);
 
+			//look up id in symbol table of current function scope
+			tPrecedenceSymbolPtr symbolId = precedenceSymbolNew();
+			symbolId->symbol = htabGetSymbol(currentFuncTable, id->stringOrId);
+			precedenceSymbolFree(id);
+			if (symbolId->symbol == NULL) {
+
+				//id isn't in current function symbol table - but it still could be static id in current class symbol table
+				symbolId->symbol = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, id->stringOrId);
+				if (symbolId->symbol == NULL) {
+					precedenceSymbolFree(symbolId);
+					return ERR_SEM;
+				}
+			}
+
+			//precedence symbol containing pointer to current id in symbol table - push on symbol stack
+			symbolId->type = TT_E;
+			symbolStackPush(symbolStack, symbolId);
+			precedenceSymbolFree(symbolId);
+
+			//push type representing operand on precedence stack
 			precedenceStackPush(stack, TT_E);
 			break;
+		}
+		case TT_fullIdentifier: {
+
+			if (precedenceStackPop(stack) != TT_fullIdentifier) {
+				return ERR_INTERN;
+			}
+
+			if (precedenceStackPop(stack) != TT_start) {
+				return ERR_SYNTAX;
+			}
+
+			tPrecedenceSymbolPtr fullId = symbolStackPop(symbolStack);
+
+			//get class name from fullIdentifier
+			dtStrPtr className;
+			errCode = substr(fullId->stringOrId, 0, strCharPos(fullId->stringOrId, '.'), &className);
+			if (errCode != ERR_OK) {
+				precedenceSymbolFree(fullId);
+				return errCode;
+			}
+
+			//look up class table in global scope table
+			tSymbolPtr classSymbol = htabGetSymbol(globalScopeTable, className);
+			strFree(className);
+			if (classSymbol == NULL) {
+				precedenceSymbolFree(fullId);
+				return ERR_SEM;
+			}
+			tHashTablePtr classTable = classSymbol->Data.ClassData.LocalSymbolTable;
+
+			dtStrPtr id;
+			errCode = substr(fullId->stringOrId, strCharPos(fullId->stringOrId, '.'), strGetLength(fullId->stringOrId), &id);
+			if (errCode != ERR_OK) {
+				precedenceSymbolFree(fullId);
+				strFree(className);
+				return errCode;
+			}
+
+			tPrecedenceSymbolPtr symbolId = precedenceSymbolNew();
+			symbolId->symbol = htabGetSymbol(classTable, id);
+			if (symbolId->symbol == NULL) {
+				precedenceSymbolFree(fullId);
+				strFree(className);
+				precedenceSymbolFree(symbolId);
+				return ERR_SEM;
+			}
+
+			symbolId->type = TT_E;
+			symbolStackPush(symbolStack, symbolId);
+
+			precedenceSymbolFree(fullId);
+			strFree(className);
+			precedenceSymbolFree(symbolId);
+			return ERR_OK;
 		}
 
 		// E -> const
@@ -354,20 +638,54 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 
 			precedenceStackPop(stack);
-			// + otestovat spravnost typu
 			if (precedenceStackPop(stack) != TT_start) {
 				return ERR_SYNTAX;
 			}
 
-			// vybrat hornu hodnotu zo zasobnika premennych
-			// ulozit ju do tabulky konstatnt
-			// do zasobnika premennych dat odkaz na konstantu
+			tPrecedenceSymbolPtr constant = symbolStackPop(symbolStack);
+
+			//create new constant adn fill it
+			tSymbolPtr symbolConst = symbolNew();
+			symbolConst->Const = true;
+			symbolConst->Name = NULL;
+			symbolConst->Defined = true;
+			switch(constant->type) {
+				case TT_string:
+					symbolConst->Type = eSTRING;
+					symbolConst->Data.String = strNewFromStr(constant->stringOrId);
+					break;
+				case TT_double:
+					symbolConst->Type = eDOUBLE;
+					symbolConst->Data.Double = constant->dNum;
+					break;
+				case TT_number:
+					symbolConst->Type = eINT;
+					symbolConst->Data.Integer = constant->iNum;
+					break;
+				case TT_boolean:
+					symbolConst->Type = eBOOL;
+					symbolConst->Data.Bool = constant->iNum;
+					break;
+				default:
+					precedenceSymbolFree(constant);
+					symbolFree(symbolConst);
+					return ERR_SYNTAX;
+			}
+
+			precedenceSymbolClean(constant);
+
+			//store created constant to constTable
+			constant->symbol = constInsertSymbol(constTable, *symbolConst);
+			constant->type = TT_E;
+
+			symbolStackPush(symbolStack, constant);
+			precedenceSymbolFree(constant);
+			free(symbolConst); //nemozem pouzit symbolFree, lebo ten zrusi aj nieco, co je v kontajneri konstant
 
 			precedenceStackPush(stack, TT_E);
 			break;
 
 		// E -> ( E )
-		// E -> function call - zatial nevyriesene, mozno sa to presunie do extra funkcie
 		case TT_rightRoundBracket:
 
 			if (precedenceStackPop(stack) != TT_rightRoundBracket) {
@@ -387,9 +705,8 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			break;
 
 		// all E -> E op E
-		// tu musia byt case: vsetky operatory co su pred E
-		case TT_plus:
 		case TT_minus:
+		case TT_plus:
 		case TT_multiply:
 		case TT_divide:
 		case TT_less:
@@ -397,36 +714,293 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_greater:
 		case TT_greaterEqual:
 		case TT_equal:
-		case TT_notEqual:
-		case TT_and:
-		case TT_or: {
+		case TT_notEqual: {
 
-			int64_t operand2 = precedenceStackPop(stack);
-			if (operand2 != TT_E) {
+			if (precedenceStackPop(stack) != TT_E) {
 				return ERR_SYNTAX;
 			}
-			//zikat ukazatel na hodnotu operandu2 - pop symbolStack
 
 			int64_t operator = precedenceStackPop(stack);
-			if (operator) {
-				//TODO overit ze je to operator a ze je spravny
-			}
-
-			int64_t operand1 = precedenceStackPop(stack);
-			if (operand1 != TT_E) {
+			if (operator == -1 ) {
 				return ERR_SYNTAX;
 			}
-			//ziskat ukazatel na hodnotu operandu1 - pop symbolStack
 
+			if (precedenceStackPop(stack) != TT_E) {
+				return ERR_SYNTAX;
+			}
 
 			if (precedenceStackPop(stack) != TT_start) {
 				return ERR_SYNTAX;
 			}
 
-			//semanticke kontroly na kompatibilitu typov operandov + generovanie instrukcii na pretypovanie ?
-			//generovat instrukciu
+			tPrecedenceSymbolPtr operand2 = symbolStackPop(symbolStack);
+			tPrecedenceSymbolPtr operand1 = symbolStackPop(symbolStack);
+			tSymbolPtr symbolExprTmp;
+			tInstruction instr;
+
+			if (operand1->symbol->Type == eSTRING) {
+				if (operator == TT_plus) {
+				if (operand2->symbol->Type != eSTRING) {
+					//pretypovat 2. operand na string
+					tSymbolPtr symbolTmp = symbolNew();
+					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eSTRING);
+
+					errCode =  instrListInsertInstruction(instructionList, instr);
+						if (errCode == -1) {
+						precedenceSymbolFree(operand1);
+						precedenceSymbolFree(operand2);
+						return ERR_SEM_TYPE;
+					}
+					operand2->symbol = symbolTmp;
+				}
+				//pomocna premenna typy string symbolTmp
+				tmpVariable(currentFuncTable, symbolExprTmp, eSTRING)
+
+				goto generateInstruction;
+				} else {
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SEM_TYPE;
+				}
+			}
+			if (operand2->symbol->Type == eSTRING) {
+				if (operator == TT_plus) {
+				if (operand1->symbol->Type != eSTRING) {
+					//pretypovat 1. operand na string
+					tSymbolPtr symbolTmp = symbolNew();
+					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eSTRING);
+
+					//pridat instrukciu na instrukcnu pasku
+					errCode =  instrListInsertInstruction(instructionList, instr);
+					if (errCode == -1) {
+						precedenceSymbolFree(operand1);
+						precedenceSymbolFree(operand2);
+						return ERR_SEM_TYPE;
+					}
+					operand1->symbol = symbolTmp;
+				}
+				//pomocna premenna typu string
+				tmpVariable(currentFuncTable, symbolExprTmp, eSTRING)
+
+				goto generateInstruction;
+			} else {
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_SEM_TYPE;
+			}
+			}
+
+			if (operand1->symbol->Type == eINT) {
+				if (operand2->symbol->Type == eINT) {
+					//pomocna premenna typu int
+					tmpVariable(currentFuncTable, symbolExprTmp, eINT)
+
+					goto generateInstruction;
+				} else if (operand2->symbol->Type == eDOUBLE) {
+
+					//generovat instrukciu na prevod prveho operandu na double
+					tSymbolPtr symbolTmp;
+					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+
+					//pridat instrukciu na instrukcnu pasku
+					errCode =  instrListInsertInstruction(instructionList, instr);
+					if (errCode == -1) {
+						precedenceSymbolFree(operand1);
+						precedenceSymbolFree(operand2);
+						return ERR_SEM_TYPE;
+					}
+					operand1->symbol = symbolTmp;
+
+					//pomocna premenna typu double
+					tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE)
+
+					goto generateInstruction;
+				} else {
+					//uvolnit vsetko
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SEM_TYPE;
+				}
+			} else if (operand1->symbol->Type == eDOUBLE) {
+				if (operand2->symbol->Type == eINT) {
+
+					//generovat instrukciu na prevod druheho operandu na double
+					tSymbolPtr symbolTmp;
+					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+
+					//pridat instrukciu na instrukcnu pasku
+					errCode =  instrListInsertInstruction(instructionList, instr);
+					if (errCode == -1) {
+						precedenceSymbolFree(operand1);
+						precedenceSymbolFree(operand2);
+						return ERR_SEM_TYPE;
+					}
+					operand2->symbol = symbolTmp;
+
+					//pomocna premenna typu double
+					tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE)
+
+					goto generateInstruction;
+				} else if (operand2->symbol->Type == eDOUBLE) {
+					//pomocna premenna typu double
+					tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE)
+
+					goto generateInstruction;
+				} else {
+					//uvolnit vsetko
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SEM_TYPE;
+				}
+			} else {
+				//uvolnit vsetko
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_SEM_TYPE;
+			}
+
+			generateInstruction: {
+
+			eInstructionType instruction;
+			switch(operator) {
+				case TT_minus:
+					instruction = iSUB;
+
+					break;
+				case TT_plus:
+					instruction = iADD;
+
+					break;
+				case TT_multiply:
+					instruction = iMUL;
+
+					break;
+				case TT_divide:
+					instruction = iDIV;
+
+					break;
+				case TT_less:
+					instruction = iLT;
+
+					break;
+				case TT_lessEqual:
+					instruction = iLE;
+
+					break;
+				case TT_greater:
+					instruction = iGT;
+
+					break;
+				case TT_greaterEqual:
+					instruction = iGE;
+
+					break;
+				case TT_equal:
+					instruction = iEQ;
+
+					break;
+				case TT_notEqual:
+					instruction = iNEQ;
+
+					break;
+				default:
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SYNTAX;
+			}
+
+			instr.type = instruction;
+			instr.dst = symbolExprTmp;
+			instr.arg1 = operand1->symbol;
+			instr.arg2 = operand2->symbol;
+
+			//pridat na instrukcnu pasku
+			errCode =  instrListInsertInstruction(instructionList, instr);
+			if (errCode == -1) {
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_INTERN;
+			}
+
+			precedenceSymbolFree(operand1);
+			precedenceSymbolFree(operand2);
 
 			//na symbolStack ulozit ukazatel na vyslednu hodnotu
+			tPrecedenceSymbolPtr result = precedenceSymbolNew();
+			result->type = TT_E;
+			result->symbol = symbolExprTmp;
+			symbolStackPush(symbolStack, result);
+			precedenceSymbolFree(result);
+
+			precedenceStackPush(stack, TT_E);
+			break;
+			}
+		}
+
+		case TT_and:
+		case TT_or: {
+
+			if (precedenceStackPop(stack) != TT_E) {
+				return ERR_SYNTAX;
+			}
+
+			int64_t operator = precedenceStackPop(stack);
+			if (operator != TT_and && operator != TT_or) {
+				return ERR_SYNTAX;
+			}
+
+			if (precedenceStackPop(stack) != TT_E) {
+				return ERR_SYNTAX;
+			}
+
+			if (precedenceStackPop(stack) != TT_start) {
+				return ERR_SYNTAX;
+			}
+
+			tPrecedenceSymbolPtr operand2 = symbolStackPop(symbolStack);
+			tPrecedenceSymbolPtr operand1 = symbolStackPop(symbolStack);
+
+			if (operand1->symbol->Type != eBOOL || operand2->symbol->Type != eBOOL) {
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_SEM_TYPE;
+			}
+
+			//pomocna premenna typu bool
+			tSymbolPtr symbolExprTmp;
+			tmpVariable(currentFuncTable, symbolExprTmp, eBOOL)
+
+			tInstruction instr;
+
+			if (operator == TT_and) {
+				instr.type = iLAND;
+				instr.dst = symbolExprTmp;
+				instr.arg1 = operand1->symbol;
+				instr.arg2 = operand2->symbol;
+			}
+			if (operator == TT_or) {
+				instr.type = iLOR;
+				instr.dst = symbolExprTmp;
+				instr.arg1 = operand1->symbol;
+				instr.arg2 = operand2->symbol;
+			}
+
+			errCode =  instrListInsertInstruction(instructionList, instr);
+			if (errCode == -1) {
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_INTERN;
+			}
+
+			precedenceSymbolFree(operand1);
+			precedenceSymbolFree(operand2);
+
+			//na symbolStack ulozit ukazatel na vyslednu hodnotu
+			tPrecedenceSymbolPtr result = precedenceSymbolNew();
+			result->type = TT_E;
+			result->symbol = symbolExprTmp;
+			symbolStackPush(symbolStack, result);
+			precedenceSymbolFree(result);
 
 			precedenceStackPush(stack, TT_E);
 			break;
@@ -435,16 +1009,41 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		// E -> ! E
 		case TT_not:
 
-			//ziskat hornu hodnotu zo zasobnika premennych
-			//spravit semanticke kontroly
-			//vytvorit instrukciu
-			//do zasobnika premennych vlozit odkaz na vysledok instrukcie
-
-			precedenceStackPop(stack);
-			precedenceStackPop(stack);
+			if (precedenceStackPop(stack) != TT_E) {
+				return ERR_SYNTAX;
+			}
+			if (precedenceStackPop(stack) != TT_not) {
+				return ERR_SYNTAX;
+			}
 			if (precedenceStackPop(stack) != TT_start) {
 				return ERR_SYNTAX;
 			}
+
+			tPrecedenceSymbolPtr operand = symbolStackPop(symbolStack);
+			if (operand->symbol->Type != eBOOL) {
+				precedenceSymbolFree(operand);
+				return ERR_SEM_TYPE;
+			}
+
+			tSymbolPtr symbolExprTmp;
+			tmpVariable(currentFuncTable, symbolExprTmp, eBOOL);
+
+			tInstruction instr = {iLNOT, symbolExprTmp, operand->symbol, NULL};
+			//vlozenie instrukcie na zasobnik instrukcii
+			errCode =  instrListInsertInstruction(instructionList, instr);
+			if (errCode == -1) {
+				precedenceSymbolFree(operand);
+				return ERR_INTERN;
+			}
+
+			precedenceSymbolFree(operand);
+
+			//na symbolStack ulozit ukazatel na vyslednu hodnotu
+			tPrecedenceSymbolPtr result = precedenceSymbolNew();
+			result->type = TT_E;
+			result->symbol = symbolExprTmp;
+			symbolStackPush(symbolStack, result);
+			precedenceSymbolFree(result);
 
 			precedenceStackPush(stack, TT_E);
 			break;
@@ -456,8 +1055,8 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_increment: //pozor, poze byt aj prefixovy aj postfixovy
 		case TT_decrement: //pozor
 
-			printf("unary\n");
-			break;
+			printf("unary not supported yet\n");
+			return ERR_SYNTAX;
 
 		default:
 			return ERR_SYNTAX;
@@ -467,158 +1066,70 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 }
 
+//entry point of expressions parsing
+eError precedenceParsing(Token* helpToken) {
 
-//helper function - just for testing
-void printStack(tPrecedenceStackPtr stack) {
+	tmpString = strNew();
+	strAddChar(tmpString, '@');
+	tmpInt = strNew();
+	strAddChar(tmpInt, '#');
+	tmpDouble = strNew();
+	strAddChar(tmpDouble, '.');
+	tmpBool = strNew();
+	strAddChar(tmpBool, '0');
 
-	for (uint32_t i = 0; i <= stack->top; i++) {
+	eError errCode = parsing(helpToken);
 
-		switch(stack->data[i]) {
-			case TT_plus:
-				printf("+|");
-				break;
-			case TT_minus:
-				printf("-|");
-				break;
-			case TT_multiply:
-				printf("*|");
-				break;
-			case TT_divide:
-				printf("/|");
-				break;
-			case TT_less:
-				printf("<|");
-				break;
-			case TT_greater:
-				printf(">|");
-				break;
-			case TT_lessEqual:
-				printf("<=|");
-				break;
-			case TT_greaterEqual:
-				printf(">=|");
-				break;
-			case TT_equal:
-				printf("==|");
-				break;
-			case TT_notEqual:
-				printf("!=|");
-				break;
-			case TT_identifier:
-				printf("id|");
-				break;
-			case TT_fullIdentifier:
-				printf("full.id|");
-				break;
-			case TT_string:
-				printf("str|");
-				break;
-			case TT_double:
-				printf("double|");
-				break;
-			case TT_number:
-				printf("int|");
-				break;
-			case TT_boolean:
-				printf("bool|");
-				break;
-			case TT_increment:
-				printf("++|");
-				break;
-			case TT_decrement:
-				printf("--|");
-				break;
-			case TT_not:
-				printf("!|");
-				break;
-			case TT_and:
-				printf("&&|");
-				break;
-			case TT_or:
-				printf(" || |");
-				break;
-			case TT_leftRoundBracket:
-				printf("(|");
-				break;
-			case TT_rightRoundBracket:
-				printf(")|");
-				break;
-			case TT_comma:
-				printf(",|");
-				break;
-			case TT_semicolon:
-				printf(";|");
-				break;
-			case TT_dolar: // 25
-				printf("$|");
-				break;
-			case TT_keyword:
-				printf("K|");
-				break;
-			case TT_assignment:
-				printf("=|");
-				break;
-			case TT_rightCurlyBracket:
-				printf("}|");
-				break;
-			case TT_leftCurlyBracket:
-				printf("{|");
-				break;
-			case TT_empty: // 30
-				printf("nic|");
-				break;
-			case TT_EOF:
-				printf("eof|");
-				break;
-			case TT_E:
-				printf("E|");
-				break;
-			case TT_start:
-				printf("start|");
-				break;
-		}
+	strFree(tmpString);
+	strFree(tmpInt);
+	strFree(tmpDouble);
+	strFree(tmpBool);
 
-	}
-	printf("\n");
+	return errCode;
 
 }
 
-eError precedenceParsing(Token* helpToken) {
+eError parsing(Token* helpToken) {
 
-	tPrecedenceSymbolPtr symbol;
-	if ((symbol = newPrecedenceSymbol()) == NULL) {
-		return ERR_INTERN;
-	}
 
 	tPrecedenceStackPtr stack;
 	if ((stack = precedenceStackNew()) == NULL) {
-		freePrecedenceSymbol(symbol);
+		printError(ERR_INTERN, "Cannot create precedence stack.\n");
 		return ERR_INTERN;
 	}
 	precedenceStackPush(stack, TT_dolar);
 
+	tPrecedenceSymbolPtr symbol;
+	if ((symbol = precedenceSymbolNew()) == NULL) {
+		precedenceStackFree(stack);
+		printError(ERR_INTERN, "Cannot create precedence symbol.\n");
+		return ERR_INTERN;
+	}
+
 	tSymbolStackPtr symbolStack;
 	if ((symbolStack = symbolStackNew()) == NULL) {
-
-		freePrecedenceSymbol(symbol);
+		precedenceSymbolFree(symbol);
 		precedenceStackFree(stack);
+		printError(ERR_INTERN, "Cannot create precedence symbol stack.\n");
 		return ERR_INTERN;
 	}
 
 	int64_t stackTop;
 	eError errCode;
 
+
 	if(helpToken == NULL) {
+
 		cleanToken(&token);
 		errCode = getToken(token);
 		if (errCode != ERR_OK) {
-			precedenceStackFree(stack);
-			freePrecedenceSymbol(symbol);
-			symbolStackFree(symbolStack);
-			return errCode;
+			goto freeAndExit;
 		}
+
 	} else {
+
 		precedenceStackPush(stack, helpToken->type);
+		precedenceStackShift(stack);
 		symbol->type = helpToken->type;
 
 		if ((symbol->type == TT_string)
@@ -640,9 +1151,10 @@ eError precedenceParsing(Token* helpToken) {
 		symbolStackPush(symbolStack, symbol);
 	}
 
+	//main loop for expressions parsing
 	do {
-		stackTop = precedenceStackTopTerminal(stack);
 
+		//converting bools to make use of token->type consistent
 		if(token->type == TT_keyword) {
 			if (token->keywordType == KTT_true) {
 				token->type = TT_boolean;
@@ -654,61 +1166,28 @@ eError precedenceParsing(Token* helpToken) {
 		}
 
 		if (token->type > NONTERMINALBORDER) {
-			return ERR_SYNTAX;
+			errCode = ERR_SYNTAX;
+			goto freeAndExit;
 		}
 
+		stackTop = precedenceStackTopTerminal(stack);
 		printf("stackTop:%ld, token->type: %d\n", stackTop, token->type);
 		switch (precedenceTable[stackTop][token->type]) {
 
 			case '=':
-
-				precedenceStackPush(stack, token->type);
-				if (token->type < TT_keyword) {//TODO: bude sa mozno este menit
-
-					cleanPrecedenceSymbol(symbol);
-					symbol->type = token->type;
-
-					if ((symbol->type == TT_string)
-	 				 || (symbol->type == TT_identifier
-	 				 || (symbol->type == TT_fullIdentifier))) {
-
-	 				 	symbol->stringOrId = strNew();
-						strCopyStr(symbol->stringOrId, token->str);
-
-					} else if (symbol->type == TT_double) {
-
-						symbol->dNum = token->dNum;
-
-					} else {
-
-						symbol->iNum = token->iNum;
-
-					}
-
-					symbolStackPush(symbolStack, symbol);
-
-
-				}
-
-				cleanToken(&token);
-				errCode = getToken(token);
-				if (errCode != ERR_OK) {
-					precedenceStackFree(stack);
-					freePrecedenceSymbol(symbol);
-					symbolStackFree(symbolStack);
-					return errCode;
-				}
-
-				printStack(stack);
-				break;
-
 			case '<':
 
-				precedenceStackShift(stack);
-				precedenceStackPush(stack, token->type);
-				if (token->type < TT_keyword) {//TODO: bude sa mozno este menit
+				if (precedenceTable[stackTop][token->type] == '<') {
+					errCode = precedenceStackShift(stack);
+					if (errCode != ERR_OK) {
+						goto freeAndExit;
+					}
+				}
 
-					cleanPrecedenceSymbol(symbol);
+				precedenceStackPush(stack, token->type);
+				if (token->type < TT_increment && token->type > TT_notEqual) {//TODO: bude sa mozno este menit
+
+					precedenceSymbolClean(symbol);
 					symbol->type = token->type;
 
 					if ((symbol->type == TT_string)
@@ -730,86 +1209,76 @@ eError precedenceParsing(Token* helpToken) {
 
 					symbolStackPush(symbolStack, symbol);
 
-
 				}
+
+				//read next token
 				cleanToken(&token);
 				errCode = getToken(token);
 				if (errCode != ERR_OK) {
-					precedenceStackFree(stack);
-					freePrecedenceSymbol(symbol);
-					symbolStackFree(symbolStack);
-					return errCode;
+					goto freeAndExit;
 				}
 
-				printStack(stack);
 				break;
 
 			case '>':
 
-
 				errCode = reduce(stack, symbolStack);
 				if (errCode != ERR_OK) {
-					return errCode;
+					goto freeAndExit;
 				}
-				printStack(stack);
 				continue;
 
 			case 'f':
+
 				errCode = functionParse(stack, symbolStack);
 				if (errCode != ERR_OK) {
-					return errCode;
+					goto freeAndExit;
 				}
-				printf("break\n");
 				break;
 
 			case 'u':
-				printf("unary\n");
-				//spracovat unary ++,--
-				//lebo moze byt aj prefixove aj postfixove a ja neviem ktore je toto
-				break;
+				printf("unary not supported yet\n");
+				errCode = ERR_SYNTAX;
+				goto freeAndExit;
 
 			case 'e':
 
 				if (symbolStack->top > -1) {
-					result = symbolStackPop(symbolStack)->symbol;
+					tPrecedenceSymbolPtr stackPop = symbolStackPop(symbolStack);
+					result = stackPop->symbol;
+					free(stackPop);
 				} else {
 					result = NULL;
 				}
-				precedenceStackFree(stack);
-				freePrecedenceSymbol(symbol);
-				symbolStackFree(symbolStack);
-				return ERR_OK;
-
-			case 'x':
-
-				precedenceStackFree(stack);
-				freePrecedenceSymbol(symbol);
-				symbolStackFree(symbolStack);
-				return ERR_SYNTAX;
+				errCode = ERR_OK;
+				goto freeAndExit;
 
 			default:
 
-				precedenceStackFree(stack);
-				freePrecedenceSymbol(symbol);
-				symbolStackFree(symbolStack);
-				return ERR_SYNTAX;
+				errCode = ERR_SYNTAX;
+				goto freeAndExit;
 
 		}
 
-	} while (token->type != TT_comma
-		  || token->type != TT_rightRoundBracket
-		  || token->type != TT_semicolon
-		  || token->type != TT_rightCurlyBracket
-		  || stackTop != TT_dolar); //TODO: determine all conditions for stoping
+	stackTop = precedenceStackTopTerminal(stack);
+	} while(stackTop != TT_dolar
+		|| (token->type != TT_comma
+		&&	token->type != TT_semicolon
+		&&  token->type != TT_rightRoundBracket));
+
 
 	if (symbolStack->top > -1) {
-		result = symbolStackPop(symbolStack)->symbol;
+		tPrecedenceSymbolPtr stackPop = symbolStackPop(symbolStack);
+		result = stackPop->symbol;
+		free(stackPop);
 	} else {
 		result = NULL;
 	}
+
+	freeAndExit:
 	precedenceStackFree(stack);
-	freePrecedenceSymbol(symbol);
+	precedenceSymbolFree(symbol);
 	symbolStackFree(symbolStack);
-	return ERR_OK;
+	return errCode;
 
 }
