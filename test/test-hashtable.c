@@ -15,8 +15,8 @@ TEST_SUITE_START(SymbolHashTableTest);
 	tSymbolPtr symbol = symbolNew();
 	SHOULD_NOT_EQUAL("New Symbol is not null", symbol, NULL);
 
-	symbol->Initialized  = true;
-	symbol->Static       = false;
+	symbol->Defined  = true;
+	symbol->Const       = false;
 	symbol->Type         = eINT;
 	symbol->Data.Integer = 42;
 	symbol->Name         = strNew();
@@ -25,11 +25,11 @@ TEST_SUITE_START(SymbolHashTableTest);
 	tSymbolPtr anothersymbol = symbolNewCopy(symbol);
 
 	SHOULD_EQUAL("symbol copy", anothersymbol->Type, eINT);
-	SHOULD_EQUAL("symbol copy", anothersymbol->Static, false);
+	SHOULD_EQUAL("symbol copy", anothersymbol->Const, false);
 	SHOULD_EQUAL("symbol copy", anothersymbol->Data.Integer, 42);
 	SHOULD_EQUAL_STR("symbol copy", strGetCStr(anothersymbol->Name), "SWAGZ");
 
-	htabAddSymbol(table, symbol);
+	htabAddSymbol(table, symbol,true);
 	dtStrPtr string = strNewFromCStr("SWAGZ");
 	SHOULD_EQUAL_STR("strCmpCStr", strGetCStr(string), "SWAGZ")
 	SHOULD_EQUAL("strCmpStr", strCmpStr(string, symbol->Name), 0)
@@ -47,7 +47,7 @@ TEST_SUITE_START(SymbolHashTableTest);
 	anothersymbol->Name = string;
 
 	anothersymbol->Data.Integer = 1337;
-	htabAddSymbol(table, anothersymbol);
+	htabAddSymbol(table, anothersymbol, false);
 	SHOULD_NOT_EQUAL("get symbol that is there", htabGetSymbol(table, string), NULL)
 
 	tHashTablePtr newtable = htabCopy(table);

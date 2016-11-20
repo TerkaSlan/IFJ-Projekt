@@ -4,17 +4,17 @@
  *  \brief Typedef enum of possible errors
  */
 typedef enum {
-	ERR_OK = 0,
+	ERR_OK        = 0,
 	ERR_LEX,
 	ERR_SYNTAX,
 	ERR_SEM,
 	ERR_SEM_TYPE,
-	ERR_SEM_OTHER,
+	ERR_SEM_OTHER = 6,
 	ERR_RUN_INPUT,
 	ERR_RUN_UNINITIALIZED,
 	ERR_RUN_ZERODIV,
 	ERR_OTHER,
-	ERR_INTERN = 99,
+	ERR_INTERN    = 99,
 } eError;
 
 /**

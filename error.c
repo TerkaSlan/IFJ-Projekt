@@ -4,7 +4,7 @@
 
 
 void printError(eError errType, const char *fmt, ...) {
-	static const char *errMessages[] = {"Internal", "Lexical", "Syntactic", "Semantic", "Semantic - type",
+	static const char *errMessages[] = {"Internal", "Lexical", "Syntactic", "Semantic", "Semantic - type", "",
 	                                    "Semantic - other", "Runtime - input", "Runtime - uninitialized var",
 	                                    "Runtime - division by zero", "Other",};
 

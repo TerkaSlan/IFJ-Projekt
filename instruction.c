@@ -11,8 +11,8 @@
 
 // Colors
 #define KNRM  "\x1B[0m"
+#define KGRN  "\x1B[32m"
 #define KYEL  "\x1B[33m"
-#define KBLU  "\x1B[34m"
 #define KMAG  "\x1B[35m"
 #define KCYN  "\x1B[36m"
 
@@ -44,6 +44,7 @@ tInstructionListPtr instrListNew() {
 	if(instrListInsertInstruction(ret, stop) != 0) {
 		free(ret->instructionArray);
 		free(ret);
+		return NULL;
 	}
 
 	return ret;
@@ -65,6 +66,12 @@ tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list) {
 		return NULL;
 
 	return &(list->instructionArray[list->activeInstruction]);
+}
+int64_t instrListGetActiveInstructionIndex(tInstructionListPtr list)
+{
+	if(!list)
+		return -2;
+	return list->activeInstruction;
 }
 
 
@@ -97,7 +104,7 @@ void instrListSetFirstInstruction(tInstructionListPtr list, uint32_t index) {
 		return;
 
 	list->firstInstruction  = (int64_t) index;
-	list->activeInstruction = (int64_t) index - 1;
+	list->activeInstruction = ((int64_t) index) - 1;
 
 }
 
@@ -133,8 +140,8 @@ void instrListPrint(tInstructionListPtr list) {
 
 	const char ESC = 27;
 	while (index < list->usedSize) {
-		printf("| %13d.: ", index);
-		printf("%s%c[1m%s%c[0m%s ", KYEL, ESC, types[list->instructionArray[index].type], ESC, KNRM);
+		printf("%4d.: ", index);
+		printf("%s%c[1m%13s%c[0m%s ", KYEL, ESC, types[list->instructionArray[index].type], ESC, KNRM);
 
 		printf("  |   %sDst ", KMAG);
 		if (list->instructionArray[index].dst != NULL) {
@@ -173,7 +180,7 @@ void instrListPrint(tInstructionListPtr list) {
 			printf("= NULL ");
 		}
 
-		printf("%s  |  %s Arg1 ", KNRM, KBLU);
+		printf("%s  |  %s Arg1 ", KNRM, KGRN);
 		if (list->instructionArray[index].arg1 != NULL) {
 			if (((tSymbolPtr)list->instructionArray[index].arg1)->Name != NULL && ((tSymbolPtr)list->instructionArray[index].arg1)->Name->str != NULL) {
 				printf("Name: %s ", ((tSymbolPtr)list->instructionArray[index].arg1)->Name->str);

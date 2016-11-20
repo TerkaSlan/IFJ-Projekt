@@ -35,30 +35,47 @@ struct tHashTableItem;
 typedef struct {
 	uint32_t              Size;               ///Size of rows of the hash table
 	uint32_t              NumberOfItems;      ///Number of symbols in the hash table
+	struct tHashTableItem *Parent;            ///Pointer to the parent symbol, if there is one
 	struct tHashTableItem *Data[];            ///Symbol pointer array
 } *tHashTablePtr;
 
+/*
+ * \brief Typedef struct of argument list item
+ */
+typedef struct tArgumentListItem {
+	struct tArgumentListItem *Next;
+	struct tHashTableItem    *Symbol; //pointer to a symbol in the local symbol table for quick access
+} tArgumentListItem;
 
 /**
  *  \brief Typedef struct of function symbol data
  */
 typedef struct {
-	void          *ArgumentList;        ///Pointer to Linked list of function arguments ///TODO:: needs tweaking
-	eSymbolType   ReturnType;           ///Type of return value
-	uint32_t      InstructionIndex;     ///Pointer to the first instruction of this funtion
-	tHashTablePtr LocalSymbolTable;     ///Pointer to the local symbol hash table.
+	tArgumentListItem *ArgumentList;         ///Pointer to Linked list of function arguments
+	uint32_t          NumberOfArguments;    ///Number of parameters the function has
+	eSymbolType       ReturnType;           ///Type of return value
+	uint32_t          InstructionIndex;     ///Pointer to the first instruction of this funtion
+	tHashTablePtr     LocalSymbolTable;     ///Pointer to the local symbol hash table.
 } tFuncData;
+
+/*
+ * \brief Typedef struct of class data
+ */
+typedef struct {
+	tHashTablePtr LocalSymbolTable;
+} tClassData;
 
 
 /**
  *  \brief Typedef union of Symbol Data
  */
 typedef union {
-	tFuncData FunctionData;
-	int32_t   Integer; //should behave like Java's int -> 32bit.
-	double    Double;
-	bool      Bool;
-	dtStrPtr  String;
+	tClassData ClassData;
+	tFuncData  FunctionData;
+	int32_t    Integer;
+	double     Double;
+	bool       Bool;
+	dtStrPtr   String;
 } tSymbolData;
 
 
@@ -69,11 +86,10 @@ typedef struct tHashTableItem {
 	struct tHashTableItem *Next;            ///Pointer to the next symbol in the linked list
 	dtStrPtr              Name;             ///Pointer to string structure representing Name of the symbol
 	eSymbolType           Type;             ///Symbol Type
-	bool                  Initialized;      ///Initialized flag
-	bool                  Static;           ///Static flag
-	bool                  Const;            ///Constant flag
-	struct tHashTableItem *Parent;          ///Pointer to the parent symbol, if there is one
-	tSymbolData           Data;             ///Symbol Data
+	bool                  Defined;          ///Defined - if static var/func is initialized/defined. note: initialized flag for local variables is stored in the local frame, not here
+	bool                  Const;            ///Constant/static flag - data are stored globaly (in the symbol): eg literals, static variables
+	int32_t               Index;            ///index to local frame, -1 not defined
+	tSymbolData           Data;             ///Symbol Data for literals/static variables
 } tSymbol, *tSymbolPtr;
 
 
@@ -96,18 +112,26 @@ tHashTablePtr htabInit(uint32_t size);
  *
  *  \details If table param is NULL, nothing happens and NULL is returned.
  */
-tHashTablePtr htabCopy(tHashTablePtr table);
+tHashTablePtr htabCopy(const tHashTablePtr table);
+
+
+/**
+ * \brief Generates frame index for each symbol
+ * \param [in] table tHashTablePtr, Pointer to the hash table
+ */
+void htabGenerateIndices(tHashTablePtr table);
 
 /**
  *  \brief Adds Symbol to the hash table.
  *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] symbol tSymbolPtr, Pointer to the symbol to be added.
+ *  \param [in] overwrite bool, specifies if symbols should be overwritten if already exist
  *  \return tSymbolPtr, Returns pointer to the added symbol. If symbol with the same name already exists, or other error occures, nothing happens and NULL is returned.
  *
  *  \details Hash table creates its own copy of a symbol passed by reference and deallocates it when htabFree() is called.
  */
-tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol);
+tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol, bool overwrite);
 
 /**
  *  \brief Looks up a symbol in the hash table with the name specified.
@@ -117,16 +141,19 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol);
  *  \return tSymbolPtr, Returns pointer to the symbol, if no symbol with such name exists, NULL is returned.
  *
  */
-tSymbolPtr htabGetSymbol(tHashTablePtr table, dtStrPtr name);
+tSymbolPtr htabGetSymbol(const tHashTablePtr table, dtStrPtr name);
 
 /**
  *  \brief Executes function for each symbol in the hash table.
- *
+ *  
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
- *  \param [in] func void(*)(tSymbolPtr), Pointer to a function to be executed for each symbol in the hash table.
+ *  \param [in] func tSymbolPtr(*)(tSymbolPtr), Pointer to a function to be executed for each symbol in the hash table.
+ *  \param param [in] void*, param to be passed as second func param
+ *
+ *  \return bool, Returns true if for each symbol in the table, function func returns non NULL
  *
  */
-void htabForEach(tHashTablePtr table, void (*func)(tSymbolPtr));
+bool htabForEach(tHashTablePtr table, tSymbolPtr (*func)(tSymbolPtr, void *), void *param);
 
 /**
  *  \brief Removes symbol of the name specified from the hash table.
@@ -168,7 +195,15 @@ tSymbolPtr symbolNew(void);
  *
  *  \return tSymbolPtr, Returnes newly allocated and copied symbol. If an error occures, NULL is returned.
  */
-tSymbolPtr symbolNewCopy(tSymbolPtr symbol);
+tSymbolPtr symbolNewCopy(const tSymbolPtr symbol);
+
+/**
+ * @brief Registers symbol as function symbol.
+ * @param symbolFunc, tSymbolPtr Pointer to the function symbol
+ * @param argument, tSymbolPtr Pointer to the symbol to be registered as argument
+ * @return tSymbolPtr, Returns pointer to the argument on success, else NULL is returned.
+ */
+tSymbolPtr symbolFuncAddArgument(tSymbolPtr symbolFunc, const tSymbolPtr argument);
 
 
 /**

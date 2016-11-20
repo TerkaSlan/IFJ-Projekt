@@ -27,16 +27,16 @@ typedef enum {
 	iMUL,       ///Multiply             dst = arg1 * arg2
 	iDIV,       ///Divide               dst = arg1 / arg2
 	iNEG,       ///Negate               dst = -arg1
-	iLE,
-	iLT,
-	iGE,
-	iGT,
-	iEQ,       ///Logical Equality     dst = arg1 == arg2
-	iNEQ,      ///Logical Inequality   dst = arg1 != arg2
+	iLE,        ///<=                   dst(bool) = arg1 <= arg2
+	iLT,        ///<                    dst(bool) = arg1 < arg2
+	iGE,        ///>=                   dst(bool) = arg1 >= arg2
+	iGT,        ///>                    dst(bool) = arg1 > arg2
+	iEQ,        ///Logical Equality     dst = arg1 == arg2
+	iNEQ,       ///Logical Inequality   dst = arg1 != arg2
 	iLAND,      ///Logical And          dst = arg1 && arg2
 	iLOR,       ///Logical Or           dst = arg1 || arg2
 	iLNOT,      ///Logical Not          dst = !arg1
-	iGOTO,      ///Goto                 goto dst
+	iGOTO,      ///Goto instr index     goto (uint32_t)dst
 	iIFGOTO,    ///if(arg1) goto dst
 	iIFNGOTO,   ///if(!arg1) goto dst
 	iCONV2STR,  /// dst = (string)arg1
@@ -48,8 +48,8 @@ typedef enum {
 	iLEN,       ///dst = lenght(arg1)
 	iCOMPARE,   ///dst = strcmp(arg1, arg2)
 	iFIND,      ///int find(string s, string substr) finds first occurance dst = find(arg1, arg2)
-	iSORT,      ///Sorts string dst - new sorted string, arg1 string to be sorted
-	iSUBSTR,    ///Finds substring in string -- ///TODO:: THIS IS A PROBLEM! 3 params and return - harakiri with frame i guess
+	iSORT,      ///Sorts string: dst - new sorted string, arg1 string to be sorted
+	iSUBSTR,    ///Finds substring in string string substr(string, index, index)    RET = substr(dst, arg1,arg2) - required to add instruciton iGETRETVAL!!!
 } eInstructionType;
 
 /*
@@ -78,7 +78,7 @@ typedef struct {
  *  
  *  \return tInstructionListPtr, Returns pointer to the new instruction list, if an error occures, NULL is returned
  *  
- *  \details Allocates tInstructionList structure and internal structures. Sets all instructionArray to NULL aswell as first instruction and allocated instruction.
+ *  \details Allocates tInstructionList structure and internal structures. Sets all instructionArray to NULL and inserts first instruction iSTOP,NULL,NULL,NULL
  */
 tInstructionListPtr instrListNew();
 
@@ -100,6 +100,16 @@ tInstructionPtr instrListGetNextInstruction(tInstructionListPtr list);
  * \details Returns pointer to the instruction after active instruction making the instruction returned active.
  */
 tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list);
+
+
+
+/**
+ * \brief Returns index of an instruction currently active
+ * @param list Pointer to instruction list
+ * @return returns index of currently active instruction, on error returns -2
+ */
+int64_t instrListGetActiveInstructionIndex(tInstructionListPtr list);
+
 
 /**
  *  \brief Sets first instruction in the instruction list and make it also active. NOTE:Should be of type label

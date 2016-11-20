@@ -30,7 +30,7 @@ _Week 2 [12.10 - 18.10]_
   
   #11 Grammar, basic parser implementation - **Katka** :white_check_mark:
   
-  #12 Builtins - **Jakub + Marek** :white_medium_square:
+  #12 Builtins - **Jakub + Marek** :white_check_mark:
   
   #13 Conversions - **Terka** :white_check_mark:
   
@@ -42,31 +42,34 @@ _Week 4 [26.10 - 1.11]_
 
   #14 Extend conversions to deal with octal numbers in string escape sequences - **Terka** :white_check_mark:
   
-  #15 Basic interpreter implementation - **Michal** :white_medium_square:
+  #15 Basic interpreter implementation - **Michal** :white_check_mark:
 
 _Week 5 [2.11 - 8.11]_
 
   #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_check_mark:
   
-  #17 Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
+  #17 [LOW] Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
   
 _Week 6 [9.11 - 15.11]_
   
-  #18 Initial expressions module implementation - **Katka** :white_medium_square:
+  #18 [HIGH] Initial expressions module implementation - **Katka** :white_medium_square:
   
 _Week 7 [16.11 - 22.11]_
   
-  #19 Deal with the newly-found need for 2 runs of parser - **Terka** :white_medium_square:
+  #19 [HIGH] Deal with the newly-found need for 2 runs of parser - **Terka** :white_medium_square:
   
-  #20 Internal documentation on how to work and communicate with symbol table - **Michal** :white_medium_square:
+  #20 Internal documentation on how to work and communicate with symbol table - **Michal** :white_check_mark:
   
-  #21 Mechanism to print out the instruction in our internal code for debugging purposes - **Jakub, Marek** :white_medium_square:
-  
-  #22 Mechanism to roll back to the beginning of the file after finishing the first read - **Jakub, Marek** :white_medium_square:
+  #21 [LOW] Mechanism to print out the instruction in our internal code for debugging purposes - **Jakub, Marek** :white_medium_square:
 
-  #23 Main.c file - **Jakub, Marek** :white_medium_square:
+  #22 [HIGH] Main.c file - **Jakub, Marek** :white_medium_square:
   
-  #24 New Makefile for 1. submission - **Michal** :white_medium_square:
+  #23 [HIGH] New Makefile for 1. submission - **Michal** :white_medium_square:
   
+  #24 [HIGH] Implement recursive freeing of globalSymbolTable in Main.c for 1. submission - **Michal** :white_medium_square:
   
+  #25 [LOW] Solve leaks originating at interpret module for 2. submission - **Michal** :white_medium_square:
   
+  #26 [LOW] Add additinal tests to cover all instructions for 2. submission - **Michal** :white_medium_square:
+  
+  #27 [LOW] Create as much general tests as possible for 2. submission - **ALL** :white_medium_square:
