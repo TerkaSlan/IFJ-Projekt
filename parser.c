@@ -11,25 +11,26 @@
  */
 #define isBuiltin(string)\
 do{                                                    \
-  if (strCmpCStr(helperString, "substr") == 0)     \
-    {string = NULL; strFree(string);}                     \
-  if (strCmpCStr(helperString, "readDouble") == 0)   \
-    {string = NULL; strFree(string);}                 \
-  if (strCmpCStr(helperString, "readInt") == 0)    \
-    {string = NULL; strFree(string);}                 \
-  if (strCmpCStr(helperString, "readString") == 0) \
-    {string = NULL; strFree(string);}                  \
-  if (strCmpCStr(helperString, "print") == 0)      \
-    {string = NULL; strFree(string);}               \
-  if (strCmpCStr(helperString, "length") == 0)     \
-    {string = NULL; strFree(string);}                 \
-  if (strCmpCStr(helperString, "compare") == 0)    \
-    {string = NULL; strFree(string);}                 \
-  if (strCmpCStr(helperString, "find") == 0)       \
-    {string = NULL; strFree(string);}                 \
-  if (strCmpCStr(helperString, "sort") == 0)       \
-    {string = NULL; strFree(string);}                 \
+  if (strCmpCStr(string, "substr") == 0)     \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "readDouble") == 0)   \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "readInt") == 0)    \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "readString") == 0) \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "print") == 0)      \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "length") == 0)     \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "compare") == 0)    \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "find") == 0)       \
+    {strFree(string); string = NULL;}                     \
+  if (strCmpCStr(string, "sort") == 0)       \
+    {strFree(string); string = NULL;}                     \
 }while(0)
+
 /*
  *  Converts between token type and symbol type
  */
@@ -37,13 +38,13 @@ do{                                                    \
 do{                                  \
   switch (ktt){                      \
     case KTT_int:                    \
-      eSymbol = eINT;                \
+      eSymbol = eINT; break;         \
     case KTT_double:                 \
-      eSymbol = eDOUBLE;             \
+      eSymbol = eDOUBLE; break;        \
     case KTT_boolean:                \
-      eSymbol = eBOOL;               \
+      eSymbol = eBOOL; break;        \
     case KTT_String:                \
-      eSymbol = eSTRING;              \
+      eSymbol = eSTRING; break;       \
     default:                          \
       eSymbol = eNULL;                \
   }                                    \
@@ -75,6 +76,7 @@ do {																								\
 	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL) \
 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);} \
 	currentClass = classSymbol;\
+  printSymbol("Class", currentClass);\
 } while (0)
 
 /*
@@ -84,9 +86,9 @@ do {																								\
 #define createFunction(type, defined, name)		\
 do{																										\
 	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);\
-	if (newTable == NULL) {errCode = ERR_INTERN; break;}	\
+	if (newTable == NULL) {errCode = ERR_INTERN;}	\
 	tSymbolPtr functionSymbol = symbolNew();											\
-	if (functionSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); break;}\
+	if (functionSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); }\
 	functionSymbol->Type = eFUNCTION;																\
 	functionSymbol->Name = name;						\
   functionSymbol->Defined = defined;\
@@ -108,41 +110,41 @@ do{																										\
 #define createStaticVariable(type, defined, name)		\
 do{																										\
 	tSymbolPtr currentVariable = symbolNew();						\
-	if (currentVariable == NULL) {errCode = ERR_INTERN; break;}	\
+	if (currentVariable == NULL) {errCode = ERR_INTERN;}	\
 	currentVariable->Type = type;																\
 	currentVariable->Const = true;																\
 	currentVariable->Defined = defined;															\
 	currentVariable->Name = name;\
 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, true) == NULL)\
     {errCode = ERR_INTERN; symbolFree(currentVariable);}\
-  printSymbol("Variable", currentClass);\
+  printSymbol("Static variable", currentClass);\
 } while (0)
 
 
 /*
  * Creates a new local variable or parameter symbol and stores it table of function variables
  */
-#define createFunctionVariable(type, defined, name, isParameter)		\
-do{																										\
-	tSymbolPtr currentVariable = symbolNew();						\
-	if (currentVariable == NULL) {errCode = ERR_INTERN; break;}	\
-	currentVariable->Type = type;																\
-	currentVariable->Const = false;																\
-	currentVariable->Defined = defined;															\
-	currentVariable->Name = name;\
+#define createFunctionVariable(type, defined, name, isParameter)                                        \
+do{                                                                                                     \
+	tSymbolPtr currentVariable = symbolNew();                                                             \
+	if (currentVariable == NULL) {errCode = ERR_INTERN;}                                                  \
+	currentVariable->Type = type;																                                          \
+	currentVariable->Const = false;																                                        \
+	currentVariable->Defined = defined;															                                      \
+	currentVariable->Name = name;                                                                         \
 	if (htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, true) == NULL)\
-    {errCode = ERR_INTERN; symbolFree(currentVariable);}\
-  printSymbol("Variable", currentFunction);\
-  if (isParameter)\
-    symbolFuncAddArgument(currentFunction, currentVariable);\
+    {errCode = ERR_INTERN; symbolFree(currentVariable);}                                                \
+  printSymbol("Function variable", currentVariable);                                                    \
+  if (isParameter)                                                                                      \
+    symbolFuncAddArgument(currentFunction, currentVariable);                                            \
 } while (0)
 
-#define getNewToken(token, errCode)\
-do{\
-	cleanToken(&token);							\
+#define getNewToken(token, errCode)   \
+do{                                   \
+	cleanToken(&token);							    \
 	errCode = getToken(token);					\
-	if (errCode != ERR_OK)					\
-		return errCode;							\
+	if (errCode != ERR_OK)					    \
+		return errCode;                   \
 } while (0)
 
 /*
@@ -155,12 +157,12 @@ eError var(bool defined);
 
 // global variables - used in multiple functions in parser.c and expr.c
 Token *token;
+// TODO: I cannot free these 2 until after Interpret is called since it results in SIGSEGV while accessing table -> Figure out what to do with it
 tSymbolPtr currentFunction;
 tSymbolPtr currentClass;
 tSymbolPtr result;
 dtStrPtr symbolName;
-dtStrPtr helperString;
-eSymbolType helperTokenType;
+eSymbolType symbolTokenType;
 
 extern tInstructionListPtr instructionList;
 extern tHashTablePtr globalScopeTable;
@@ -179,6 +181,8 @@ eError initializeHelperVariables(){
     return ERR_INTERN;
   }
   if ((symbolName = strNew()) == NULL){
+    symbolFree(currentFunction);
+    symbolFree(currentClass);
     freeToken(&token);
     return ERR_INTERN;
   }
@@ -186,19 +190,22 @@ eError initializeHelperVariables(){
 }
 
 void freeHelperVariables(){
-  freeToken(&token);
   //symbolFree(currentFunction);
   //symbolFree(currentClass);
+  freeToken(&token);
   strFree(symbolName);
 }
 
-eError prog() {
+eError fillSymbolTable() {
 
 	eError errCode;
   if((errCode = initializeHelperVariables()) != ERR_OK)
     return errCode;
 	//1. Token -> [<KTT_CLASS>]
-	getNewToken(token, errCode);
+  errCode = getToken(token);
+  if (errCode != ERR_OK)
+    goto freeResourcesAndFinish;
+
 	if (token->type == TT_keyword && token->keywordType == KTT_class) {
 		if ((errCode = classList()) != ERR_OK)
       goto freeResourcesAndFinish;
@@ -210,10 +217,8 @@ eError prog() {
     EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {PROG -> CLASS_LIST eof}\n",  __FILE__, __LINE__);
     errCode = ERR_SYNTAX;
   }
-  dtStrPtr string;
+
   freeResourcesAndFinish:
-  string = strNewFromCStr("Main");
-  currentClass = htabGetSymbol(globalScopeTable, string);
   freeHelperVariables();
 	return errCode;
 }
@@ -237,6 +242,7 @@ eError classList() {
       // Creating our first class symbol! This one will go to globalScopeTable and currentScopeTable will be changed
 			createClass(symbolName);
       currentClass = htabGetSymbol(globalScopeTable, symbolName);
+      strClear(symbolName);
       if (errCode != ERR_OK)
         return errCode;
 	}
@@ -270,6 +276,7 @@ eError classList() {
     EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {CLASS_BODY -> static type simple_id VAR_OR_FUNC CLASS_BODY}\n",  __FILE__, __LINE__);
     return ERR_SYNTAX;
   }
+  return errCode;
 }
 
 eError classBody() {
@@ -290,21 +297,20 @@ eError classBody() {
 		return ERR_SYNTAX;
 	}
 
-	TTtoeSymbolType(token->keywordType, helperTokenType);
+	TTtoeSymbolType(token->keywordType, symbolTokenType);
 
 	//[<KTT_CLASS>][<TT_identifier>][{][<KTT_STATIC>][<KTT_*>]6.->[<TT_identifier>]
 	getNewToken(token, errCode);
   if (token->type != TT_identifier)
 		return ERR_SYNTAX;
-	if ((helperString = strNewFromStr(token->str)) == NULL)
+	if (strCopyStr(symbolName, token->str) != STR_SUCCESS)
     return ERR_INTERN;
     // Checking if token->str doesn't collide with builtins
-  isBuiltin(helperString);
-  if (helperString == NULL){
+  isBuiltin(symbolName);
+  if (symbolName == NULL){
     EXIT(ERR_SYNTAX, "Identifier collides with a builtin in %s at %d \n",  __FILE__, __LINE__);
     return ERR_SEM;
   }
-
 	//read next token - now we will find out, if it is function or identifier
 	//VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
 	getNewToken(token, errCode);
@@ -312,14 +318,11 @@ eError classBody() {
 		case TT_semicolon:
 			// Variable without initialization
 			//[<KTT_CLASS>][<TT_identifier>][{][<KTT_STATIC>][<KTT_*>][<TT_identifier>][;]
-
-        // if variable and i didn't find helperTokenType in TTtoeSymbolType() -> uknown type -> error
-      if (helperTokenType == eNULL){
+      if (symbolTokenType == eNULL){
         EXIT(ERR_SYNTAX, "Unexpected token type in %s at %d \n",  __FILE__, __LINE__);
-        strFree(helperString);
         return ERR_SYNTAX;
       }
-			createStaticVariable(helperTokenType, true, helperString);
+			createStaticVariable(symbolTokenType, true, symbolName);
 			getNewToken(token, errCode);
 			break;
 
@@ -327,21 +330,17 @@ eError classBody() {
 			//we have variable with initialization
 			//[<KTT_CLASS>][<TT_identifier>][{][<KTT_STATIC>][<KTT_*>][<TT_identifier>][=]
 			//after assignment have an expression - we call expressions parsing
-      // if variable and i didn't find helperTokenType in TTtoeSymbolType() -> uknown type -> error
-      if (helperTokenType == eNULL){
+      // if variable and i didn't find symbolTokenType in TTtoeSymbolType() -> uknown type -> error
+      if (symbolTokenType == eNULL){
         EXIT(ERR_SYNTAX, "Unexpected token type in %s at %d \n",  __FILE__, __LINE__);
-        strFree(helperString);
         return ERR_SYNTAX;
       }
-			errCode = precedenceParsing(NULL); // currently broken for some reason
-      printf("PrecedenceParsing returned: %d\n", errCode);
-			if (errCode != ERR_OK) {
-        strFree(helperString);
+			//errCode = precedenceParsing(NULL); -> Second run deals with expressions
+			if (errCode != ERR_OK)
 				return errCode;
-			}
 
-			//we should have result of axpressions parsing in variable result
-			createStaticVariable(helperTokenType, true, helperString);
+			createStaticVariable(symbolTokenType, true, symbolName);
+
 			//expressions parsing read one token outside of expression - has to be semicolon
 			if (token->type != TT_semicolon){
         EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {INITIALIZE -> = EXPR ;}\n",  __FILE__, __LINE__);
@@ -349,14 +348,12 @@ eError classBody() {
       }
 
 			getNewToken(token, errCode);
-
 			break;
 
 		case TT_leftRoundBracket:
-			createFunction(eFUNCTION, true, helperString);
-      currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, helperString);
+			createFunction(eFUNCTION, true, symbolName);
+      currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName);
       if (errCode != ERR_OK){
-        strFree(helperString);
         return errCode;
       }
 			//reading all parameters
@@ -374,17 +371,16 @@ eError classBody() {
 					return ERR_SYNTAX;
 				}
 
-				//we have type
+				//we have a type
 				// adds argument as a local variable to function scope
-				helperTokenType = token->type;
+				TTtoeSymbolType(token->type, symbolTokenType);
 				getNewToken(token, errCode);
 
 				if (token->type != TT_identifier)
 					return ERR_SYNTAX;
 
-				//we have id
-				if ((helperString = strNewFromStr(token->str)) == NULL) // + freeShit
-          strFree(helperString);
+				//we have an id
+				if (strCopyStr(symbolName,token->str) != STR_SUCCESS) // + freeShit
 					return ERR_INTERN;
 				//read next token
 				getNewToken(token, errCode);
@@ -395,7 +391,7 @@ eError classBody() {
 					if (token->type == TT_rightRoundBracket)
 						return ERR_SYNTAX;
 				}
-				createFunctionVariable(helperTokenType, true, helperString, false);
+				createFunctionVariable(symbolTokenType, true, symbolName, false);
 			}
 			//read next token - it should be left curly bracket
 			//RULE: VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
@@ -408,14 +404,15 @@ eError classBody() {
 			if (token->type != TT_rightCurlyBracket) {
 				errCode = funcBody();
 				if (errCode != ERR_OK)
-					return errCode;
+					return ERR_SYNTAX;
 
 				//checks if there really is right curly bracket after funcBody
 				if (token->type != TT_rightCurlyBracket) {
-					return ERR_SYNTAX;
+          errCode = ERR_SYNTAX;
+          return ERR_SYNTAX;
 				}
 			}
-
+      strClear(symbolName);
 			getNewToken(token, errCode);
 			break;
 
@@ -429,25 +426,18 @@ eError classBody() {
 		return ERR_OK;
 	}
 	//if it is keyword static - it is first token of next classBody
-	if (token->type == TT_keyword && token->keywordType == KTT_static) {
+	if (token->type == TT_keyword && token->keywordType == KTT_static)
 		errCode = classBody();
-		if(errCode != ERR_OK) {
-			return errCode;
-		}
-	}
 
-	return ERR_OK;
-
+  return errCode;
 }
 
 eError funcBody() {
 
 	eError errCode;
-	//elements in function can be STMT or VAR
-	//VAR has to start with keyword type
 	//RULE: VAR -> type ID INITIALIZE
 	if (token->type == TT_keyword) {
-			//current token is keyword type - we call var
+		//current token is keyword type - we call var
 	 	errCode = var(true);
 	 	if (errCode != ERR_OK)
 	 		return errCode;
@@ -466,23 +456,18 @@ eError funcBody() {
   else {
 		//current token is anything but keyword - this could be STMT - we call stmt()
 		errCode = stmt();
-		if (errCode != ERR_OK) {
+		if (errCode != ERR_OK)
 			return errCode;
-		}
-
 	}
 
 	//after funcBody parsing we got one more token - to determine what to do next
 	if (token->type != TT_rightCurlyBracket) {
-
 		errCode = funcBody();
-		if (errCode != ERR_OK) {
+		if (errCode != ERR_OK)
 			return errCode;
-		}
 	}
 
-	return ERR_OK;
-
+  return errCode;
 }
 
 eError stmt() {
@@ -515,8 +500,7 @@ eError stmt() {
 
 					//we call expressions parsing to parse RETURN_VAL
 					//if there wasn't RETURN_VAR, result from expressions parsing will be NULL
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
+					//errCode = precedenceParsing(NULL);
 					if (errCode != ERR_OK) {
 						return errCode;
 					}
@@ -566,109 +550,87 @@ eError stmt() {
 					if (token->type != TT_leftRoundBracket) {
 						return ERR_SYNTAX;
 					}
-
 					//call expressions parsing - parse condition
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if(errCode != ERR_OK) {
+					//errCode = precedenceParsing(NULL);
+					if(errCode != ERR_OK)
 						return errCode;
-					}
 
 					//there have to be right round bracket after condition
-					if(token->type != TT_rightRoundBracket) {
+					if(token->type != TT_rightRoundBracket)
 						return ERR_SYNTAX;
-					}
 
 					//read next token and call STMT processing
 					getNewToken(token, errCode);
 					errCode = stmt();
-					if (errCode != ERR_OK) {
+					if (errCode != ERR_OK)
 						return errCode;
-					}
 
 					//after SMTM - there can be else
 					if (token->type == TT_keyword && token->keywordType == KTT_else) {
 						getNewToken(token, errCode);
 						errCode = stmt();
-						if (errCode != ERR_OK) {
+						if (errCode != ERR_OK)
 							return errCode;
-						}
-
 					}
-
 					break;
 
 				//STMT -> while ( EXPR ) STMT
 				case KTT_while:
 
 					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
+					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
-					}
 
-					//zavolat vyrazy
-					precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if(token->type != TT_rightRoundBracket) {
+					//precedenceParsing(NULL);
+					if(token->type != TT_rightRoundBracket)
 						return ERR_SYNTAX;
-					}
 					getNewToken(token, errCode);
 
 					errCode = stmt();
-					if (errCode != ERR_OK) {
+					if (errCode != ERR_OK)
 						return errCode;
-					}
 
 					break;
 
 				case KTT_for:
 
 					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
+					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
-					}
 
 					getNewToken(token, errCode);
-					errCode = var(true);			//vo var spracujem uz aj semicolon, ale ostane ako posledny token
-					if(errCode != ERR_OK) {
+					errCode = var(true);
+					if(errCode != ERR_OK)
 						return errCode;
-					}
 
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
+					//errCode = precedenceParsing(NULL);
+          //printf("PrecedenceParsing returned: %d\n", errCode);
+					if (errCode != ERR_OK)
 						return errCode;
-					}
 
-					if (token->type != TT_semicolon) {
+					if (token->type != TT_semicolon)
 						return ERR_SYNTAX;
-					}
 
 					getNewToken(token, errCode);
-					if (token->type != TT_identifier && token->type != TT_fullIdentifier) {
+					if (token->type != TT_identifier && token->type != TT_fullIdentifier)
 						return ERR_SYNTAX;
-					}
-					//zapamatat si id
 
 					getNewToken(token, errCode);
-					if (token->type != TT_assignment) {
+					if (token->type != TT_assignment)
 						return ERR_SYNTAX;
-					}
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
 
-					if (token->type != TT_rightRoundBracket) {
+					//errCode = precedenceParsing(NULL);
+					if (errCode != ERR_OK)
+						return errCode;
+
+					if (token->type != TT_rightRoundBracket)
 						return ERR_SYNTAX;
-					}
+
 					getNewToken(token, errCode);
 
 					errCode = stmt();
-					if (errCode != ERR_OK) {
+					if (errCode != ERR_OK)
 						return errCode;
-					}
 
 					break;
 
@@ -676,34 +638,28 @@ eError stmt() {
 					getNewToken(token, errCode);
 
 					errCode = stmt();
-					if (errCode != ERR_OK) {
+					if (errCode != ERR_OK)
 						return errCode;
-					}
 
-					if (token->type != TT_keyword && token->keywordType != KTT_while) {
+					if (token->type != TT_keyword && token->keywordType != KTT_while)
 						return ERR_SYNTAX;
-					}
 
 					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
+					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
-					}
 
-					//zavolat vyrazy
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
+					//errCode = precedenceParsing(NULL);
+					if (errCode != ERR_OK)
 						return errCode;
-					}
 
-					if(token->type != TT_rightRoundBracket) {
+					if(token->type != TT_rightRoundBracket)
 						return ERR_SYNTAX;
-					}
+
 					getNewToken(token, errCode);
 
-					if (token->type != TT_semicolon) {
+					if (token->type != TT_semicolon)
 						return ERR_SYNTAX;
-					}
+
 					getNewToken(token, errCode);
 
 					break;
@@ -715,14 +671,11 @@ eError stmt() {
 
 		case TT_increment:
 		case TT_decrement:
-			errCode = precedenceParsing(NULL);
-      printf("PrecedenceParsing returned: %d\n", errCode);
-			if (errCode != ERR_OK) {
-				return errCode;
-			}
-			if(token->type != TT_semicolon) {
+			//errCode = precedenceParsing(NULL);
+      //printf("PrecedenceParsing returned: %d\n", errCode);
+			if(token->type != TT_semicolon)
 				return ERR_SYNTAX;
-			}
+
 			getNewToken(token, errCode);
 			break;
 
@@ -742,26 +695,20 @@ eError stmt() {
 			getNewToken(token, errCode);
 
 			if (token->type == TT_assignment) {
-				errCode = precedenceParsing(NULL);
-        printf("PrecedenceParsing returned: %d\n", errCode);
-				if(errCode != ERR_OK) {
+				//errCode = precedenceParsing(NULL);
+				if(errCode != ERR_OK)
 					return errCode;
-				}
-
-
-			} else if (token->type == TT_leftRoundBracket || token->type == TT_increment || token->type == TT_decrement) {
-				errCode = precedenceParsing(helperToken);
-        printf("PrecedenceParsing returned: %d\n", errCode);
-				if (errCode != ERR_OK) {
+			}
+      else if (token->type == TT_leftRoundBracket || token->type == TT_increment || token->type == TT_decrement) {
+				//errCode = precedenceParsing(helperToken);
+				if (errCode != ERR_OK)
 					return errCode;
-				}
 			}
 
 			freeToken(&helperToken);
 
-			if (token->type != TT_semicolon) {
+			if (token->type != TT_semicolon)
 				return ERR_SYNTAX;
-			}
 
 			getNewToken(token, errCode);
 			break;
@@ -772,11 +719,9 @@ eError stmt() {
 
 	}
 
-	if (token->type == TT_rightCurlyBracket) {
+	if (token->type == TT_rightCurlyBracket)
 		return ERR_OK;
-	}
 
-	//bude tam var
 	if (token->type == TT_keyword) {
 		if (token->keywordType == KTT_boolean
 		 || token->keywordType == KTT_double
@@ -787,9 +732,9 @@ eError stmt() {
 		}
 	}
 	errCode = stmt();
-	if (errCode != ERR_OK) {
+	if (errCode != ERR_OK)
 		return errCode;
-	}
+
 	return ERR_OK;
 
 }
@@ -797,55 +742,45 @@ eError stmt() {
 eError var(bool defined) {
 
 	eError errCode;
-  if (defined){
+  if (!defined){
+    symbolTokenType = eNULL;
+  }
+  else{
     //RULE: sVAR -> type ID INITIALIZE
   	if (token->keywordType != KTT_boolean
   	 && token->keywordType != KTT_String
   	 && token->keywordType != KTT_double
   	 && token->keywordType != KTT_int) {
   		return ERR_SYNTAX;
-  	}
-    helperTokenType = token->type;
-  	getNewToken(token, errCode);
-  }
-	if (token->type != TT_identifier && token->type != TT_fullIdentifier) {
-		return ERR_SYNTAX;
-	}
-  if (strCopyStr(symbolName, token->str) != STR_SUCCESS){
-    return ERR_INTERN;
+    }
+    TTtoeSymbolType(token->keywordType, symbolTokenType);
+    getNewToken(token, errCode);
   }
 
+  if (token->type != TT_identifier && token->type != TT_fullIdentifier)
+    return ERR_SYNTAX;
+
+  if (strCopyStr(symbolName, token->str) != STR_SUCCESS)
+    return ERR_INTERN;
+
+  getNewToken(token, errCode);
 	// INITIALIZE ->     = EXPR ;
-	getNewToken(token, errCode);
 	if (token->type == TT_assignment) {
-		//call expressions parsing to parse intialize value
-		errCode = precedenceParsing(NULL);
-    printf("PrecedenceParsing returned: %d\n", errCode);
-		if (errCode != ERR_OK) {
-			return errCode;
-		}
-    if (defined)
-      createFunctionVariable(helperTokenType, true, symbolName, false);
-    else{
-      createFunctionVariable(helperTokenType, false, symbolName, false);
-    }
-	}
+    createFunctionVariable(symbolTokenType, defined, symbolName, false);
+    //tSymbolPtr temp = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
 
 	//expressions parsing could stop on semicolon or right round bracket before semicolon
 	//otherwise, there is syntax error
-	if (token->type != TT_semicolon) {
-		getNewToken(token, errCode);
 		if (token->type != TT_semicolon) {
 			return ERR_SYNTAX;
 		}
-
-    //createStaticVariable(symbolName, helperToken, );
 	}
   else{
     // var without initialization
-    createStaticVariable(helperTokenType, true, helperString);
+    createStaticVariable(symbolTokenType, true, symbolName);
   }
 
+  strClear(symbolName);
 	return ERR_OK;
 
 }

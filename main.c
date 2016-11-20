@@ -34,8 +34,8 @@ void freeGlobalVariables(){
 int main(int argc, char const *argv[]) {
   openFile("3");
   initializeGlobalVariables();
-  printf("Retcode: %d \n", prog());
-  parse_2();
+  printf("Retcode: %d \n", fillSymbolTable());    // parsing #1
+  finishParsing();                                // parsing #2   
   Interpret(globalScopeTable, instructionList);
   closeFile();
   return 0;

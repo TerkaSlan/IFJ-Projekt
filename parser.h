@@ -6,6 +6,6 @@
 #include "error.h"
 #include <stdint.h>
 
-eError prog();
+eError fillSymbolTable();
 
 #endif

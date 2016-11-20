@@ -6,6 +6,6 @@
 #include "error.h"
 #include <stdint.h>
 
-eError parse_2();
+eError finishParsing();
 
 #endif

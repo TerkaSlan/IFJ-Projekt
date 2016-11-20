@@ -31,6 +31,7 @@ extern tSymbolPtr currentClass;
 dtStrPtr className;
 tSymbolPtr result;
 tInstruction instr;
+dtStrPtr symbolName;
 
 
 #define getNewToken(token, errCode)\
@@ -42,31 +43,26 @@ do{\
 } while (0)
 
 eError initializeHelperVariables_2(){
-  if ((currentFunction = symbolNew()) == NULL)
-    return ERR_INTERN;
-  if((currentClass = symbolNew()) == NULL){
-    symbolFree(currentFunction);
-    return ERR_INTERN;
-  }
   if ((token = newToken()) == NULL){
-    symbolFree(currentFunction);
-    symbolFree(currentClass);
     return ERR_INTERN;
   }
   if ((className = strNew()) == NULL){
-    symbolFree(currentFunction);
-    symbolFree(currentClass);
     freeToken(&token);
     return ERR_INTERN;
   }
+	if ((symbolName = strNew()) == NULL){
+		strFree(className);
+		freeToken(&token);
+		return ERR_INTERN;
+	}
   return ERR_OK;
 }
 
 void freeHelperVariables_2(){
   freeToken(&token);
-  symbolFree(currentFunction);
-  symbolFree(currentClass);
   strFree(className);
+	//symbolFree(currentFunction);
+	//symbolFree(currentClass);
 }
 
 /*
@@ -82,20 +78,22 @@ tSymbolPtr findUndefinedSymbol(tSymbolPtr symbol, void *param){
 		case eCLASS:
 			htabForEach(symbol->Data.ClassData.LocalSymbolTable, findUndefinedSymbol, NULL);
 			break;
-
-		/*case eFUNCTION:
-			htabForEach(symbol->Data.FunctionData.LocalSymbolTable, findUndefinedSymbol, NULL);
-			break;
-
+    case eFUNCTION:
+      htabForEach(symbol->Data.FunctionData.LocalSymbolTable, findUndefinedSymbol, NULL);
+      break;
 		default:
 			break;
 	}
-	return symbol;
+  if (symbol->Defined)
+	 return NULL;
+  else{
+    return symbol;
+  }
 }*/
 
-eError parse_2(){
-  dtStrPtr string = strNewFromCStr("Main");
-  htabGetSymbol(globalScopeTable, string);
+eError finishParsing(){
+  //dtStrPtr string = strNewFromCStr("Main");
+  //htabGetSymbol(globalScopeTable, string);
 	eError errCode;
   if ((errCode = initializeHelperVariables_2()) != ERR_OK)
     return errCode;
@@ -135,9 +133,9 @@ eError classList_2() {
     return ERR_SYNTAX;
   }
   // updating the currentScope var_2iable in second run
-  // htabGetSymbol(globalScopeTable, token->str) should NOT return nothing
-  //currentClass = htabGetSymbol(globalScopeTable, token->str);
-  className = strNewFromStr(token->str);
+  //htabGetSymbol(globalScopeTable, token->str) should NOT return nothing
+  currentClass = htabGetSymbol(globalScopeTable, token->str);
+  //className = strNewFromStr(token->str);
   //printSymbol("In 2. run class update", currentClass);
 	getNewToken(token, errCode);
 	if (token->type == TT_leftCurlyBracket){
@@ -193,7 +191,7 @@ eError classBody_2() {
   if (token->type != TT_identifier)
 		return ERR_SYNTAX;
   //tSymbolPtr helperSymbol = (tSymbolPtr)htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, className);
-  //currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, token->str);
+  currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, token->str);
 	getNewToken(token, errCode);
 	switch(token->type) {
 		case TT_semicolon:
@@ -218,11 +216,12 @@ eError classBody_2() {
 
 		case TT_leftRoundBracket:
 			//we have function
+			/*
         instr.type = iFRAME;
         instr.dst  = NULL;
         instr.arg1 = currentFunction->Name;
         instr.arg2 = NULL;
-        instrListInsertInstruction(instructionList, instr);
+        instrListInsertInstruction(instructionList, instr);*/
 			//reading all parameters
 			getNewToken(token, errCode);
 			//stops, when right round bracket is read - end of parameters
@@ -675,12 +674,22 @@ eError var_2() {
 	if (token->type != TT_identifier && token->type != TT_fullIdentifier) {
 		return ERR_SYNTAX;
 	}
+	strCopyStr(symbolName, token->str);
 
 	// INITIALIZE ->     = EXPR ;
 	getNewToken(token, errCode);
 	if (token->type == TT_assignment) {
 		//call expressions parsing to parse intialize value
 		errCode = precedenceParsing(NULL);
+		// TODO: check na kompatibilitu typov
+		instr.type = iMOV;
+    instr.dst  = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
+		if ((*(tSymbolPtr)instr.dst).Type != (*result).Type){
+			printf("Types aren't equal\n");
+		}
+    instr.arg1 = result; // p *(tSymbolPtr)instr.dst
+    instr.arg2 = NULL;
+		instrListInsertInstruction(instructionList, instr);
     printf("PrecedenceParsing returned: %d\n", errCode);
 		if (errCode != ERR_OK) {
 			return errCode;
