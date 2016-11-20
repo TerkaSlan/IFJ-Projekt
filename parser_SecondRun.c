@@ -470,7 +470,6 @@ eError stmt_2() {
 						return ERR_SYNTAX;
 					}
 
-					//zavolat vyrazy
 					precedenceParsing(NULL);
           printf("PrecedenceParsing returned: %d\n", errCode);
 					if(token->type != TT_rightRoundBracket) {
@@ -553,7 +552,6 @@ eError stmt_2() {
 						return ERR_SYNTAX;
 					}
 
-					//zavolat vyrazy
 					errCode = precedenceParsing(NULL);
           printf("PrecedenceParsing returned: %d\n", errCode);
 					if (errCode != ERR_OK) {
@@ -609,6 +607,7 @@ eError stmt_2() {
 				errCode = precedenceParsing(NULL);
         printf("PrecedenceParsing returned: %d\n", errCode);
 				if(errCode != ERR_OK) {
+					freeToken(&helperToken);
 					return errCode;
 				}
 
@@ -617,6 +616,7 @@ eError stmt_2() {
 				errCode = precedenceParsing(helperToken);
         printf("PrecedenceParsing returned: %d\n", errCode);
 				if (errCode != ERR_OK) {
+					freeToken(&helperToken);
 					return errCode;
 				}
 			}

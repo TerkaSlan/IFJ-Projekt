@@ -335,7 +335,7 @@ eError classBody() {
         EXIT(ERR_SYNTAX, "Unexpected token type in %s at %d \n",  __FILE__, __LINE__);
         return ERR_SYNTAX;
       }
-			//errCode = precedenceParsing(NULL); -> Second run deals with expressions
+			errCode = precedenceParsing(NULL);
 			if (errCode != ERR_OK)
 				return errCode;
 
@@ -500,7 +500,7 @@ eError stmt() {
 
 					//we call expressions parsing to parse RETURN_VAL
 					//if there wasn't RETURN_VAR, result from expressions parsing will be NULL
-					//errCode = precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
 					if (errCode != ERR_OK) {
 						return errCode;
 					}
@@ -551,7 +551,7 @@ eError stmt() {
 						return ERR_SYNTAX;
 					}
 					//call expressions parsing - parse condition
-					//errCode = precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
 					if(errCode != ERR_OK)
 						return errCode;
 
@@ -581,7 +581,9 @@ eError stmt() {
 					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
 
-					//precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
+          if(errCode != ERR_OK)
+            return errCode;
 					if(token->type != TT_rightRoundBracket)
 						return ERR_SYNTAX;
 					getNewToken(token, errCode);
@@ -603,7 +605,7 @@ eError stmt() {
 					if(errCode != ERR_OK)
 						return errCode;
 
-					//errCode = precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
           //printf("PrecedenceParsing returned: %d\n", errCode);
 					if (errCode != ERR_OK)
 						return errCode;
@@ -619,7 +621,7 @@ eError stmt() {
 					if (token->type != TT_assignment)
 						return ERR_SYNTAX;
 
-					//errCode = precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
 					if (errCode != ERR_OK)
 						return errCode;
 
@@ -648,7 +650,7 @@ eError stmt() {
 					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
 
-					//errCode = precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
 					if (errCode != ERR_OK)
 						return errCode;
 
@@ -671,7 +673,9 @@ eError stmt() {
 
 		case TT_increment:
 		case TT_decrement:
-			//errCode = precedenceParsing(NULL);
+			errCode = precedenceParsing(NULL);
+      if (errCode != ERR_OK)
+        return errCode;
       //printf("PrecedenceParsing returned: %d\n", errCode);
 			if(token->type != TT_semicolon)
 				return ERR_SYNTAX;
@@ -695,14 +699,18 @@ eError stmt() {
 			getNewToken(token, errCode);
 
 			if (token->type == TT_assignment) {
-				//errCode = precedenceParsing(NULL);
-				if(errCode != ERR_OK)
+				errCode = precedenceParsing(NULL);
+				if(errCode != ERR_OK){
+          freeToken(&helperToken);
 					return errCode;
-			}
+        }
+      }
       else if (token->type == TT_leftRoundBracket || token->type == TT_increment || token->type == TT_decrement) {
-				//errCode = precedenceParsing(helperToken);
-				if (errCode != ERR_OK)
-					return errCode;
+				errCode = precedenceParsing(helperToken);
+				if (errCode != ERR_OK){
+          freeToken(&helperToken);
+          return errCode;
+        }
 			}
 
 			freeToken(&helperToken);
@@ -768,18 +776,15 @@ eError var(bool defined) {
 	if (token->type == TT_assignment) {
     createFunctionVariable(symbolTokenType, defined, symbolName, false);
     //tSymbolPtr temp = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
-
-	//expressions parsing could stop on semicolon or right round bracket before semicolon
-	//otherwise, there is syntax error
-		if (token->type != TT_semicolon) {
-			return ERR_SYNTAX;
-		}
+    errCode = precedenceParsing(NULL);
 	}
   else{
     // var without initialization
     createStaticVariable(symbolTokenType, true, symbolName);
   }
-
+  if (token->type != TT_semicolon) {
+    return ERR_SYNTAX;
+  }
   strClear(symbolName);
 	return ERR_OK;
 
