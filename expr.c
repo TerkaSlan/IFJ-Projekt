@@ -60,7 +60,7 @@ do{																\
 #define tmpVariable(table, symbolExprTmp, type)					\
 do {															\
 	tSymbolPtr exprTmp = symbolNew();							\
-	exprTmp->Defined = false;									\
+	exprTmp->Defined = true;									\
 	exprTmp->Const = false;										\
 	exprTmp->Type = type;										\
 	switch(type) {												\
@@ -70,20 +70,20 @@ do {															\
 			break;												\
 		case eDOUBLE:											\
 			exprTmp->Name = strNewFromStr(tmpDouble);			\
-			strAddChar(tmpString, '.');							\
+			strAddChar(tmpDouble, '.');							\
 			break;												\
 		case eINT:												\
 			exprTmp->Name = strNewFromStr(tmpInt);				\
-			strAddChar(tmpString, '#');							\
+			strAddChar(tmpInt, '#');							\
 			break;												\
 		case eBOOL:												\
 			exprTmp->Name = strNewFromStr(tmpBool);				\
-			strAddChar(tmpString, '0');							\
+			strAddChar(tmpBool, '0');							\
 			break;												\
 		default:												\
 			return ERR_INTERN;									\
 	}															\
-	symbolExprTmp = htabAddSymbol(table, exprTmp, false);		\
+	symbolExprTmp = htabAddSymbol(table, exprTmp, true);		\
 	symbolFree(exprTmp);										\
 } while (0);
 
@@ -377,6 +377,9 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	}
 
 	tPrecedenceSymbolPtr funcName = symbolStackPop(symbolStack);
+	if (funcName == NULL) {
+		return ERR_INTERN;
+	}
 
 	tSymbolPtr funcSymbol;
 	if (funcId == TT_fullIdentifier) {
@@ -396,7 +399,13 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			precedenceSymbolFree(funcName);
 			return ERR_SEM;
 		}
+
+		//get pointer to classTable from classSymbol
 		tHashTablePtr classTable = classSymbol->Data.ClassData.LocalSymbolTable;
+		if (classTable == NULL) {
+			precedenceSymbolFree(funcName);
+			return ERR_INTERN;
+		}
 
 		//get function name from fullIdentifier
 		dtStrPtr func;
@@ -417,6 +426,9 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		//function have to be in current class
 		funcSymbol = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, funcName->stringOrId);
+		if (funcSymbol == NULL) {
+			return ERR_SEM;
+		}
 		precedenceSymbolFree(funcName);
 
 	}
@@ -424,7 +436,6 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	tInstruction instr = {iFRAME, NULL, funcSymbol, NULL};
 	errCode =  instrListInsertInstruction(instructionList, instr);
 	if (errCode == -1) {
-		symbolFree(funcSymbol);
 		return ERR_INTERN;
 	}
 
@@ -435,7 +446,6 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
-			symbolFree(funcSymbol);
 			return errCode;
 		}
 
@@ -448,7 +458,6 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				//add instr to instructionList
 				errCode =  instrListInsertInstruction(instructionList, instr);
 				if (errCode == -1) {
-					symbolFree(funcSymbol);
 					return ERR_SEM_TYPE;
 				}
 				result = symbolTmp;
@@ -468,13 +477,11 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				argument = argument->Next;
 			} else {
 
-				symbolFree(funcSymbol);
 				return ERR_SEM_TYPE;
 
 			}
 
 		} else {
-			symbolFree(funcSymbol);
 			return ERR_SEM_TYPE;
 		}
 
@@ -492,7 +499,6 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	errCode =  instrListInsertInstruction(instructionList, instr);
 	if (errCode == -1) {
-		symbolFree(funcSymbol);
 		return ERR_INTERN;
 	}
 
@@ -512,14 +518,12 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	errCode =  instrListInsertInstruction(instructionList, instr);
 	if (errCode == -1) {
 		precedenceSymbolFree(funcPrecedenceSymbol);
-		symbolFree(funcSymbol);
 		return ERR_INTERN;
 	}
 
 	funcPrecedenceSymbol->symbol = symbolExprTmp;
 
 	symbolStackPush(symbolStack, funcPrecedenceSymbol);
-	symbolFree(funcSymbol);
 	precedenceSymbolFree(funcPrecedenceSymbol);
 
 	cleanToken(&token);
@@ -534,7 +538,9 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	eError errCode;
-	tHashTablePtr currentFuncTable = currentFunction->Data.ClassData.LocalSymbolTable;
+	tHashTablePtr currentFuncTable = currentFunction->Data.FunctionData.LocalSymbolTable;
+	if (currentFuncTable == NULL) {
+	}
 
 	switch(precedenceStackTopTerminal(stack)) {
 
@@ -553,23 +559,24 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			tPrecedenceSymbolPtr id = symbolStackPop(symbolStack);
 
 			//look up id in symbol table of current function scope
-			tPrecedenceSymbolPtr symbolId = precedenceSymbolNew();
-			symbolId->symbol = htabGetSymbol(currentFuncTable, id->stringOrId);
-			precedenceSymbolFree(id);
-			if (symbolId->symbol == NULL) {
+			tSymbolPtr symbolId;
+			symbolId = htabGetSymbol(currentFuncTable, id->stringOrId);
+			if (symbolId == NULL) {
 
 				//id isn't in current function symbol table - but it still could be static id in current class symbol table
-				symbolId->symbol = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, id->stringOrId);
-				if (symbolId->symbol == NULL) {
-					precedenceSymbolFree(symbolId);
+				symbolId = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, id->stringOrId);
+				if (symbolId == NULL) {
+					precedenceSymbolFree(id);
 					return ERR_SEM;
 				}
 			}
 
 			//precedence symbol containing pointer to current id in symbol table - push on symbol stack
-			symbolId->type = TT_E;
-			symbolStackPush(symbolStack, symbolId);
-			precedenceSymbolFree(symbolId);
+			precedenceSymbolClean(id);
+			id->type = TT_E;
+			id->symbol = symbolNewCopy(symbolId);
+			symbolStackPush(symbolStack, id);
+			precedenceSymbolFree(id);
 
 			//push type representing operand on precedence stack
 			precedenceStackPush(stack, TT_E);
@@ -602,31 +609,38 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				precedenceSymbolFree(fullId);
 				return ERR_SEM;
 			}
+
+			//get pointer to classTable from classSymbol
 			tHashTablePtr classTable = classSymbol->Data.ClassData.LocalSymbolTable;
+			if (classTable == NULL) {
+				precedenceSymbolFree(fullId);
+				return ERR_INTERN;
+			}
 
 			dtStrPtr id;
-			errCode = substr(fullId->stringOrId, strCharPos(fullId->stringOrId, '.'), strGetLength(fullId->stringOrId), &id);
+			errCode = substr(fullId->stringOrId, strCharPos(fullId->stringOrId, '.') + 1, strGetLength(fullId->stringOrId), &id);
 			if (errCode != ERR_OK) {
 				precedenceSymbolFree(fullId);
 				strFree(className);
 				return errCode;
 			}
 
-			tPrecedenceSymbolPtr symbolId = precedenceSymbolNew();
-			symbolId->symbol = htabGetSymbol(classTable, id);
-			if (symbolId->symbol == NULL) {
+			tSymbolPtr symbolId;
+			symbolId = htabGetSymbol(classTable, id);
+			strFree(id);
+			if (symbolId == NULL) {
 				precedenceSymbolFree(fullId);
-				strFree(className);
-				precedenceSymbolFree(symbolId);
 				return ERR_SEM;
 			}
 
-			symbolId->type = TT_E;
-			symbolStackPush(symbolStack, symbolId);
+			precedenceSymbolClean(fullId);
+			fullId->type = TT_E;
+			fullId->symbol = symbolNewCopy(symbolId);
+			symbolStackPush(symbolStack, fullId);
+
+			precedenceStackPush(stack, TT_E);
 
 			precedenceSymbolFree(fullId);
-			strFree(className);
-			precedenceSymbolFree(symbolId);
 			return ERR_OK;
 		}
 
@@ -755,8 +769,8 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				}
 				//pomocna premenna typy string symbolTmp
 				tmpVariable(currentFuncTable, symbolExprTmp, eSTRING)
-
 				goto generateInstruction;
+
 				} else {
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
@@ -1052,8 +1066,9 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		// E -> -- E
 		// E -> E ++
 		// E -> E --
-		case TT_increment: //pozor, poze byt aj prefixovy aj postfixovy
-		case TT_decrement: //pozor
+		// E -> - E
+		case TT_increment:
+		case TT_decrement:
 
 			printf("unary not supported yet\n");
 			return ERR_SYNTAX;
@@ -1194,8 +1209,7 @@ eError parsing(Token* helpToken) {
 	 				 || (symbol->type == TT_identifier
 	 				 || (symbol->type == TT_fullIdentifier))) {
 
-	 				 	symbol->stringOrId = strNew();
-						strCopyStr(symbol->stringOrId, token->str);
+	 				 	symbol->stringOrId = strNewFromStr(token->str);
 
 					} else if (symbol->type == TT_double) {
 

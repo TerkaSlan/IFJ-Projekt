@@ -9,25 +9,25 @@
 /*
  * Checks if given adept for identifier collides with any builtin
  */
-#define isBuiltin(string)\
-do{                                                    \
-  if (strCmpCStr(string, "substr") == 0)     \
+#define isBuiltin(string)                                 \
+do{                                                       \
+  if (strCmpCStr(string, "ifj16.substr") == 0)                  \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "readDouble") == 0)   \
+  if (strCmpCStr(string, "ifj16.readDouble") == 0)              \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "readInt") == 0)    \
+  if (strCmpCStr(string, "ifj16.readInt") == 0)                 \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "readString") == 0) \
+  if (strCmpCStr(string, "ifj16.readString") == 0)              \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "print") == 0)      \
+  if (strCmpCStr(string, "ifj16.print") == 0)                   \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "length") == 0)     \
+  if (strCmpCStr(string, "ifj16.length") == 0)                  \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "compare") == 0)    \
+  if (strCmpCStr(string, "ifj16.compare") == 0)                 \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "find") == 0)       \
+  if (strCmpCStr(string, "ifj16.find") == 0)                    \
     {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "sort") == 0)       \
+  if (strCmpCStr(string, "ifj16.sort") == 0)                    \
     {strFree(string); string = NULL;}                     \
 }while(0)
 
@@ -40,14 +40,14 @@ do{                                  \
     case KTT_int:                    \
       eSymbol = eINT; break;         \
     case KTT_double:                 \
-      eSymbol = eDOUBLE; break;        \
+      eSymbol = eDOUBLE; break;      \
     case KTT_boolean:                \
       eSymbol = eBOOL; break;        \
-    case KTT_String:                \
-      eSymbol = eSTRING; break;       \
-    default:                          \
-      eSymbol = eNULL;                \
-  }                                    \
+    case KTT_String:                 \
+      eSymbol = eSTRING; break;      \
+    default:                         \
+      eSymbol = eNULL;               \
+  }                                  \
 }while(0)
 
 #define printSymbol(what_symbol, symbol)do{\
@@ -60,30 +60,30 @@ do{                                  \
  * Creates a new class symbol and stores it in globalScopeTable
  * Changes currentScopeTable
  */
-#define createClass(name) \
-do {																								\
-	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE); \
-	if (newTable == NULL) {errCode = ERR_INTERN; break;}	\
-	tSymbolPtr classSymbol = symbolNew();											\
+#define createClass(name)                                                    \
+do {																								                         \
+	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);                      \
+	if (newTable == NULL) {errCode = ERR_INTERN; break;}	                     \
+	tSymbolPtr classSymbol = symbolNew();											                 \
 	if (classSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); break;}\
-  classSymbol->Type = eCLASS;																\
-  classSymbol->Const = true;																\
-  classSymbol->Defined = true;															\
-  classSymbol->Name = strNewFromStr(name);						\
-  classSymbol->Next = NULL;						\
-  classSymbol->Data.ClassData.LocalSymbolTable = newTable;\
-	newTable->Parent = classSymbol;						\
-	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL) \
-		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);} \
-	currentClass = classSymbol;\
-  printSymbol("Class", currentClass);\
+  classSymbol->Type = eCLASS;																                 \
+  classSymbol->Const = true;																                 \
+  classSymbol->Defined = true;															                 \
+  classSymbol->Name = strNewFromStr(name);						                       \
+  classSymbol->Next = NULL;						                                       \
+  classSymbol->Data.ClassData.LocalSymbolTable = newTable;                   \
+	newTable->Parent = classSymbol;						                                 \
+	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL)            \
+		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);}     \
+	currentClass = classSymbol;                                                \
+  printSymbol("Class", currentClass);                                        \
 } while (0)
 
 /*
  * Creates a new function symbol and stores it in currentScopeTable
  * Changes currentScopeTable
  */
-#define createFunction(type, defined, name)		\
+#define createFunction(type, defined, name)		                           \
 do{																										\
 	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);\
 	if (newTable == NULL) {errCode = ERR_INTERN;}	\
@@ -117,14 +117,14 @@ do{																										\
 	currentVariable->Name = name;\
 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, true) == NULL)\
     {errCode = ERR_INTERN; symbolFree(currentVariable);}\
-  printSymbol("Static variable", currentClass);\
+  printSymbol("Static variable", currentVariable);\
 } while (0)
 
 
 /*
  * Creates a new local variable or parameter symbol and stores it table of function variables
  */
-#define createFunctionVariable(type, defined, name, isParameter)                                        \
+#define createFunctionVariable(type, defined, name, isArgument)                                        \
 do{                                                                                                     \
 	tSymbolPtr currentVariable = symbolNew();                                                             \
 	if (currentVariable == NULL) {errCode = ERR_INTERN;}                                                  \
@@ -135,7 +135,7 @@ do{                                                                             
 	if (htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, true) == NULL)\
     {errCode = ERR_INTERN; symbolFree(currentVariable);}                                                \
   printSymbol("Function variable", currentVariable);                                                    \
-  if (isParameter)                                                                                      \
+  if (isArgument)                                                                                      \
     symbolFuncAddArgument(currentFunction, currentVariable);                                            \
 } while (0)
 
@@ -149,6 +149,7 @@ do{                                   \
 
 /*
  */
+eError skipPrecedenceParsing(eError errCode);
 eError classList();
 eError classBody();
 eError funcBody();
@@ -167,6 +168,28 @@ eSymbolType symbolTokenType;
 extern tInstructionListPtr instructionList;
 extern tHashTablePtr globalScopeTable;
 extern tConstContainerPtr constTable;
+
+eError skipPrecedenceParsing(eError errCode){
+  do {
+    getNewToken(token, errCode);
+    if (errCode != ERR_OK)
+      return errCode;
+    if (token->type == TT_EOF)
+      return ERR_SYNTAX;
+  } while (token->type != TT_semicolon);
+
+  return ERR_OK;
+}
+
+eError skipFunctionCall(eError errCode){
+  while (token->type != TT_rightRoundBracket) {
+    getNewToken(token, errCode);
+    if (token->type == TT_EOF)
+      return ERR_SYNTAX;
+  }
+  getNewToken(token, errCode);
+  return ERR_OK; // ?
+}
 
 eError initializeHelperVariables(){
   if ((currentFunction = symbolNew()) == NULL)
@@ -198,7 +221,7 @@ void freeHelperVariables(){
 
 eError fillSymbolTable() {
 
-	eError errCode;
+	eError errCode = ERR_OK;
   if((errCode = initializeHelperVariables()) != ERR_OK)
     return errCode;
 	//1. Token -> [<KTT_CLASS>]
@@ -280,7 +303,7 @@ eError classList() {
 }
 
 eError classBody() {
-	eError errCode;
+	eError errCode = ERR_OK;
 	//[<KTT_CLASS>][<TT_identifier>][{][<KTT_STATIC>]5.Token -> [<KTT_*>]
 	//RULE: CLASS_BODY -> static type simple_id VAR_OR_FUNC CLASS_BODY
 	getNewToken(token, errCode);
@@ -335,7 +358,7 @@ eError classBody() {
         EXIT(ERR_SYNTAX, "Unexpected token type in %s at %d \n",  __FILE__, __LINE__);
         return ERR_SYNTAX;
       }
-			errCode = precedenceParsing(NULL);
+			errCode = skipPrecedenceParsing(errCode);
 			if (errCode != ERR_OK)
 				return errCode;
 
@@ -391,8 +414,9 @@ eError classBody() {
 					if (token->type == TT_rightRoundBracket)
 						return ERR_SYNTAX;
 				}
-				createFunctionVariable(symbolTokenType, true, symbolName, false);
-			}
+        // last true for isArgument, updating argument list of currentFunction
+				createFunctionVariable(symbolTokenType, true, symbolName, true);
+      }
 			//read next token - it should be left curly bracket
 			//RULE: VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
  			getNewToken(token, errCode);
@@ -434,7 +458,7 @@ eError classBody() {
 
 eError funcBody() {
 
-	eError errCode;
+	eError errCode = ERR_OK;
 	//RULE: VAR -> type ID INITIALIZE
 	if (token->type == TT_keyword) {
 		//current token is keyword type - we call var
@@ -472,7 +496,7 @@ eError funcBody() {
 
 eError stmt() {
 
-	eError errCode;
+	eError errCode = ERR_OK;
 
   //RULE: STMT -> { STMT_LIST }
 	switch(token->type) {
@@ -500,7 +524,7 @@ eError stmt() {
 
 					//we call expressions parsing to parse RETURN_VAL
 					//if there wasn't RETURN_VAR, result from expressions parsing will be NULL
-					errCode = precedenceParsing(NULL);
+					errCode = skipPrecedenceParsing(errCode);
 					if (errCode != ERR_OK) {
 						return errCode;
 					}
@@ -551,7 +575,7 @@ eError stmt() {
 						return ERR_SYNTAX;
 					}
 					//call expressions parsing - parse condition
-					errCode = precedenceParsing(NULL);
+					errCode = skipPrecedenceParsing(errCode);
 					if(errCode != ERR_OK)
 						return errCode;
 
@@ -581,7 +605,7 @@ eError stmt() {
 					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
 
-					errCode = precedenceParsing(NULL);
+					errCode = skipPrecedenceParsing(errCode);
           if(errCode != ERR_OK)
             return errCode;
 					if(token->type != TT_rightRoundBracket)
@@ -605,7 +629,7 @@ eError stmt() {
 					if(errCode != ERR_OK)
 						return errCode;
 
-					errCode = precedenceParsing(NULL);
+					errCode = skipPrecedenceParsing(errCode);
           //printf("PrecedenceParsing returned: %d\n", errCode);
 					if (errCode != ERR_OK)
 						return errCode;
@@ -621,7 +645,7 @@ eError stmt() {
 					if (token->type != TT_assignment)
 						return ERR_SYNTAX;
 
-					errCode = precedenceParsing(NULL);
+					errCode = skipPrecedenceParsing(errCode);
 					if (errCode != ERR_OK)
 						return errCode;
 
@@ -650,7 +674,7 @@ eError stmt() {
 					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
 
-					errCode = precedenceParsing(NULL);
+					errCode = skipPrecedenceParsing(errCode);
 					if (errCode != ERR_OK)
 						return errCode;
 
@@ -673,7 +697,7 @@ eError stmt() {
 
 		case TT_increment:
 		case TT_decrement:
-			errCode = precedenceParsing(NULL);
+			errCode = skipPrecedenceParsing(errCode);
       if (errCode != ERR_OK)
         return errCode;
       //printf("PrecedenceParsing returned: %d\n", errCode);
@@ -699,14 +723,14 @@ eError stmt() {
 			getNewToken(token, errCode);
 
 			if (token->type == TT_assignment) {
-				errCode = precedenceParsing(NULL);
+				errCode = skipPrecedenceParsing(errCode);
 				if(errCode != ERR_OK){
           freeToken(&helperToken);
 					return errCode;
         }
       }
       else if (token->type == TT_leftRoundBracket || token->type == TT_increment || token->type == TT_decrement) {
-				errCode = precedenceParsing(helperToken);
+				errCode = skipPrecedenceParsing(errCode);
 				if (errCode != ERR_OK){
           freeToken(&helperToken);
           return errCode;
@@ -749,7 +773,7 @@ eError stmt() {
 
 eError var(bool defined) {
 
-	eError errCode;
+	eError errCode = ERR_OK;
   if (!defined){
     symbolTokenType = eNULL;
   }
@@ -774,13 +798,37 @@ eError var(bool defined) {
   getNewToken(token, errCode);
 	// INITIALIZE ->     = EXPR ;
 	if (token->type == TT_assignment) {
+    // [reserved_name] [=]  -> Nope
+    isBuiltin(symbolName);
+    if (symbolName == NULL)
+      return ERR_SEM;
     createFunctionVariable(symbolTokenType, defined, symbolName, false);
     //tSymbolPtr temp = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
-    errCode = precedenceParsing(NULL);
+    errCode = skipPrecedenceParsing(errCode);
+    if (errCode != ERR_OK)
+      return errCode;
 	}
+  else if (token->type == TT_leftRoundBracket){
+    isBuiltin(symbolName);
+    if (symbolName == NULL){  // isBuiltin = true
+      if (symbolTokenType == eNULL){
+        if ((errCode = skipFunctionCall(errCode)) != ERR_OK)
+          return errCode;
+      }
+      else{
+        // builtin with a type? I don't think so ...
+        return ERR_SEM;
+      }
+    }
+  }
   else{
     // var without initialization
-    createStaticVariable(symbolTokenType, true, symbolName);
+    isBuiltin(symbolName);
+    if (symbolName == NULL){
+      // using reserved word as a variable, not a function call
+      return ERR_SEM;
+    }
+    createFunctionVariable(symbolTokenType, defined, symbolName, false);
   }
   if (token->type != TT_semicolon) {
     return ERR_SYNTAX;

@@ -7,5 +7,5 @@
 #include <stdint.h>
 
 eError fillSymbolTable();
-
+eError skipFunctionCall(eError errCode);
 #endif
