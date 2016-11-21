@@ -158,15 +158,15 @@ Test_TT_double("-123.456e-2 -> 123.456e-2", TT_double, getToken(token), token, 1
 cleanToken(&token);
 Test_TT_number("1_000", TT_number, getToken(token), token, 1000);
 // Strings
-Test_TT_string("\"\"", TT_string, getToken(token), token, string);
-Test_TT_string("\".@#)(!*$#()@_!)\"", TT_string, getToken(token), token, string);
-strAddCStr(string, "\"Ahoj\nSve'te\\\"\"");
+Test_TT_string("", TT_string, getToken(token), token, string);
+Test_TT_string(".@#)(!*$#()@_!)", TT_string, getToken(token), token, string);
+strAddCStr(string, "Ahoj\nSve'te\\\"");
 // Octal escape
 Test_TT_string("Ahoj\nSve'te\\\042", TT_string, getToken(token), token, string);
-strAddCStr(string, "\"Ahoj\nSve'te\t\"m\"");
-Test_TT_string("\"Ahoj\nSve'te\t\"\155\"", TT_string, getToken(token), token, string);
-Test_TT_string("\"terka\"", TT_string, getToken(token), token, string);
-Test_TT_string("\"!non-octal /\"", TT_string, getToken(token), token, string);
+strAddCStr(string, "Ahoj\nSve'te\t\"m");
+Test_TT_string("Ahoj\nSve'te\t\"\155", TT_string, getToken(token), token, string);
+Test_TT_string("terka", TT_string, getToken(token), token, string);
+Test_TT_string("!non-octal /", TT_string, getToken(token), token, string);
 cleanToken(&token);
 // Keywords
 TestKeyword("break", TT_keyword, getToken(token), token, string);

@@ -256,8 +256,6 @@ int32_t getToken(Token *token){
               state = SString;
               if ((token->str = strNew()) == NULL)
                 handleLexError(token, ERR_INTERN);
-              if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR)
-                handleLexError(token, ERR_INTERN);
               break;
             case ',':
               token->type = TT_comma;
@@ -535,9 +533,6 @@ int32_t getToken(Token *token){
       case SString: {
         // Empty string
         if (iCurrentSymbol == '"'){
-          if (strAddChar(token->str, iCurrentSymbol) == STR_ERROR){
-            handleLexError(token, ERR_INTERN);
-          }
           token->type = TT_string;
           return ERR_OK;
         }
