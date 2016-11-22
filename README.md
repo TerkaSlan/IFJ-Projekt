@@ -62,7 +62,7 @@ _Week 7 [16.11 - 22.11]_
   
   #21 [LOW] Mechanism to print out the instruction in our internal code for debugging purposes - **Jakub, Marek** :white_medium_square:
 
-  #22 [HIGH] Main.c file - **Jakub, Marek** :white_medium_square:
+  #22 [HIGH] Main.c file - **Terka** :white_medium_square:
   
   #23 [HIGH] New Makefile for 1. submission - **Michal** :white_medium_square:
   
@@ -73,3 +73,7 @@ _Week 7 [16.11 - 22.11]_
   #26 [LOW] Add additinal tests to cover all instructions for 2. submission - **Michal** :white_medium_square:
   
   #27 [LOW] Create as much general tests as possible for 2. submission - **ALL** :white_medium_square:
+  
+  #28 [HIGH] Adjust Parser and Interpret modules to deal with the need of initialization of static variables before runtime - **Terka, Michal** :white_medium_square:
+  
+  #29 [LOW] Make all print functions within the Builtin module behave according to their java counterparts - **Jakub, Marek**
