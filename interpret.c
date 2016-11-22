@@ -648,7 +648,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				dtStrPtr *dst = &(SDS(i->dst, curFrame)->String);
 
 				//if replacing string free first
-				if((*dst))
+				if(*dst)
 				{
 					strFree(*dst);
 					*dst = NULL;

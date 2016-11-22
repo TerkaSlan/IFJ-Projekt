@@ -41,11 +41,20 @@ TEST_SUITE_START(InterpretTest)
 	sym->Const = true;
 	sym->Defined = true;
 	strClear(sym->Name);
-	strAddCStr(sym->Name, "StaticASD");
-	sym->Data.String = strNewFromCStr("ASD");
+	strAddCStr(sym->Name, "Static42");
+	sym->Data.String = strNewFromCStr("42");
 
 	tSymbolPtr StaticASD = htabAddSymbol(MainTable, sym, true);
-	SHOULD_EQUAL("Add fine", strcmp(strGetCStr(sym->Data.String), "ASD"), 0);
+	SHOULD_EQUAL("Add fine", strcmp(strGetCStr(sym->Data.String), "42"), 0);
+
+	sym->Type = eSTRING;
+	sym->Const = true;
+	sym->Defined = true;
+	strClear(sym->Name);
+	strAddCStr(sym->Name, "Static8");
+	sym->Data.String = strNewFromCStr("8");
+
+	tSymbolPtr Static8 = htabAddSymbol(MainTable, sym, true);
 
 
 	tHashTablePtr RunTable = htabInit(31);
@@ -132,6 +141,7 @@ TEST_SUITE_START(InterpretTest)
 	sym->Const = true;
 	sym->Defined = true;
 	sym->Data.Integer = 1337;
+	strFree(sym->Name);
 	sym->Name = NULL;
 
 	tSymbolPtr leetconst = constInsertSymbol(constants, *sym);
@@ -168,14 +178,13 @@ TEST_SUITE_START(InterpretTest)
 	{tInstruction instr = {iPRINT, NULL , tmp, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iRET, NULL, NULL, NULL}; instrListInsertInstruction(list, instr);}
 	//CAT FUNC
-	{tInstruction instr = {iMOV, CatLocalStr, StaticASD, NULL}; instrListInsertInstruction(list, instr);}
+	{tInstruction instr = {iADD, CatLocalStr, StaticASD, Static8}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iCONV2STR, CatLocalStr2, Static7, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iADD, CatLocalStr, CatLocalStr, CatLocalStr2}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iRET, NULL , CatLocalStr, NULL}; instrListInsertInstruction(list, instr);}
 
-	instrListSetFirstInstruction(list ,1);
 	Interpret(globalTable, list);
-
+	symbolFree(sym);
 	htabFree(globalTable);
 	htabFree(MainTable);
 	htabFree(CatTable);

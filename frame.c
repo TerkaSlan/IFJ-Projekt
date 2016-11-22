@@ -93,6 +93,8 @@ tFrame *fstackPop(tFrameStack *stack) {
 					strFree(stack->FrameArray[stack->Top].symbolArray[j].Data.String);
 			}
 
+
+
 			free(stack->FrameArray[stack->Top].symbolArray);
 			stack->FrameArray[stack->Top].symbolArray = NULL;
 		}
