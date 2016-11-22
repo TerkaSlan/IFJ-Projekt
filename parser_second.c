@@ -2,7 +2,7 @@
 // Basic structure created by Katika
 // Refined into more elaborate structure by Terka
 //
-#include "parser_SecondRun.h"
+#include "parser_second.h"
 #include "parser.h"
 #include "expr.h"
 #include "scanner.h"
@@ -31,6 +31,8 @@ tInstruction instr;
 dtStrPtr symbolName;
 
 bool updateInstructionIndex = true;
+
+dtStrPtr tmpString;
 
 /*
  * Checks if given adept for identifier collides with any builtin
@@ -73,14 +75,13 @@ eError initializeHelperVariables_2(){
 		freeToken(&token);
 		return ERR_INTERN;
 	}
+  tmpString = strNew();
   return ERR_OK;
 }
 
 void freeHelperVariables_2(){
   freeToken(&token);
   strFree(symbolName);
-	//symbolFree(currentFunction);
-	//symbolFree(currentClass);
 }
 
 tSymbolPtr findSymbol(dtStrPtr symbolName){
@@ -116,6 +117,9 @@ tSymbolPtr findSymbol(dtStrPtr symbolName){
         // I'm in currentClass, not in currentFunction
         return symbolAdept;
       }
+    }
+    else{
+      return symbolAdept;
     }
   }
   return NULL;
@@ -189,13 +193,6 @@ eError classList_2() {
 	}
 	if (token->type == TT_rightCurlyBracket){
 		getNewToken(token, errCode);
-    /*
-      instr.type = iRET;
-      instr.dst  = NULL;
-      instr.arg1 = NULL; // [TODO] map to a class ?
-      instr.arg2 = NULL;
-      instrListInsertInstruction(instructionList, instr);
-      */
     //
 		if (token->type == TT_keyword && token->keywordType == KTT_class) {
 			errCode = classList_2();
@@ -237,18 +234,14 @@ eError classBody_2() {
 			getNewToken(token, errCode);
 			//stops, when right round bracket is read - end of parameters
       currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName);
+      // no iFRAME
       strClear(symbolName);
       // telling me next time i'll be generating an intruction within this function, i have to set instruction index
-      updateInstructionIndex = true;
+      updateInstructionIndex = true; // TODO ??
 			while (token->type != TT_rightRoundBracket) {
-        //[type]
         getNewToken(token, errCode);
-				//[id]
-				getNewToken(token, errCode);
-
-				if (token->type == TT_comma)
-					getNewToken(token, errCode);
-
+        if (token->type == TT_EOF)
+          return ERR_SYNTAX;
 			}
       //[rightCurlyBracket]
  			getNewToken(token, errCode);
@@ -259,12 +252,6 @@ eError classBody_2() {
 				errCode = funcBody_2();
 				if (errCode != ERR_OK)
 					return errCode;
-        // TODO: Good here?
-        instr.type = iRET;
-        instr.dst  = NULL;
-        instr.arg1 = NULL;
-        instr.arg2 = NULL;
-        instrListInsertInstruction(instructionList, instr);
 			}
 
 			getNewToken(token, errCode);
@@ -354,14 +341,12 @@ eError stmt_2() {
 					if (errCode != ERR_OK) {
 						return errCode;
 					}
+          // TODO iRET
 
 					//expressions parsing could stop on semicolon or right round bracket before semicolon
 					//otherwise, there is syntax error
 					if (token->type != TT_semicolon) {
 						getNewToken(token, errCode);
-						if (token->type != TT_semicolon) {
-							return ERR_SYNTAX;
-						}
 					}
 
 					//read next token - at the end of the function we will determine what to do next
@@ -375,7 +360,7 @@ eError stmt_2() {
 					if (token->type != TT_semicolon) {
 						return errCode;
 					}
-
+          // TODO GOTO next instruction
 					//read next token - at the end of the function we will determine what to do next
 					getNewToken(token, errCode);
 					break;
@@ -387,7 +372,7 @@ eError stmt_2() {
 					if (token->type != TT_semicolon) {
 						return errCode;
 					}
-
+          // TODO GOTO instruction starting the loop
 					//read next token - at the end of the function we will determine what to do next
 					getNewToken(token, errCode);
 					break;
@@ -440,7 +425,7 @@ eError stmt_2() {
 						return ERR_SYNTAX;
 					}
 
-					precedenceParsing(NULL);
+					errCode = precedenceParsing(NULL);
           printf("PrecedenceParsing returned: %d\n", errCode);
 					if(token->type != TT_rightRoundBracket) {
 						return ERR_SYNTAX;
@@ -642,20 +627,22 @@ eError var_2(bool defined) {
 	if (token->type == TT_assignment) {
 		//call expressions parsing to parse intialize value
 		errCode = precedenceParsing(NULL);
-		instr.type = iMOV;
+		//instr.type = iMOV;
     // DO I HAVE SUCH SYMBOL? Checking for both defined and !define cause you never know, but might refactor later
     if((foundSymbol = findSymbol(symbolName)) == NULL)
       return ERR_SEM;
     else{
-      instr.dst = foundSymbol;
+      //instr.dst = foundSymbol;
+      ;
     }
 		// check na kompatibilitu typov -> tento provizorny zatial cajk, uvidime dokedy
-		if ((*(tSymbolPtr)instr.dst).Type != (*result).Type){
+		if (foundSymbol->Type != result->Type){
 			printf("Types aren't equal\n");
 		}
-		instr.arg1 = result; // p *(tSymbolPtr)instr.dst
-    instr.arg2 = NULL;
-		instrListInsertInstruction(instructionList, instr);
+    {tInstruction instr = {iMOV, foundSymbol, result, NULL}; instrListInsertInstruction(instructionList, instr);}
+		//instr.arg1 = result; // p *(tSymbolPtr)instr.dst
+    //instr.arg2 = NULL;
+		//instrListInsertInstruction(instructionList, instr);
     if (updateInstructionIndex){
 		  currentFunction->Data.FunctionData.InstructionIndex = instructionList->usedSize - 1;
       updateInstructionIndex = false;
@@ -669,11 +656,30 @@ eError var_2(bool defined) {
 		if (functionCall != iSTOP){  // isBuiltin = true
 			//TODO: generate functionCall according to what individual FC need
       if (functionCall == iPRINT){
+        // Want to iPRINT, must iCONV2STR first
+        // CONVERTING
         errCode = precedenceParsing(NULL);
-        symbolToString(result, &(result->Data));
-        result->Type = eSTRING;
-        instr.type = iPRINT;
+        tSymbolPtr symbolTmp;
+        //strAddChar(tmpString, '#');
+        tmpString = strNewFromCStr("##");
+        instr.type = iCONV2STR;
+        //symbolTmp = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
+          tSymbolPtr tmp = symbolNew();
+          tmp->Defined = true;
+          tmp->Const = false;
+          tmp->Type = eSTRING;
+          tmp->Name = strNewFromStr(tmpString);
+          symbolTmp = htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, tmp, false);
+          symbolFree(tmp);
+
+        strFree(tmpString);
+        instr.dst = symbolTmp;
         instr.arg1 = result;
+        instr.arg2 = NULL;
+        instrListInsertInstruction(instructionList, instr);
+        //PRINTING
+        instr.type = iPRINT;
+        instr.arg1 = symbolTmp;
         instr.arg2 = NULL;
         instr.dst = NULL;
         instrListInsertInstruction(instructionList, instr);
@@ -696,6 +702,9 @@ eError var_2(bool defined) {
       if((foundSymbol = findSymbol(symbolName)) == NULL)
         return ERR_SEM;
       else{
+        /*
+
+        */
         instr.dst = foundSymbol;
         instr.type = iCALL;
         instr.arg1 = NULL;

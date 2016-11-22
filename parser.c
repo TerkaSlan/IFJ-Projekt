@@ -60,84 +60,84 @@ do{                                  \
  * Creates a new class symbol and stores it in globalScopeTable
  * Changes currentScopeTable
  */
-#define createClass(name)                                                    \
-do {																								                         \
-	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);                      \
-	if (newTable == NULL) {errCode = ERR_INTERN; break;}	                     \
-	tSymbolPtr classSymbol = symbolNew();											                 \
-	if (classSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); break;}\
-  classSymbol->Type = eCLASS;																                 \
-  classSymbol->Const = true;																                 \
-  classSymbol->Defined = true;															                 \
-  classSymbol->Name = strNewFromStr(name);						                       \
-  classSymbol->Next = NULL;						                                       \
-  classSymbol->Data.ClassData.LocalSymbolTable = newTable;                   \
-	newTable->Parent = classSymbol;						                                 \
-	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL)            \
-		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);}     \
-	currentClass = classSymbol;                                                \
-  printSymbol("Class", currentClass);                                        \
-} while (0)
+ #define createClass(name)                                                    \
+ do {																								                         \
+ 	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);                      \
+ 	if (newTable == NULL) {errCode = ERR_INTERN; break;}	                     \
+ 	tSymbolPtr classSymbol = symbolNew();											                 \
+ 	if (classSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); break;}\
+   classSymbol->Type = eCLASS;																                 \
+   classSymbol->Const = true;																                 \
+   classSymbol->Defined = true;															                 \
+   classSymbol->Name = name;						                       \
+   classSymbol->Next = NULL;						                                       \
+   classSymbol->Data.ClassData.LocalSymbolTable = newTable;                   \
+ 	newTable->Parent = classSymbol;						                                 \
+ 	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL)            \
+ 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);}     \
+ 	currentClass = classSymbol;                                                \
+   printSymbol("Class", currentClass);                                        \
+ } while (0)
 
-/*
- * Creates a new function symbol and stores it in currentScopeTable
- * Changes currentScopeTable
- */
-#define createFunction(type, defined, name)		                           \
-do{																										\
-	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);\
-	if (newTable == NULL) {errCode = ERR_INTERN;}	\
-	tSymbolPtr functionSymbol = symbolNew();											\
-	if (functionSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); }\
-	functionSymbol->Type = eFUNCTION;																\
-	functionSymbol->Name = name;						\
-  functionSymbol->Defined = defined;\
-	functionSymbol->Data.FunctionData.ArgumentList = NULL;\
-	functionSymbol->Data.FunctionData.NumberOfArguments = 0;\
-	functionSymbol->Data.FunctionData.ReturnType = type;\
-	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
-	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
-	newTable->Parent = functionSymbol;\
-	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, true) == NULL) \
-		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(functionSymbol);} \
-	currentFunction = functionSymbol;\
-  printSymbol("Function", currentFunction);\
-} while (0)
+ /*
+  * Creates a new function symbol and stores it in currentScopeTable
+  * Changes currentScopeTable
+  */
+ #define createFunction(type, defined, name)		                           \
+ do{																										\
+ 	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);\
+ 	if (newTable == NULL) {errCode = ERR_INTERN;}	\
+ 	tSymbolPtr functionSymbol = symbolNew();											\
+ 	if (functionSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); }\
+ 	functionSymbol->Type = eFUNCTION;																\
+ 	functionSymbol->Name = name;						\
+   functionSymbol->Defined = defined;\
+ 	functionSymbol->Data.FunctionData.ArgumentList = NULL;\
+ 	functionSymbol->Data.FunctionData.NumberOfArguments = 0;\
+ 	functionSymbol->Data.FunctionData.ReturnType = type;\
+ 	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
+ 	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
+ 	newTable->Parent = functionSymbol;\
+ 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, true) == NULL) \
+ 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(functionSymbol);} \
+ 	currentFunction = functionSymbol;\
+   printSymbol("Function", currentFunction);\
+ } while (0)
 
-/*
- * Creates a new static variable symbol and stores it table of static variables and functions
- */
-#define createStaticVariable(type, defined, name)		\
-do{																										\
-	tSymbolPtr currentVariable = symbolNew();						\
-	if (currentVariable == NULL) {errCode = ERR_INTERN;}	\
-	currentVariable->Type = type;																\
-	currentVariable->Const = true;																\
-	currentVariable->Defined = defined;															\
-	currentVariable->Name = name;\
-	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, true) == NULL)\
-    {errCode = ERR_INTERN; symbolFree(currentVariable);}\
-  printSymbol("Static variable", currentVariable);\
-} while (0)
+ /*
+  * Creates a new static variable symbol and stores it table of static variables and functions
+  */
+ #define createStaticVariable(type, defined, name)		\
+ do{																										\
+ 	tSymbolPtr currentVariable = symbolNew();						\
+ 	if (currentVariable == NULL) {errCode = ERR_INTERN;}	\
+ 	currentVariable->Type = type;																\
+ 	currentVariable->Const = true;																\
+ 	currentVariable->Defined = defined;															\
+ 	currentVariable->Name = name;\
+ 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, true) == NULL)\
+     {errCode = ERR_INTERN; symbolFree(currentVariable);}\
+   printSymbol("Static variable", currentVariable);\
+ } while (0)
 
 
-/*
- * Creates a new local variable or parameter symbol and stores it table of function variables
- */
-#define createFunctionVariable(type, defined, name, isArgument)                                        \
-do{                                                                                                     \
-	tSymbolPtr currentVariable = symbolNew();                                                             \
-	if (currentVariable == NULL) {errCode = ERR_INTERN;}                                                  \
-	currentVariable->Type = type;																                                          \
-	currentVariable->Const = false;																                                        \
-	currentVariable->Defined = defined;															                                      \
-	currentVariable->Name = name;                                                                         \
-	if (htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, true) == NULL)\
-    {errCode = ERR_INTERN; symbolFree(currentVariable);}                                                \
-  printSymbol("Function variable", currentVariable);                                                    \
-  if (isArgument)                                                                                      \
-    symbolFuncAddArgument(currentFunction, currentVariable);                                            \
-} while (0)
+ /*
+  * Creates a new local variable or parameter symbol and stores it table of function variables
+  */
+ #define createFunctionVariable(type, defined, name, isArgument)                                        \
+ do{                                                                                                     \
+ 	tSymbolPtr currentVariable = symbolNew();                                                             \
+ 	if (currentVariable == NULL) {errCode = ERR_INTERN;}                                                  \
+ 	currentVariable->Type = type;																                                          \
+ 	currentVariable->Const = false;																                                        \
+ 	currentVariable->Defined = defined;															                                      \
+ 	currentVariable->Name = name;                                                                         \
+ 	if (htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, true) == NULL)\
+     {errCode = ERR_INTERN; symbolFree(currentVariable);}                                                \
+   printSymbol("Function variable", currentVariable);                                                    \
+   if (isArgument)                                                                                      \
+     symbolFuncAddArgument(currentFunction, currentVariable);                                            \
+ } while (0)
 
 #define getNewToken(token, errCode)   \
 do{                                   \
@@ -213,8 +213,6 @@ eError initializeHelperVariables(){
 }
 
 void freeHelperVariables(){
-  //symbolFree(currentFunction);
-  //symbolFree(currentClass);
   freeToken(&token);
   strFree(symbolName);
 }
@@ -264,7 +262,6 @@ eError classList() {
 	if (token->type == TT_leftCurlyBracket){
       // Creating our first class symbol! This one will go to globalScopeTable and currentScopeTable will be changed
 			createClass(symbolName);
-      currentClass = htabGetSymbol(globalScopeTable, symbolName);
       strClear(symbolName);
       if (errCode != ERR_OK)
         return errCode;
@@ -331,7 +328,7 @@ eError classBody() {
     // Checking if token->str doesn't collide with builtins
   isBuiltin(symbolName);
   if (symbolName == NULL){
-    EXIT(ERR_SYNTAX, "Identifier collides with a builtin in %s at %d \n",  __FILE__, __LINE__);
+    EXIT(ERR_SEM, "Identifier collides with a builtin in %s at %d \n",  __FILE__, __LINE__);
     return ERR_SEM;
   }
 	//read next token - now we will find out, if it is function or identifier
@@ -345,7 +342,7 @@ eError classBody() {
         EXIT(ERR_SYNTAX, "Unexpected token type in %s at %d \n",  __FILE__, __LINE__);
         return ERR_SYNTAX;
       }
-			createStaticVariable(symbolTokenType, true, symbolName);
+			createStaticVariable(symbolTokenType, false, symbolName);
 			getNewToken(token, errCode);
 			break;
 
@@ -362,7 +359,7 @@ eError classBody() {
 			if (errCode != ERR_OK)
 				return errCode;
 
-			createStaticVariable(symbolTokenType, true, symbolName);
+			createStaticVariable(symbolTokenType, false, symbolName);
 
 			//expressions parsing read one token outside of expression - has to be semicolon
 			if (token->type != TT_semicolon){
@@ -375,7 +372,6 @@ eError classBody() {
 
 		case TT_leftRoundBracket:
 			createFunction(eFUNCTION, true, symbolName);
-      currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName);
       if (errCode != ERR_OK){
         return errCode;
       }
@@ -803,7 +799,6 @@ eError var(bool defined) {
     if (symbolName == NULL)
       return ERR_SEM;
     createFunctionVariable(symbolTokenType, defined, symbolName, false);
-    //tSymbolPtr temp = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
     errCode = skipPrecedenceParsing(errCode);
     if (errCode != ERR_OK)
       return errCode;
@@ -835,5 +830,4 @@ eError var(bool defined) {
   }
   strClear(symbolName);
 	return ERR_OK;
-
 }

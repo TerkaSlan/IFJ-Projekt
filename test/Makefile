@@ -1,5 +1,5 @@
 cc=gcc
-CFLAGS=-std=gnu99 -g -Wall -lm
+CFLAGS=-std=gnu99 -g -Werror  -Wall -lm
 
 #TEST_C_FILES=$(wildcard test*.c)
 #TEST_H_FILES=$(wildcard test*.h)

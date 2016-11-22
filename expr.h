@@ -96,6 +96,8 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
+void printStack(tPrecedenceStackPtr stack);
+
 eError precedenceParsing(Token* helpToken);
 
 eError parsing(Token* helpToken);

@@ -701,8 +701,9 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 			}
 			case iPRINT:
 				ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
-				CHECK_INIT(i->arg1, curFrame);
-
+				symbolIsInitialized((i->arg1), (curFrame));
+				//CHECK_INIT(i->arg1, curFrame);
+				GD(i->arg1, curFrame);
 				printf("%s", strGetCStr(GD(i->arg1, curFrame)->String));
 
 				break;

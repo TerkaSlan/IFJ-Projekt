@@ -1,9 +1,9 @@
 #include <stdio.h>
+#include "parser_second.h"
 #include "parser.h"
 #include "scanner.h"
 #include "interpret.h"
 #include "error.h"
-#include "parser_SecondRun.h"
 
 tHashTablePtr globalScopeTable;
 tInstructionListPtr instructionList;
@@ -32,10 +32,10 @@ void freeGlobalVariables(){
 }
 
 int main(int argc, char const *argv[]) {
-  openFile("3");
+  openFile("2");
   initializeGlobalVariables();
   printf("Retcode: %d \n", fillSymbolTable());    // parsing #1
-  finishParsing();                                // parsing #2   
+  finishParsing();                                // parsing #2
   Interpret(globalScopeTable, instructionList);
   closeFile();
   return 0;

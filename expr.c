@@ -32,16 +32,18 @@ dtStrPtr tmpBool;
 do{																\
 	dtStrPtr name;												\
 	if (dType == eDOUBLE) {										\
-		name = strNewFromCStr("@double");						\
+		name = strNewFromStr(tmpDouble);						\
+		strAddChar(tmpDouble, '.');								\
 		instr.type = iCONV2DOUBLE;								\
 	} else { 													\
-		name = strNewFromCStr("@string");						\
+		name = strNewFromStr(tmpString);						\
+		strAddChar(tmpString, '@');								\
 		instr.type = iCONV2STR;									\
 	}															\
 	symbolTmp = htabGetSymbol(table, name);						\
 	if (symbolTmp == NULL) {									\
 		tSymbolPtr tmp = symbolNew();							\
-		tmp->Defined = false;									\
+		tmp->Defined = true;									\
 		tmp->Const = false;										\
 		tmp->Type = dType;										\
 		tmp->Name = strNewFromStr(name);						\
@@ -55,7 +57,7 @@ do{																\
 } while (0);
 
 /*
- * Creates new variable with given type, stores it into given table and returns pointer to variable in symbolExprTmp
+ * Creates new variable with given type, stores it into given table and returns pointer to it in symbolExprTmp
  */
 #define tmpVariable(table, symbolExprTmp, type)					\
 do {															\
@@ -250,9 +252,7 @@ void precedenceSymbolClean(tPrecedenceSymbolPtr symbol) {
 	 || (symbol->type == TT_fullIdentifier))) {
 		strFree(symbol->stringOrId);
 	}
-//	if (symbol->type == TT_E) {
-//		symbolFree(symbol->symbol);
-//	}
+
 	symbol->type = TT_empty;
 
 }
@@ -450,6 +450,10 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		}
 
 		if (paramCount > 0 ) {
+			if (result == NULL) {
+				printError(ERR_SEM_TYPE, "Function call with too few arguments.");
+				return ERR_SEM_TYPE;
+			}
 			if (result->Type == eINT && argument->Symbol->Type == eDOUBLE) {
 				//convert result from expressions parsing to double
 				tSymbolPtr symbolTmp;
@@ -458,7 +462,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				//add instr to instructionList
 				errCode =  instrListInsertInstruction(instructionList, instr);
 				if (errCode == -1) {
-					return ERR_SEM_TYPE;
+					return ERR_INTERN;
 				}
 				result = symbolTmp;
 			}
@@ -470,18 +474,18 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				instr.arg2 = NULL;
 				errCode =  instrListInsertInstruction(instructionList, instr);
 				if (errCode == -1) {
-					symbolFree(funcSymbol);
 					return ERR_INTERN;
 				}
 				paramCount--;
 				argument = argument->Next;
+
 			} else {
-
+				printError(ERR_SEM_TYPE, "Incompatible argument type in function call.");
 				return ERR_SEM_TYPE;
-
 			}
 
 		} else {
+			printError(ERR_SEM_TYPE, "Function call with too much arguments.");
 			return ERR_SEM_TYPE;
 		}
 
@@ -574,7 +578,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			//precedence symbol containing pointer to current id in symbol table - push on symbol stack
 			precedenceSymbolClean(id);
 			id->type = TT_E;
-			id->symbol = symbolNewCopy(symbolId);
+			id->symbol = symbolId;
 			symbolStackPush(symbolStack, id);
 			precedenceSymbolFree(id);
 
@@ -635,7 +639,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			precedenceSymbolClean(fullId);
 			fullId->type = TT_E;
-			fullId->symbol = symbolNewCopy(symbolId);
+			fullId->symbol = symbolId;
 			symbolStackPush(symbolStack, fullId);
 
 			precedenceStackPush(stack, TT_E);
@@ -750,20 +754,21 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			tPrecedenceSymbolPtr operand2 = symbolStackPop(symbolStack);
 			tPrecedenceSymbolPtr operand1 = symbolStackPop(symbolStack);
 			tSymbolPtr symbolExprTmp;
+			tSymbolPtr symbolTmp;
 			tInstruction instr;
 
 			if (operand1->symbol->Type == eSTRING) {
 				if (operator == TT_plus) {
 				if (operand2->symbol->Type != eSTRING) {
+
 					//pretypovat 2. operand na string
-					tSymbolPtr symbolTmp = symbolNew();
 					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eSTRING);
 
 					errCode =  instrListInsertInstruction(instructionList, instr);
 						if (errCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
-						return ERR_SEM_TYPE;
+						return ERR_INTERN;
 					}
 					operand2->symbol = symbolTmp;
 				}
@@ -780,16 +785,16 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			if (operand2->symbol->Type == eSTRING) {
 				if (operator == TT_plus) {
 				if (operand1->symbol->Type != eSTRING) {
+
 					//pretypovat 1. operand na string
-					tSymbolPtr symbolTmp = symbolNew();
-					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eSTRING);
+					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eSTRING);
 
 					//pridat instrukciu na instrukcnu pasku
 					errCode =  instrListInsertInstruction(instructionList, instr);
 					if (errCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
-						return ERR_SEM_TYPE;
+						return ERR_INTERN;
 					}
 					operand1->symbol = symbolTmp;
 				}
@@ -813,7 +818,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
 					//generovat instrukciu na prevod prveho operandu na double
-					tSymbolPtr symbolTmp;
 					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
 					//pridat instrukciu na instrukcnu pasku
@@ -821,7 +825,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					if (errCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
-						return ERR_SEM_TYPE;
+						return ERR_INTERN;
 					}
 					operand1->symbol = symbolTmp;
 
@@ -830,7 +834,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					goto generateInstruction;
 				} else {
-					//uvolnit vsetko
+
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
 					return ERR_SEM_TYPE;
@@ -839,7 +843,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				if (operand2->symbol->Type == eINT) {
 
 					//generovat instrukciu na prevod druheho operandu na double
-					tSymbolPtr symbolTmp;
 					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
 					//pridat instrukciu na instrukcnu pasku
@@ -847,7 +850,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					if (errCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
-						return ERR_SEM_TYPE;
+						return ERR_INTERN;
 					}
 					operand2->symbol = symbolTmp;
 
@@ -1085,13 +1088,49 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 eError precedenceParsing(Token* helpToken) {
 
 	tmpString = strNew();
-	strAddChar(tmpString, '@');
+	if (tmpString == NULL) {
+		return ERR_INTERN;
+	}
+	if (strAddChar(tmpString, '@') != ERR_OK) {
+		strFree(tmpString);
+		return ERR_INTERN;
+	}
 	tmpInt = strNew();
-	strAddChar(tmpInt, '#');
+	if (tmpInt == NULL) {
+		strFree(tmpString);
+		return ERR_INTERN;
+	}
+	if (strAddChar(tmpInt, '#') != ERR_OK) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		return ERR_INTERN;
+	}
 	tmpDouble = strNew();
-	strAddChar(tmpDouble, '.');
+	if (tmpDouble == NULL) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		return ERR_INTERN;
+	}
+	if (strAddChar(tmpDouble, '.') != ERR_OK) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		strFree(tmpDouble);
+		return ERR_INTERN;
+	}
 	tmpBool = strNew();
-	strAddChar(tmpBool, '0');
+	if (tmpBool == NULL) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		strFree(tmpDouble);
+		return ERR_INTERN;
+	}
+	if (strAddChar(tmpBool, '0') != ERR_OK) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		strFree(tmpDouble);
+		strFree(tmpBool);
+		return ERR_INTERN;
+	}
 
 	eError errCode = parsing(helpToken);
 
