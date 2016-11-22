@@ -30,7 +30,7 @@ tConstContainerPtr constNew();
 tSymbolPtr constInsertSymbol(tConstContainerPtr container, tSymbol symbol);
 
 /**
- * \brief Clrears container and frees all the symbols, including itself.
+ * \brief Clears container and frees all the symbols, including itself.
  * @param container Container to be freed.
  */
 void constFree(tConstContainerPtr container);

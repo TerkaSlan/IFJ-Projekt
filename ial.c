@@ -44,7 +44,7 @@ tHashTablePtr htabCopy(const tHashTablePtr table) {
 				return NULL;
 			}
 
-			//copy symbol 
+			//copy symbol
 			memcpy(symbolNew, symbolIterator, sizeof(tSymbol)); //use memcpy to allow changes in tSymbol structure
 			symbolNew->Next = NULL;
 
@@ -138,14 +138,20 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol, bool over
 		//hash name to get index into the hash table
 		uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
 
+	//insert new item to the beginning of the list
+	table->Data[index] = symbolCopy;
+	table->NumberOfItems++;
 
 		//first item in the list will become second
-		symbolCopy->Next = table->Data[index];
+		/*
+		if (symbolCopy->Next != NULL){
+			symbolCopy->Next = table->Data[index];
 
 
-		//insert new item to the beginning of the list
-		table->Data[index] = symbolCopy;
-		table->NumberOfItems++;
+			//insert new item to the beginning of the list
+			table->Data[index] = symbolCopy;
+			table->NumberOfItems++;
+		}*/
 
 		return symbolCopy;
 	}
@@ -296,6 +302,8 @@ tSymbolPtr symbolNewCopy(const tSymbolPtr symbol) {
 	if(memcpy(ret, symbol, sizeof(tSymbol)) == NULL)
 		goto ERRORsymbolNewCopy;
 
+	if((ret->Name = strNew()) == NULL)
+		goto ERRORsymbolNewCopy;
 
 	//if has name, copy
 	if(symbol->Name) {
@@ -424,7 +432,7 @@ int32_t find(dtStr* s, dtStr* search) {
 	uint32_t fail[s->uiLength+1];
 	uint32_t r;
 	fail[0] = 0;
-	for (uint32_t k = 1; k < s->uiLength; k++) {		
+	for (uint32_t k = 1; k < s->uiLength; k++) {
 		r = fail[k-1];
 		while ((r>0) && (s->str[r-1] != s->str[k-1])) {
 			r = fail[r-1];
