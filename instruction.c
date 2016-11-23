@@ -135,7 +135,7 @@ void instrListPrint(tInstructionListPtr list) {
 		printf("Pointer to instruction list is NULL\n");
 		return;
 	}	
-	char *types[] = {"iSTOP", "iMOV", "iFRAME", "iPUSH", "iCALL", "iRET", "iGETRETVAL", "iINC", "iDEC", "iADD", "iSUB", "iMUL", "iDIV", "iNEG", "iLE", "iLT", "iGE", "iGT", "iEQ", "iNEQ", "iLAND", "iLOR", "iLNOT", "iGOTO", "iIFGOTO", "iIFNGOTO", "iCONV2STR", "iCONV2INT", "iCONV2BOOL", "iCONV2DOUBLE", "iPRINT", "iREAD", "iLEN", "iCOMPARE", "iFIND", "iSORT", "iSUBSTR", "Unknown instr"};
+	static const char *types[] = {"iSTOP", "iMOV", "iFRAME", "iPUSH", "iCALL", "iRET", "iGETRETVAL", "iINC", "iDEC", "iADD", "iSUB", "iMUL", "iDIV", "iNEG", "iLE", "iLT", "iGE", "iGT", "iEQ", "iNEQ", "iLAND", "iLOR", "iLNOT", "iGOTO", "iIFGOTO", "iIFNGOTO", "iCONV2STR", "iCONV2INT", "iCONV2BOOL", "iCONV2DOUBLE", "iPRINT", "iREAD", "iLEN", "iCOMPARE", "iFIND", "iSORT", "iSUBSTR", "Unknown instr"};
 	uint32_t index = 0;
 
 	const char ESC = 27;
