@@ -4,7 +4,18 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <inttypes.h>
 #include "instruction.h"
+#include "ial.h"
+
+// Colors
+#define KNRM  "\x1B[0m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+
 
 
 #define INSTRUCTION_LIST_DEFAULT_SIZE 4096
@@ -117,4 +128,132 @@ void instrListFree(tInstructionListPtr list) {
 	free(list->instructionArray);
 	free(list);
 
+}
+
+void instrListPrint(tInstructionListPtr list) {
+	if (!list) {
+		printf("Pointer to instruction list is NULL\n");
+		return;
+	}	
+	static const char *types[] = {"iSTOP", "iMOV", "iFRAME", "iPUSH", "iCALL", "iRET", "iGETRETVAL", "iINC", "iDEC", "iADD", "iSUB", "iMUL", "iDIV", "iNEG", "iLE", "iLT", "iGE", "iGT", "iEQ", "iNEQ", "iLAND", "iLOR", "iLNOT", "iGOTO", "iIFGOTO", "iIFNGOTO", "iCONV2STR", "iCONV2INT", "iCONV2BOOL", "iCONV2DOUBLE", "iPRINT", "iREAD", "iLEN", "iCOMPARE", "iFIND", "iSORT", "iSUBSTR", "Unknown instr"};
+	uint32_t index = 0;
+
+	const char ESC = 27;
+	while (index < list->usedSize) {
+		printf("%4d.: ", index);
+		printf("%s%c[1m%13s%c[0m%s ", KYEL, ESC, types[list->instructionArray[index].type], ESC, KNRM);
+
+		printf("  |   %sDst ", KMAG);
+		if (list->instructionArray[index].dst != NULL) {
+			if (((tSymbolPtr)list->instructionArray[index].dst)->Name != NULL && ((tSymbolPtr)list->instructionArray[index].dst)->Name->str != NULL) {
+				printf("Name: %s ", ((tSymbolPtr)list->instructionArray[index].dst)->Name->str);
+			} else {
+				if ( &(((tSymbolPtr)list->instructionArray[index].dst)->Data) != NULL || ((tSymbolPtr)list->instructionArray[index].dst)->Type == eNULL) {
+					switch (((tSymbolPtr)list->instructionArray[index].dst)->Type) {
+						case eNULL:
+							printf("eNULL ");
+							break;
+						case eINT:
+							printf( "eINT: ""%" SCNd32 " ", (int32_t)((tSymbolPtr)list->instructionArray[index].dst)->Data.Integer );
+							break;
+						case eDOUBLE:
+							printf( "eDOUBLE: %lf ", ((tSymbolPtr)list->instructionArray[index].dst)->Data.Double );
+							break;
+						case eBOOL:
+							printf("eBOOL: %s ", ((tSymbolPtr)list->instructionArray[index].dst)->Data.Bool ? "true" : "false");
+							break;
+						case eSTRING:
+							if (((tSymbolPtr)list->instructionArray[index].dst)->Data.String != NULL) {
+								printf("eSTRING: %s ", ((tSymbolPtr)list->instructionArray[index].dst)->Data.String->str );
+							} else {
+								printf("eSTRING: NULL ");	
+							}
+							break;
+						default:
+							printf("*UnknownType* ");
+					}
+				} else {
+					printf("Data = NULL ");
+				}
+			}
+		} else {
+			printf("= NULL ");
+		}
+
+		printf("%s  |  %s Arg1 ", KNRM, KGRN);
+		if (list->instructionArray[index].arg1 != NULL) {
+			if (((tSymbolPtr)list->instructionArray[index].arg1)->Name != NULL && ((tSymbolPtr)list->instructionArray[index].arg1)->Name->str != NULL) {
+				printf("Name: %s ", ((tSymbolPtr)list->instructionArray[index].arg1)->Name->str);
+			} else {
+				if ( &(((tSymbolPtr)list->instructionArray[index].arg1)->Data) != NULL || ((tSymbolPtr)list->instructionArray[index].arg1)->Type == eNULL) {
+					switch (((tSymbolPtr)list->instructionArray[index].arg1)->Type) {
+						case eNULL:
+							printf("eNULL ");
+							break;
+						case eINT:
+							printf( "eINT: ""%" SCNd32 " ", (int32_t)((tSymbolPtr)list->instructionArray[index].arg1)->Data.Integer );
+							break;
+						case eDOUBLE:
+							printf( "eDOUBLE: %lf ", ((tSymbolPtr)list->instructionArray[index].arg1)->Data.Double );
+							break;
+						case eBOOL:
+							printf("eBOOL: %s ", ((tSymbolPtr)list->instructionArray[index].arg1)->Data.Bool ? "true" : "false");
+							break;
+						case eSTRING:
+							if (((tSymbolPtr)list->instructionArray[index].arg1)->Data.String != NULL) {
+								printf("eSTRING: %s ", ((tSymbolPtr)list->instructionArray[index].arg1)->Data.String->str );
+							} else {
+								printf("eSTRING: NULL ");
+							}
+							break;					
+						default:
+							printf("*UnknownType* ");
+					}
+				} else {
+					printf("Data = NULL ");
+				}
+			}
+		} else {
+			printf("= NULL ");
+		}
+
+		printf("%s  |  %s Arg2 ", KNRM, KCYN);
+		if (list->instructionArray[index].arg2 != NULL) {
+			if (((tSymbolPtr)list->instructionArray[index].arg2)->Name != NULL && ((tSymbolPtr)list->instructionArray[index].arg2)->Name->str != NULL) {
+				printf("Name: %s ", ((tSymbolPtr)list->instructionArray[index].arg2)->Name->str);
+			} else {
+				if ( &(((tSymbolPtr)list->instructionArray[index].arg2)->Data) != NULL || ((tSymbolPtr)list->instructionArray[index].arg2)->Type == eNULL) {
+					switch (((tSymbolPtr)list->instructionArray[index].arg2)->Type) {
+						case eNULL:
+							printf("eNULL ");
+							break;
+						case eINT:
+							printf( "eINT: ""%" SCNd32 " ", (int32_t)((tSymbolPtr)list->instructionArray[index].arg2)->Data.Integer );
+							break;
+						case eDOUBLE:
+							printf( "eDOUBLE: %lf ", ((tSymbolPtr)list->instructionArray[index].arg2)->Data.Double );
+							break;
+						case eBOOL:
+							printf("eBOOL: %s ", ((tSymbolPtr)list->instructionArray[index].arg2)->Data.Bool ? "true" : "false");
+							break;
+						case eSTRING:
+							if (((tSymbolPtr)list->instructionArray[index].arg2)->Data.String != NULL) {
+								printf("eSTRING: %s ", ((tSymbolPtr)list->instructionArray[index].arg2)->Data.String->str );
+							} else {
+								printf("eSTRING: NULL ");
+							}
+							break;					
+						default:
+							printf("*UnknownType* ");
+					}
+				} else {
+					printf("Data = NULL ");
+				}
+			}
+		} else {
+			printf("= NULL ");
+		}
+		printf("%s\n", KNRM);
+		index++;
+	}
 }

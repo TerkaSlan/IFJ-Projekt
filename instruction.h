@@ -156,5 +156,12 @@ void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex);
  */
 void instrListFree(tInstructionListPtr list);
 
+/**
+ * @brief      Prints present state of instruction list
+ *
+ * @param[in]  list  tInstructionListPtr, Pointer to the instruction list to be printed
+ */
+void instrListPrint(tInstructionListPtr list);
+
 
 #endif //INSTRUCTION_H

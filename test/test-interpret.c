@@ -173,6 +173,8 @@ TEST_SUITE_START(InterpretTest)
 	{tInstruction instr = {iADD, CatLocalStr, CatLocalStr, CatLocalStr2}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iRET, NULL , CatLocalStr, NULL}; instrListInsertInstruction(list, instr);}
 
+	instrListPrint(list);
+
 	instrListSetFirstInstruction(list ,1);
 	Interpret(globalTable, list);
 
