@@ -135,23 +135,16 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol, bool over
 		//create a copy of a symbol
 		tSymbolPtr symbolCopy = symbolNewCopy(symbol);
 
+		if(!symbolCopy)
+			return NULL;
+
 		//hash name to get index into the hash table
 		uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
 
 	//insert new item to the beginning of the list
+	symbolCopy->Next = table->Data[index];
 	table->Data[index] = symbolCopy;
 	table->NumberOfItems++;
-
-		//first item in the list will become second
-		/*
-		if (symbolCopy->Next != NULL){
-			symbolCopy->Next = table->Data[index];
-
-
-			//insert new item to the beginning of the list
-			table->Data[index] = symbolCopy;
-			table->NumberOfItems++;
-		}*/
 
 		return symbolCopy;
 	}
@@ -263,6 +256,30 @@ void htabClear(tHashTablePtr table) {
 	table->NumberOfItems = 0;
 
 }
+static tSymbolPtr recursiveDelete(tSymbolPtr symbol, void* param)
+{
+	switch(symbol->Type)
+	{
+		case eCLASS:
+			htabRecursiveFree(symbol->Data.ClassData.LocalSymbolTable);
+			break;
+		case eFUNCTION:
+			htabFree(symbol->Data.FunctionData.LocalSymbolTable);
+			break;
+		default:
+			break;
+	}
+	return symbol;
+}
+
+void htabRecursiveFree(tHashTablePtr table)
+{
+	if(!table)
+		return;
+
+	htabForEach(table, recursiveDelete, NULL);
+	htabFree(table);
+}
 
 void htabFree(tHashTablePtr table) {
 	if(!table)
@@ -302,8 +319,6 @@ tSymbolPtr symbolNewCopy(const tSymbolPtr symbol) {
 	if(memcpy(ret, symbol, sizeof(tSymbol)) == NULL)
 		goto ERRORsymbolNewCopy;
 
-	if((ret->Name = strNew()) == NULL)
-		goto ERRORsymbolNewCopy;
 
 	//if has name, copy
 	if(symbol->Name) {
