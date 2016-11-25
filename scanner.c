@@ -600,7 +600,7 @@ int32_t getToken(Token *token){
               handleLexError(token, ERR_LEX);
             }
             else{
-              state = SString;
+              handleLexError(token, ERR_LEX);
             }
           }
         }
@@ -608,12 +608,18 @@ int32_t getToken(Token *token){
       }
       case SOctal: {
         // 001 to 377 are valid sequences (0-3 already in token->str)
-        if ((iCurrentSymbol >= '0' && iCurrentSymbol <= '7') && octalLength < 3){
+        if ((iCurrentSymbol >= '0' && iCurrentSymbol <= '7')){
+          if (octalLength > 3)
+            handleLexError(token, ERR_LEX);
           state = SOctal;
           strAddChar(octalString, iCurrentSymbol);
           octalLength++;
         }
         else{
+          if (octalLength != 3){
+            strFree(octalString);
+            handleLexError(token, ERR_LEX);
+          }
           ungetc(iCurrentSymbol, fSourceFile);
           int32_t intFromOctal = octalToInt(octalString);
           strFree(octalString);
