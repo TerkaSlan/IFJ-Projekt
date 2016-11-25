@@ -279,6 +279,22 @@ getc(fSourceFile);
 
 token = newToken();
 retval = getToken(token);
+SHOULD_EQUAL("\n2digits in octal escape", retval, ERR_LEX);
+// skipping over invalid octal
+getc(fSourceFile);
+getc(fSourceFile);
+getc(fSourceFile);
+
+token = newToken();
+retval = getToken(token);
+SHOULD_EQUAL("\n2digits in octal escape", retval, ERR_LEX);
+
+token = newToken();
+retval = getToken(token);
+SHOULD_EQUAL("\n4digits in octal escape", retval, ERR_LEX);
+
+token = newToken();
+retval = getToken(token);
 SHOULD_EQUAL("\n9_$ ", retval, ERR_LEX);
 getc(fSourceFile);
 
