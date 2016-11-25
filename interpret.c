@@ -121,7 +121,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 			case iFRAME: {
 				//check if function being called is ok
-				tSymbolPtr func = (tSymbolPtr)(i->dst);
+				tSymbolPtr func = (tSymbolPtr)(i->arg1);
 				if(!func->Defined || func->Type != eFUNCTION)
 					EXIT(ERR_RUN_UNINITIALIZED, "Calling undefined function %s.\n", strGetCStr(func->Name));
 
@@ -160,6 +160,10 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						tFrameItemPtr tmpDst = &(frames.Prepared.symbolArray[frames.ArgumentIndex++]);
 						dtStrPtr tmpSrc = GD(i->arg1, curFrame)->String;
 
+						//if replacing string, free it first (should never happen in this case but hey)
+						if(tmpDst->Initialized && tmpDst->Type == eSTRING && tmpDst->Data.String)
+							strFree(tmpDst->Data.String);
+
 						if((tmpDst->Data.String = strNewFromStr(tmpSrc)) == NULL)
 							EXIT(ERR_INTERN, "Cannot copy string. Out of memory.\n");
 
@@ -189,7 +193,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				tSymbolPtr retval = i->arg1;
 
 				//if replacing string, free first
-				if(frames.ReturnData.String && frames.ReturnData.String != NULL)
+				if(frames.ReturnType == eSTRING && frames.ReturnData.String)
 				{
 					strFree(frames.ReturnData.String);
 					frames.ReturnData.String = NULL;
@@ -217,8 +221,15 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 					case eSTRING: {
 						tSymbolData *tmpStr = GD(i->arg1, curFrame);
 
+
+						//if replacing string that has not been picked up by iGETRETVAL, free is first
+						if(frames.ReturnType == eSTRING && frames.ReturnData.String)
+							strFree(frames.ReturnData.String);
+
 						frames.ReturnData.String = tmpStr->String;
-						tmpStr->String = NULL; //prevent deleting on frame destruction
+
+						//passed only a pointer to string, prevent deleting it with destruction of current frame
+						tmpStr->String = NULL;
 						break;
 					}
 					default:
@@ -255,7 +266,13 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					case eSTRING: {
-						SDS(i->dst, curFrame)->String = frames.ReturnData.String;
+						dtStrPtr *dst = &(SDS(i->dst, curFrame)->String);
+
+						//if replacing local string variable, free it first
+						if(*dst)
+							strFree(*dst);
+
+						*dst = frames.ReturnData.String;
 						frames.ReturnData.String = NULL; //prevent multiple frees
 						break;
 					}
@@ -274,6 +291,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 					GD(tmp, curFrame)->Integer++;
 				else
 					EXIT(ERR_OTHER,"Trying to increment non int.\n");
+				break;
 			}
 
 			case iDEC:{
@@ -284,6 +302,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 					GD(tmp, curFrame)->Integer--;
 				else
 					EXIT(ERR_OTHER,"Trying to decrement non int.\n");
+				break;
 			}
 
 			case iADD:{
@@ -701,9 +720,8 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 			}
 			case iPRINT:
 				ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
-				symbolIsInitialized((i->arg1), (curFrame));
-				//CHECK_INIT(i->arg1, curFrame);
-				GD(i->arg1, curFrame);
+				CHECK_INIT(i->arg1, curFrame);
+
 				printf("%s", strGetCStr(GD(i->arg1, curFrame)->String));
 
 				break;

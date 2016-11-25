@@ -207,6 +207,12 @@ tSymbolPtr symbolFuncAddArgument(tSymbolPtr symbolFunc, const tSymbolPtr argumen
 
 
 /**
+ * \brief Recursively frees symbol table hiearchy
+ * @param table Table hiearchy to be freed recursively.
+ */
+void htabRecursiveFree(tHashTablePtr table);
+
+/**
 *  \brief Deallocates a new Symbol.
 *
 *	\param [in] tSymbolPtr, Pointer to the symbol to be deallocated

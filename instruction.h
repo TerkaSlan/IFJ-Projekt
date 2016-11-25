@@ -20,13 +20,12 @@ typedef enum {
 	iCALL,      ///calls function from
 	iRET,       ///Return arg1, can be null
 	iGETRETVAL, ///Gets return value from last function dst = retval
-	iINC,       ///Increment            dst = arg1 + 1
-	iDEC,       ///Decrement            dst = arg1 - 1
+	iINC,       ///Increment            dst = dst + 1
+	iDEC,       ///Decrement            dst = dst - 1
 	iADD,       ///Add                  dst = arg1 + arg2
 	iSUB,       ///Subtract             dst = arg1 - arg2
 	iMUL,       ///Multiply             dst = arg1 * arg2
 	iDIV,       ///Divide               dst = arg1 / arg2
-	iMOD,       ///Modulo               dst = arg1 % arg2
 	iNEG,       ///Negate               dst = -arg1
 	iLE,        ///<=                   dst(bool) = arg1 <= arg2
 	iLT,        ///<                    dst(bool) = arg1 < arg2
@@ -156,6 +155,13 @@ void instrListGoto(tInstructionListPtr list, uint32_t instructionIndex);
  *
  */
 void instrListFree(tInstructionListPtr list);
+
+/**
+ * @brief      Prints present state of instruction list
+ *
+ * @param[in]  list  tInstructionListPtr, Pointer to the instruction list to be printed
+ */
+void instrListPrint(tInstructionListPtr list);
 
 
 #endif //INSTRUCTION_H
