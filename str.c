@@ -241,7 +241,7 @@ int32_t strCharPos(dtStr *s, const char c) {
 	if (s == NULL) {
 		return -1;
 	}
-	for (int32_t i = 0; i < s->uiLength; i++)
+	for (uint32_t i = 0; i < s->uiLength; i++)
 	{
 		if (s->str[i] == c) {
 			return i;

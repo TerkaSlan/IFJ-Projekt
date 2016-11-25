@@ -73,6 +73,9 @@ int main(int argc, char **argv)
     REGISTER_TEST_SUITE(ConversionsTest)
     REGISTER_TEST_SUITE(ScannerTest)
     REGISTER_TEST_SUITE(InterpretTest)
+    REGISTER_TEST_SUITE(ialTest)
+    REGISTER_TEST_SUITE(BuiltinTest)
+
     RUN_TEST_SUITES
 
     if (!(testFlags & OnlyFailed)) {
