@@ -59,23 +59,31 @@ void precedenceStackFree(tPrecedenceStackPtr stack);
  * Finds terminal closest to top of given precedence stack.
  *
  * @param  stack pointer to precedence stack
- * @return       terminal closest to top, or ERR_INTERN if error (ERR_INTERS is equal to 99 and terminal is less then 25)
+ * @return       terminal closest to top, or ERR_INTERN if error (ERR_INTERN is equal to 99 and terminal value is less then 25)
  */
 uint32_t precedenceStackTopTerminal(tPrecedenceStackPtr stack);
 
-
+/**
+ * Push item to precedence stack and increments top of precedence stack
+ * 
+ * @param  stack pointer to precedence stack
+ * @param  item  value of item to by pushed
+ * @return       ERR_OK if success, ERR_INTERN otherwise
+ */
+eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item); 
 
 /**
- * [precedenceStackPush description]
- * @param  stack [description]
- * @param  item  [description]
- * @return       [description]
+ * Returns value of item on top of precedence stack and decrement top of precedence stack
+ * @param  stack pointer to precedence stack
+ * @return       value of item on top of precedence stack
  */
-eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item);
-
-
 int64_t precedenceStackPop(tPrecedenceStackPtr stack);
 
+/**
+ * Inserts value representing shift before top most terminal on stack
+ * @param  stack pointer to precedence stack
+ * @return       ERR_OK if success, ERR_INTERN otherwise
+ */
 eError precedenceStackShift(tPrecedenceStackPtr stack);
 
 tPrecedenceSymbolPtr precedenceSymbolNew();
@@ -93,6 +101,8 @@ int64_t symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item);
 tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack);
 
 eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
+
+eError buildinCall(dtStrPtr buildin, tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 

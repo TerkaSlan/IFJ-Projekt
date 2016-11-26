@@ -6,47 +6,23 @@
 #include "expr.h"
 #include "scanner.h"
 #include "ial.h"
-/*
- * Checks if given adept for identifier collides with any builtin
- */
-#define isBuiltin(string)                                 \
-do{                                                       \
-  if (strCmpCStr(string, "ifj16.substr") == 0)                  \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.readDouble") == 0)              \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.readInt") == 0)                 \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.readString") == 0)              \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.print") == 0)                   \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.length") == 0)                  \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.compare") == 0)                 \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.find") == 0)                    \
-    {strFree(string); string = NULL;}                     \
-  if (strCmpCStr(string, "ifj16.sort") == 0)                    \
-    {strFree(string); string = NULL;}                     \
-}while(0)
 
 /*
- *  Converts between token type and symbol type
- */
+*  Converts between token type and symbol type
+*/
 #define TTtoeSymbolType(ktt, eSymbol)\
 do{                                  \
   switch (ktt){                      \
     case KTT_int:                    \
-      eSymbol = eINT; break;         \
+    eSymbol = eINT; break;         \
     case KTT_double:                 \
-      eSymbol = eDOUBLE; break;      \
+    eSymbol = eDOUBLE; break;      \
     case KTT_boolean:                \
-      eSymbol = eBOOL; break;        \
+    eSymbol = eBOOL; break;        \
     case KTT_String:                 \
-      eSymbol = eSTRING; break;      \
+    eSymbol = eSTRING; break;      \
     default:                         \
-      eSymbol = eNULL;               \
+    eSymbol = eNULL;               \
   }                                  \
 }while(0)
 
@@ -61,36 +37,45 @@ do{                                  \
  * Changes currentScopeTable
  */
  #define createClass(name)                                                    \
- do {																								                         \
+ do {		                                                                     \
+  if (strCmpCStr(name, "ifj16") == 0 ) {                                     \
+    errCode = ERR_SEM;                                                        \
+    break;                                                                    \
+  } 																						                             \
  	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);                      \
+  tSymbolPtr addedClass;\
  	if (newTable == NULL) {errCode = ERR_INTERN; break;}	                     \
  	tSymbolPtr classSymbol = symbolNew();											                 \
  	if (classSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); break;}\
    classSymbol->Type = eCLASS;																                 \
    classSymbol->Const = true;																                 \
    classSymbol->Defined = true;															                 \
-   classSymbol->Name = name;						                       \
+   classSymbol->Name = strNewFromStr(name);						                       \
    classSymbol->Next = NULL;						                                       \
    classSymbol->Data.ClassData.LocalSymbolTable = newTable;                   \
  	newTable->Parent = classSymbol;						                                 \
- 	if (htabAddSymbol(globalScopeTable, classSymbol, true) == NULL)            \
- 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(classSymbol);}     \
- 	currentClass = classSymbol;                                                \
-   printSymbol("Class", currentClass);                                        \
+ 	if ((addedClass = htabAddSymbol(globalScopeTable, classSymbol, false)) == NULL)            \
+ 		{errCode = ERR_SEM; htabFree(newTable); symbolFree(classSymbol);}  else {   \
+ 	currentClass = addedClass;                                                \
+   printSymbol("Class", currentClass); }                                       \
  } while (0)
+ // TODO: ifj16 trieda nemoze byt
 
  /*
   * Creates a new function symbol and stores it in currentScopeTable
   * Changes currentScopeTable
   */
+
+
  #define createFunction(type, defined, name)		                           \
  do{																										\
- 	tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);\
+  tHashTablePtr newTable = htabInit(HTAB_DEFAULT_SIZE);\
  	if (newTable == NULL) {errCode = ERR_INTERN;}	\
  	tSymbolPtr functionSymbol = symbolNew();											\
- 	if (functionSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); }\
+  tSymbolPtr addedFunc;\
+  if (functionSymbol == NULL) {errCode = ERR_INTERN; htabFree(newTable); }\
  	functionSymbol->Type = eFUNCTION;																\
- 	functionSymbol->Name = name;						\
+ 	functionSymbol->Name = strNewFromStr(name);						\
    functionSymbol->Defined = defined;\
  	functionSymbol->Data.FunctionData.ArgumentList = NULL;\
  	functionSymbol->Data.FunctionData.NumberOfArguments = 0;\
@@ -98,10 +83,12 @@ do{                                  \
  	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
  	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
  	newTable->Parent = functionSymbol;\
- 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, true) == NULL) \
- 		{errCode = ERR_INTERN; htabFree(newTable); symbolFree(functionSymbol);} \
- 	currentFunction = functionSymbol;\
-   printSymbol("Function", currentFunction);\
+  if ((addedFunc =htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, false)) == NULL) \
+    {errCode = ERR_SEM; htabFree(newTable); symbolFree(functionSymbol);} \
+  if (!htabForEach(currentClass->Data.ClassData.LocalSymbolTable, checkForIdConflictWithinClass, name)) \
+     {errCode = ERR_SEM; if (addedFunc != NULL){htabFree(newTable); symbolFree(functionSymbol);}} else{\
+  currentFunction = addedFunc;\
+  printSymbol("Function", currentFunction);}\
  } while (0)
 
  /*
@@ -115,28 +102,39 @@ do{                                  \
  	currentVariable->Const = true;																\
  	currentVariable->Defined = defined;															\
  	currentVariable->Name = name;\
- 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, true) == NULL)\
-     {errCode = ERR_INTERN; symbolFree(currentVariable);}\
-   printSymbol("Static variable", currentVariable);\
+ 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, false) == NULL)\
+     {errCode = ERR_SEM; /*symbolFree(currentVariable)*/;} else {\
+   printSymbol("Static variable", currentVariable);}\
  } while (0)
 
 
  /*
   * Creates a new local variable or parameter symbol and stores it table of function variables
   */
+
  #define createFunctionVariable(type, defined, name, isArgument)                                        \
  do{                                                                                                     \
  	tSymbolPtr currentVariable = symbolNew();                                                             \
- 	if (currentVariable == NULL) {errCode = ERR_INTERN;}                                                  \
+  tSymbolPtr addedVar;\
+  tSymbolPtr helperVar;\
+  if (currentVariable == NULL) {errCode = ERR_INTERN;}                                                  \
  	currentVariable->Type = type;																                                          \
  	currentVariable->Const = false;																                                        \
  	currentVariable->Defined = defined;															                                      \
  	currentVariable->Name = name;                                                                         \
- 	if (htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, true) == NULL)\
-     {errCode = ERR_INTERN; symbolFree(currentVariable);}                                                \
-   printSymbol("Function variable", currentVariable);                                                    \
-   if (isArgument)                                                                                      \
-     symbolFuncAddArgument(currentFunction, currentVariable);                                            \
+ 	if ((addedVar = htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, false)) == NULL) {\
+    errCode = ERR_SEM; symbolFree(currentVariable);\
+  } else {    \
+    helperVar = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable->Name);\
+    if (helperVar != NULL && helperVar->Type == eFUNCTION) {\
+      errCode = ERR_SEM; symbolFree(currentVariable);\
+    } else {\
+      printSymbol("Function variable", currentVariable);                                                    \
+      if (isArgument)                                                                                      \
+        symbolFuncAddArgument(currentFunction, addedVar);\
+      errCode = ERR_OK;\
+    }     \
+  }                                       \
  } while (0)
 
 #define getNewToken(token, errCode)   \
@@ -150,11 +148,12 @@ do{                                   \
 /*
  */
 eError skipPrecedenceParsing(eError errCode);
+eError skipFunctionCall(eError errCode);
 eError classList();
 eError classBody();
 eError funcBody();
 eError stmt();
-eError var(bool defined);
+eError var();
 
 // global variables - used in multiple functions in parser.c and expr.c
 Token *token;
@@ -165,30 +164,51 @@ tSymbolPtr result;
 dtStrPtr symbolName;
 eSymbolType symbolTokenType;
 
-extern tInstructionListPtr instructionList;
 extern tHashTablePtr globalScopeTable;
 extern tConstContainerPtr constTable;
 
+// urobim main, run do GST, nastrkam tam staticke inicializovane, nastrkam instrukcie do inej instr. pasky
+/*
+ * A mock of expression evaluation, which I don't really need in 1. run,
+ * but need to check for correct syntax and skip tokens.
+ */
 eError skipPrecedenceParsing(eError errCode){
-  do {
+  while (token->type != TT_semicolon) {
     getNewToken(token, errCode);
     if (errCode != ERR_OK)
       return errCode;
     if (token->type == TT_EOF)
       return ERR_SYNTAX;
-  } while (token->type != TT_semicolon);
-
+  }
   return ERR_OK;
 }
 
+/*
+ * A mock of function call, which I don't generate in 1. run,
+ * but need to check for correct syntax and skip tokens.
+ */
 eError skipFunctionCall(eError errCode){
   while (token->type != TT_rightRoundBracket) {
     getNewToken(token, errCode);
     if (token->type == TT_EOF)
       return ERR_SYNTAX;
   }
-  getNewToken(token, errCode);
-  return ERR_OK; // ?
+  return ERR_OK;
+}
+
+tSymbolPtr checkForIdConflictWithinClass(tSymbolPtr symbol, void* name){
+  if (symbol->Type == eFUNCTION){
+    if (htabGetSymbol(symbol->Data.FunctionData.LocalSymbolTable, name) == NULL) {
+      return symbol;
+    } else {
+      return NULL;
+    }
+  }
+  else {
+    if ((strCmpStr(symbol->Name, (dtStrPtr)name)) == 0)
+      return NULL;
+  return symbol;
+  }
 }
 
 eError initializeHelperVariables(){
@@ -226,6 +246,12 @@ eError fillSymbolTable() {
   errCode = getToken(token);
   if (errCode != ERR_OK)
     goto freeResourcesAndFinish;
+  // looking for EOF before going into class
+  if (token->type == TT_EOF){
+    EXIT(ERR_SEM, "Input file is empty\n");
+    errCode = ERR_SEM;
+    goto freeResourcesAndFinish;
+  }
 
 	if (token->type == TT_keyword && token->keywordType == KTT_class) {
 		if ((errCode = classList()) != ERR_OK)
@@ -234,6 +260,7 @@ eError fillSymbolTable() {
 	//if 1. Token != [<KTT_CLASS>] I'm expecting EOF, otherwise syntactic error
 	if (token->type == TT_EOF)
     goto freeResourcesAndFinish;
+
   else{
     EXIT(ERR_SYNTAX, "Unexpected token in %s at %d violating {PROG -> CLASS_LIST eof}\n",  __FILE__, __LINE__);
     errCode = ERR_SYNTAX;
@@ -241,6 +268,12 @@ eError fillSymbolTable() {
 
   freeResourcesAndFinish:
   freeHelperVariables();
+  // I won't go into interpretation, therefore currentClass and currentFunction need to be freed
+  // I cannot currupt contents of globalScopeTable if there are some though
+  if (errCode != ERR_OK && globalScopeTable->NumberOfItems == 0){
+    symbolFree(currentClass);
+    symbolFree(currentFunction);
+  }
 	return errCode;
 }
 
@@ -262,6 +295,7 @@ eError classList() {
 	if (token->type == TT_leftCurlyBracket){
       // Creating our first class symbol! This one will go to globalScopeTable and currentScopeTable will be changed
 			createClass(symbolName);
+      htabGetSymbol(globalScopeTable, symbolName);
       strClear(symbolName);
       if (errCode != ERR_OK)
         return errCode;
@@ -325,12 +359,6 @@ eError classBody() {
 		return ERR_SYNTAX;
 	if (strCopyStr(symbolName, token->str) != STR_SUCCESS)
     return ERR_INTERN;
-    // Checking if token->str doesn't collide with builtins
-  isBuiltin(symbolName);
-  if (symbolName == NULL){
-    EXIT(ERR_SEM, "Identifier collides with a builtin in %s at %d \n",  __FILE__, __LINE__);
-    return ERR_SEM;
-  }
 	//read next token - now we will find out, if it is function or identifier
 	//VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
 	getNewToken(token, errCode);
@@ -342,7 +370,11 @@ eError classBody() {
         EXIT(ERR_SYNTAX, "Unexpected token type in %s at %d \n",  __FILE__, __LINE__);
         return ERR_SYNTAX;
       }
-			createStaticVariable(symbolTokenType, false, symbolName);
+      // treba overit co sa vyhodnocuje (iba konstanty + uz zname staticke) - asi check vo vyrazoch - over
+      createStaticVariable(symbolTokenType, true, symbolName);
+      if (errCode != ERR_OK) {
+        return errCode;
+      }
 			getNewToken(token, errCode);
 			break;
 
@@ -359,7 +391,10 @@ eError classBody() {
 			if (errCode != ERR_OK)
 				return errCode;
 
-			createStaticVariable(symbolTokenType, false, symbolName);
+			createStaticVariable(symbolTokenType, true, symbolName);
+      if (errCode != ERR_OK) {
+        return errCode;
+      }
 
 			//expressions parsing read one token outside of expression - has to be semicolon
 			if (token->type != TT_semicolon){
@@ -371,7 +406,7 @@ eError classBody() {
 			break;
 
 		case TT_leftRoundBracket:
-			createFunction(eFUNCTION, true, symbolName);
+      createFunction(symbolTokenType, true, symbolName);
       if (errCode != ERR_OK){
         return errCode;
       }
@@ -399,7 +434,7 @@ eError classBody() {
 					return ERR_SYNTAX;
 
 				//we have an id
-				if (strCopyStr(symbolName,token->str) != STR_SUCCESS) // + freeShit
+				if (strCopyStr(symbolName,token->str) != STR_SUCCESS)
 					return ERR_INTERN;
 				//read next token
 				getNewToken(token, errCode);
@@ -412,6 +447,9 @@ eError classBody() {
 				}
         // last true for isArgument, updating argument list of currentFunction
 				createFunctionVariable(symbolTokenType, true, symbolName, true);
+        if (errCode != ERR_OK) {
+          return errCode;
+        }
       }
 			//read next token - it should be left curly bracket
 			//RULE: VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
@@ -424,7 +462,7 @@ eError classBody() {
 			if (token->type != TT_rightCurlyBracket) {
 				errCode = funcBody();
 				if (errCode != ERR_OK)
-					return ERR_SYNTAX;
+					return errCode;
 
 				//checks if there really is right curly bracket after funcBody
 				if (token->type != TT_rightCurlyBracket) {
@@ -457,23 +495,27 @@ eError funcBody() {
 	eError errCode = ERR_OK;
 	//RULE: VAR -> type ID INITIALIZE
 	if (token->type == TT_keyword) {
-		//current token is keyword type - we call var
-	 	errCode = var(true);
-	 	if (errCode != ERR_OK)
-	 		return errCode;
+    if (token->keywordType == KTT_boolean
+     || token->keywordType == KTT_double
+     || token->keywordType == KTT_int
+     || token->keywordType == KTT_String) {
 
-	 	getNewToken(token, errCode);
+		  //current token is keyword type - we call var
+	 	  errCode = var();
+	 	  if (errCode != ERR_OK)
+	 		  return errCode;
+	 	  getNewToken(token, errCode);
 
-	}
-  else if (token->type == TT_identifier || token->type == TT_fullIdentifier){
-    errCode = var(false);
-    if (errCode != ERR_OK)
-      return errCode;
+    } else {
+      //current token is keyword, but it isn't type - this could be STMT - we call stmt()
+      errCode = stmt();
+      if (errCode != ERR_OK) {
+        return errCode;
+      }
 
-    getNewToken(token, errCode);
-  }
+    }
 
-  else {
+	} else {
 		//current token is anything but keyword - this could be STMT - we call stmt()
 		errCode = stmt();
 		if (errCode != ERR_OK)
@@ -507,10 +549,14 @@ eError stmt() {
 					return errCode;
 				}
 			}
-			else {
-				getNewToken(token, errCode);
-				break;
-			}
+			if (token->type == TT_rightCurlyBracket) {
+        //read next token - at the end of the function we will determine what to do next
+        getNewToken(token, errCode);
+        break;
+
+      }
+
+      return ERR_SYNTAX;
 
 		case TT_keyword:
 			switch(token->keywordType){
@@ -538,30 +584,6 @@ eError stmt() {
 					getNewToken(token, errCode);
 					break;
 
-				//STMT -> break ;
-				case KTT_break:
-
-					getNewToken(token, errCode);
-					if (token->type != TT_semicolon) {
-						return errCode;
-					}
-
-					//read next token - at the end of the function we will determine what to do next
-					getNewToken(token, errCode);
-					break;
-
-				//STMT -> continue ;
-				case KTT_continue:
-
-					getNewToken(token, errCode);
-					if (token->type != TT_semicolon) {
-						return errCode;
-					}
-
-					//read next token - at the end of the function we will determine what to do next
-					getNewToken(token, errCode);
-					break;
-
 				//STMT -> if ( EXPR ) STMT ELSE
 				case KTT_if:
 
@@ -571,7 +593,7 @@ eError stmt() {
 						return ERR_SYNTAX;
 					}
 					//call expressions parsing - parse condition
-					errCode = skipPrecedenceParsing(errCode);
+					errCode = skipFunctionCall(errCode); //lebo je to ukoncene zatvorkou, nie bodkociarkou
 					if(errCode != ERR_OK)
 						return errCode;
 
@@ -601,88 +623,15 @@ eError stmt() {
 					if (token->type != TT_leftRoundBracket)
 						return ERR_SYNTAX;
 
-					errCode = skipPrecedenceParsing(errCode);
+					errCode = skipFunctionCall(errCode); //lebo je to ukoncene zatvorkou, nie bodkociarkou
           if(errCode != ERR_OK)
             return errCode;
-					if(token->type != TT_rightRoundBracket)
-						return ERR_SYNTAX;
-					getNewToken(token, errCode);
 
-					errCode = stmt();
+          getNewToken(token, errCode);
+
+          errCode = stmt();
 					if (errCode != ERR_OK)
 						return errCode;
-
-					break;
-
-				case KTT_for:
-
-					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
-					errCode = var(true);
-					if(errCode != ERR_OK)
-						return errCode;
-
-					errCode = skipPrecedenceParsing(errCode);
-          //printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK)
-						return errCode;
-
-					if (token->type != TT_semicolon)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
-					if (token->type != TT_identifier && token->type != TT_fullIdentifier)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
-					if (token->type != TT_assignment)
-						return ERR_SYNTAX;
-
-					errCode = skipPrecedenceParsing(errCode);
-					if (errCode != ERR_OK)
-						return errCode;
-
-					if (token->type != TT_rightRoundBracket)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
-
-					errCode = stmt();
-					if (errCode != ERR_OK)
-						return errCode;
-
-					break;
-
-				case KTT_do:
-					getNewToken(token, errCode);
-
-					errCode = stmt();
-					if (errCode != ERR_OK)
-						return errCode;
-
-					if (token->type != TT_keyword && token->keywordType != KTT_while)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket)
-						return ERR_SYNTAX;
-
-					errCode = skipPrecedenceParsing(errCode);
-					if (errCode != ERR_OK)
-						return errCode;
-
-					if(token->type != TT_rightRoundBracket)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
-
-					if (token->type != TT_semicolon)
-						return ERR_SYNTAX;
-
-					getNewToken(token, errCode);
 
 					break;
 
@@ -696,7 +645,6 @@ eError stmt() {
 			errCode = skipPrecedenceParsing(errCode);
       if (errCode != ERR_OK)
         return errCode;
-      //printf("PrecedenceParsing returned: %d\n", errCode);
 			if(token->type != TT_semicolon)
 				return ERR_SYNTAX;
 
@@ -707,33 +655,24 @@ eError stmt() {
 		case TT_fullIdentifier: {
 			//not LL case
 			//might be assignment or function call or id++/--
-			Token* helperToken;
-			helperToken = newToken();
-			helperToken->type = token->type;
-			helperToken->str = strNew();
-			if (strCopyStr(helperToken->str, token->str) != ERR_OK) {
-				freeToken(&helperToken);
-				return ERR_INTERN;
-			}
 
 			getNewToken(token, errCode);
 
-			if (token->type == TT_assignment) {
+			if (token->type == TT_assignment || token->type == TT_increment || token->type == TT_decrement) {
 				errCode = skipPrecedenceParsing(errCode);
 				if(errCode != ERR_OK){
-          freeToken(&helperToken);
 					return errCode;
         }
-      }
-      else if (token->type == TT_leftRoundBracket || token->type == TT_increment || token->type == TT_decrement) {
-				errCode = skipPrecedenceParsing(errCode);
-				if (errCode != ERR_OK){
-          freeToken(&helperToken);
+      } else if (token->type == TT_leftRoundBracket){
+        errCode = skipFunctionCall(errCode);
+        if(errCode != ERR_OK){
           return errCode;
         }
-			}
+        getNewToken(token, errCode);
 
-			freeToken(&helperToken);
+      } else {
+        return ERR_SYNTAX;
+      }
 
 			if (token->type != TT_semicolon)
 				return ERR_SYNTAX;
@@ -767,67 +706,42 @@ eError stmt() {
 
 }
 
-eError var(bool defined) {
+eError var() {
 
 	eError errCode = ERR_OK;
-  if (!defined){
-    symbolTokenType = eNULL;
-  }
-  else{
-    //RULE: sVAR -> type ID INITIALIZE
-  	if (token->keywordType != KTT_boolean
-  	 && token->keywordType != KTT_String
-  	 && token->keywordType != KTT_double
-  	 && token->keywordType != KTT_int) {
-  		return ERR_SYNTAX;
-    }
-    TTtoeSymbolType(token->keywordType, symbolTokenType);
-    getNewToken(token, errCode);
-  }
 
-  if (token->type != TT_identifier && token->type != TT_fullIdentifier)
+  TTtoeSymbolType(token->keywordType, symbolTokenType);
+  getNewToken(token, errCode);
+
+  if (token->type != TT_identifier)
     return ERR_SYNTAX;
 
   if (strCopyStr(symbolName, token->str) != STR_SUCCESS)
     return ERR_INTERN;
+  if (symbolName == NULL)
+    return ERR_SEM;
+
+  createFunctionVariable(symbolTokenType, true, symbolName, false);
+  if (errCode != ERR_OK) {
+    return errCode;
+  }
 
   getNewToken(token, errCode);
-	// INITIALIZE ->     = EXPR ;
-	if (token->type == TT_assignment) {
+  // INITIALIZE ->     = EXPR ;
+  if (token->type == TT_assignment) {
     // [reserved_name] [=]  -> Nope
-    isBuiltin(symbolName);
-    if (symbolName == NULL)
-      return ERR_SEM;
-    createFunctionVariable(symbolTokenType, defined, symbolName, false);
     errCode = skipPrecedenceParsing(errCode);
     if (errCode != ERR_OK)
       return errCode;
 	}
-  else if (token->type == TT_leftRoundBracket){
-    isBuiltin(symbolName);
-    if (symbolName == NULL){  // isBuiltin = true
-      if (symbolTokenType == eNULL){
-        if ((errCode = skipFunctionCall(errCode)) != ERR_OK)
-          return errCode;
-      }
-      else{
-        // builtin with a type? I don't think so ...
-        return ERR_SEM;
-      }
-    }
-  }
-  else{
-    // var without initialization
-    isBuiltin(symbolName);
-    if (symbolName == NULL){
-      // using reserved word as a variable, not a function call
-      return ERR_SEM;
-    }
-    createFunctionVariable(symbolTokenType, defined, symbolName, false);
-  }
+
   if (token->type != TT_semicolon) {
     return ERR_SYNTAX;
   }
   strClear(symbolName);
 	return ERR_OK;
 }
+/*
+  [1] htabForEach
+  [2] 2. instr. paska v 2. behu
+*/

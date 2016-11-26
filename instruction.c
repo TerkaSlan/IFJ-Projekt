@@ -67,6 +67,10 @@ tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list) {
 
 	return &(list->instructionArray[list->activeInstruction]);
 }
+
+
+
+
 int64_t instrListGetActiveInstructionIndex(tInstructionListPtr list)
 {
 	if(!list)

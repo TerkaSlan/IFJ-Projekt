@@ -38,6 +38,7 @@ typedef enum {
 	TT_empty, // 30
 	TT_EOF,
 	TT_E,
+	TT_void,
 	TT_start
 
 } TokenType;

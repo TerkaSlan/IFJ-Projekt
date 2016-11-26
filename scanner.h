@@ -6,7 +6,7 @@
 #include "error.h"
 #include "str.h"
 #include <stdio.h> // FILE* TO ERASE: Just for testing purposes, won't be included in final build
-extern FILE* fSourceFile; // TO ERASE: Just for testing purposes, won't be included in final build
+extern FILE* fSourceFile; // TODO:: Just for testing purposes, won't be included in final build
 
 /**
  * Opens the file located at sFileLocation and loads global variable
@@ -15,7 +15,7 @@ extern FILE* fSourceFile; // TO ERASE: Just for testing purposes, won't be inclu
  * @param      sFileLocation      Input file location
  * @return     ERR_OTHER if an error was encountered, ERR_OK otherwise
  */
-int32_t openFile(const char *sFileLocation);
+eError openFile(const char *sFileLocation);
 /**
  * Closes the file loaded in global variable fSourceFile
  */
@@ -34,6 +34,6 @@ KeywordTokenType keywordType(const dtStr *string);
  * @param      token     Token to be filled
  * @return     ERR_OK in the case of success, ERR_INTERN or ERR_LEX in the case of failure
  */
-int32_t getToken(Token *token);
+eError getToken(Token *token);
 
 #endif

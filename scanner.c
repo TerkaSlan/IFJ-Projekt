@@ -2,6 +2,7 @@
 #include <stdio.h> // eof, FILE*
 
 FILE* fSourceFile; // TO ADD 'static' to the final build, can't do it now since it's extern in scanner.h
+uint32_t LineCounter;
 
 typedef enum
 {
@@ -48,7 +49,7 @@ do {                                                                    \
     return errorType;                                                   \
 } while (0)
 
-int32_t openFile(const char *sFileLocation){
+eError openFile(const char *sFileLocation){
 
   if (sFileLocation == NULL){
     printError(ERR_OTHER, " in identifying the file source in %s at line: %d", __FILE__, __LINE__);
@@ -161,7 +162,7 @@ KeywordTokenType getKeywordType(dtStr *string){
   return KTT_none;
 }
 
-int32_t getToken(Token *token){
+eError getToken(Token *token){
 
   int32_t iCurrentSymbol;
   uint8_t octalLength = 0;
@@ -201,7 +202,8 @@ int32_t getToken(Token *token){
           return ERR_OK;
         }
         else if (isspace(iCurrentSymbol)){
-          ;
+          if((char)iCurrentSymbol == '\n')
+            LineCounter++;
         }
         else {
           switch(iCurrentSymbol){

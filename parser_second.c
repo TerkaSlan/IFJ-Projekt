@@ -8,18 +8,27 @@
 #include "scanner.h"
 #include "interpret.h"
 #include "builtin.h"
-// Borrowed from interpret.c
-#define EXIT(err, ...) do{errCode = err; printError(err, __VA_ARGS__);}while(0)
+#include "instruction.h"
+
+// Sets error, prints message with line number
+#define EXIT(err, ...) do{errCode = err; printError(err, "Line: %lu - %s\n", (unsigned long)LineCounter, __VA_ARGS__);}while(0)
+#define CHECK_ERRCODE() if (errCode != ERR_OK) return errCode
+
+//Add Instruction
+#define AI(type, dst, arg1, arg2) do{ tInstruction instr = {type, dst, arg1, arg2}; int64_t index = instrListInsertInstruction(instructionList, instr); if(index < 0) {printError(ERR_INTERN, "Could not insert next instruction. Out of memory.\n"); return ERR_INTERN;} }while(0)
+//Add Instruction with output - sets index of inserted instruction to output
+#define AIwO(type, dst, arg1, arg2, output) do{ tInstruction instr = {type, dst, arg1, arg2}; int64_t index = instrListInsertInstruction(instructionList, instr);if(index < 0) {printError(ERR_INTERN, "Could not insert next instruction. Out of memory.\n"); return ERR_INTERN;} else output = (uint32_t)index; }while(0)
 
 eError classList_2();
 eError classBody_2();
 eError funcBody_2();
 eError stmt_2();
-eError var_2(bool defined);
+eError var_2();
 eInstructionType getFunctionCallForBuiltin(dtStrPtr *string);
 tSymbolPtr findSymbol(dtStrPtr symbolName);
 
-
+extern uint32_t LineCounter;
+extern tInstructionListPtr preInstructionList;
 extern tInstructionListPtr instructionList;
 extern tConstContainerPtr constTable;
 extern tHashTablePtr globalScopeTable;
@@ -29,54 +38,41 @@ extern tSymbolPtr currentClass;
 tSymbolPtr result;
 tInstruction instr;
 dtStrPtr symbolName;
+tSymbolPtr foundSymbol;
 
-bool updateInstructionIndex = true;
-
-dtStrPtr tmpString;
-
-/*
- * Checks if given adept for identifier collides with any builtin
- */
-eInstructionType getFunctionCallForBuiltin(dtStrPtr *string){
-  if (strCmpCStr(*string, "ifj16.substr") == 0)
-    return iSUBSTR;
-  if (strCmpCStr(*string, "ifj16.readDouble") == 0)
-    return iREAD;
-  if (strCmpCStr(*string, "ifj16.readInt") == 0)
-    return iREAD;
-  if (strCmpCStr(*string, "ifj16.readString") == 0)
-    return iREAD;
-  if (strCmpCStr(*string, "ifj16.print") == 0)
-    return iPRINT;
-  if (strCmpCStr(*string, "ifj16.length") == 0)
-    return iLEN;
-  if (strCmpCStr(*string, "ifj16.compare") == 0)
-    return iCOMPARE;
-  if (strCmpCStr(*string, "ifj16.find") == 0)
-    return iFIND;
-  if (strCmpCStr(*string, "ifj16.sort") == 0)
-    return iSORT;
-	return iSTOP;
-}
+#define checkTypesAndGenerateiMOV(errCode)\
+do{\
+	foundSymbol = findSymbol(symbolName);\
+	if (result->Type == foundSymbol->Type){\
+		AI(iMOV, foundSymbol, result, NULL);\
+		errCode = ERR_OK;\
+	}\
+	else{\
+		errCode = ERR_SEM_TYPE;\
+	}\
+}while(0)
 
 #define getNewToken(token, errCode)\
 do{\
 	cleanToken(&token);							\
 	errCode = getToken(token);					\
-	if (errCode != ERR_OK)					\
-		return errCode;							\
+	CHECK_ERRCODE();							\
 } while (0)
 
 eError initializeHelperVariables_2(){
-  if ((token = newToken()) == NULL){
+	if ((token = newToken()) == NULL){
     return ERR_INTERN;
-  }
+    }
 	if ((symbolName = strNew()) == NULL){
 		freeToken(&token);
 		return ERR_INTERN;
 	}
-  tmpString = strNew();
-  return ERR_OK;
+	if ((preInstructionList = instrListNew()) == NULL){
+		freeToken(&token);
+		strFree(symbolName);
+		return ERR_INTERN;
+	}
+	return ERR_OK;
 }
 
 void freeHelperVariables_2(){
@@ -87,7 +83,7 @@ void freeHelperVariables_2(){
 tSymbolPtr findSymbol(dtStrPtr symbolName){
   eError errCode;
   tSymbolPtr symbolAdept;
-  if (strCharPos(symbolName, '.') != (-1)){ // AKA if fullIdentifier
+  if (strCharPos(symbolName, '.') != (-1)){
     // find out what is the class's name
     dtStrPtr functionName, className;
     tSymbolPtr classSymbol, functionSymbol;
@@ -126,43 +122,18 @@ tSymbolPtr findSymbol(dtStrPtr symbolName){
 }
 
 /*
-tSymbolPtr findUndefinedSymbol(tSymbolPtr symbol, void *param){
-	if(!symbol)
-		return NULL;
-
-	if(!symbol->Defined){
-		printf("Found Undefined: %s", symbol->Name->str);
-		return symbol;
-	}
-	switch(symbol->Type){
-		case eCLASS:
-			htabForEach(symbol->Data.ClassData.LocalSymbolTable, findUndefinedSymbol, NULL);
-			break;
-    case eFUNCTION:
-      htabForEach(symbol->Data.FunctionData.LocalSymbolTable, findUndefinedSymbol, NULL);
-      break;
-		default:
-			break;
-	}
-  if (symbol->Defined)
-	 return NULL;
-  else{
-    return symbol;
-  }
-}*/
-
-/*
  * Prepares source file for reading, initiates the second run of parser
  */
-eError finishParsing() {
+eError generateInstructions() {
 
 	eError errCode = ERR_OK;
   if ((errCode = initializeHelperVariables_2()) != ERR_OK)
     return errCode;
-  rewind(fSourceFile);
+	rewind(fSourceFile);
+	LineCounter = 0;
 
   // Ignoring syntactic checks, already done by 1. run
-	errCode = getToken(token);
+	errCode = (eError)getToken(token);
   if (errCode != ERR_OK)
     goto freeResourcesAndFinish_2;
 
@@ -173,6 +144,7 @@ eError finishParsing() {
 
 	freeResourcesAndFinish_2:
   freeHelperVariables_2();
+
   return errCode;
 }
 
@@ -185,19 +157,15 @@ eError classList_2() {
   currentClass = htabGetSymbol(globalScopeTable, token->str);
 	getNewToken(token, errCode);
 	getNewToken(token, errCode);
-  // got our  [<KTT_CLASS>][<TT_identifier>][{], jumping into classBody
 	if (token->type == TT_keyword && token->keywordType == KTT_static) {
 		errCode = classBody_2();
-		if (errCode != ERR_OK)
-			return errCode;
+		CHECK_ERRCODE();
 	}
 	if (token->type == TT_rightCurlyBracket){
 		getNewToken(token, errCode);
-    //
 		if (token->type == TT_keyword && token->keywordType == KTT_class) {
 			errCode = classList_2();
-			if (errCode != ERR_OK)
-				return errCode;
+			CHECK_ERRCODE();
 		}
 		return errCode;
 	}
@@ -206,54 +174,64 @@ eError classList_2() {
 
 eError classBody_2() {
 	eError errCode = ERR_OK;
+  //[<TT_keyword>]
+	getNewToken(token, errCode);
+  //[<TT_identifier>]
+	getNewToken(token, errCode);
 
-	getNewToken(token, errCode);
-	//[<TT_identifier>]
-	getNewToken(token, errCode);
   if(strCopyStr(symbolName, token->str) == STR_ERROR)
     return ERR_INTERN;
 
 	getNewToken(token, errCode);
 	switch(token->type) {
 		case TT_semicolon:
-			// variable without initialization
+			// STATIC! variable without initialization
+
 			getNewToken(token, errCode);
 			break;
 
 		case TT_assignment:
-      // variable with initialization, generating iMOV
+      // STATIC! variable with initialization, calling expressions and generating iMOV
 			errCode = precedenceParsing(NULL);
-			if (errCode != ERR_OK)
-				return errCode;
-			// TODO: iMOV
+			CHECK_ERRCODE();
+      if((foundSymbol = findSymbol(symbolName)) == NULL)
+        return ERR_SEM;
+      {tInstruction instr = {iMOV, foundSymbol, result, NULL}; instrListInsertInstruction(preInstructionList, instr);}
+
 			getNewToken(token, errCode);
 			break;
 
 		case TT_leftRoundBracket:
-			//we have function
-			getNewToken(token, errCode);
-			//stops, when right round bracket is read - end of parameters
       currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName);
+      //trying out instructionList update without a flag
+      getNewToken(token, errCode);
       // no iFRAME
       strClear(symbolName);
-      // telling me next time i'll be generating an intruction within this function, i have to set instruction index
-      updateInstructionIndex = true; // TODO ??
+
 			while (token->type != TT_rightRoundBracket) {
         getNewToken(token, errCode);
         if (token->type == TT_EOF)
           return ERR_SYNTAX;
-			}
-      //[rightCurlyBracket]
- 			getNewToken(token, errCode);
 
+        // Incoming parameters in function definition, don't care in 2.run
+        getNewToken(token, errCode);
+        getNewToken(token, errCode);
+        if (token->type == TT_comma)
+          getNewToken(token, errCode);
+			}
+      //[leftCurlyBracket]
+ 			getNewToken(token, errCode);
 			getNewToken(token, errCode);
 			if (token->type != TT_rightCurlyBracket){
         // not an empty function, going to funcBody
 				errCode = funcBody_2();
-				if (errCode != ERR_OK)
-					return errCode;
+				CHECK_ERRCODE();
 			}
-
+      else{
+        // Empty function, the only instruction is iRET
+        AI(iRET, NULL, NULL, NULL);
+        //currentFunction->Data.FunctionData.InstructionIndex = instructionList->usedSize - 1; ??
+      }
 			getNewToken(token, errCode);
 			break;
 
@@ -265,51 +243,46 @@ eError classBody_2() {
 	// next token has to be KTT_static, recursively calling classBody_2 again
 	if (token->type == TT_keyword && token->keywordType == KTT_static){
 		errCode = classBody_2();
-		if(errCode != ERR_OK)
-			return errCode;
+		CHECK_ERRCODE();
 	}
 	return ERR_OK;
 }
 
 eError funcBody_2() {
 	eError errCode = ERR_OK;
-
+	currentFunction->Data.FunctionData.InstructionIndex =  1;
 	if (token->type == TT_keyword) {
-			//current token is keyword type - we call var_2
-		 	errCode = var_2(true);
-		 	if (errCode != ERR_OK)
-		 		return errCode;
+    if (token->keywordType == KTT_boolean
+     || token->keywordType == KTT_double
+     || token->keywordType == KTT_int
+     || token->keywordType == KTT_String) {
+			//Keyword, calling var() with parameter true as for 'defined'
+		 	errCode = var_2();
+		 	CHECK_ERRCODE();
 		 	getNewToken(token, errCode);
+    }
+    else{
+      //current token is a keyword, but it isn't type - this could be STMT - we call stmt()
+      errCode = stmt_2();
+      CHECK_ERRCODE();
+    }
 	}
-  else if (token->type == TT_identifier || token->type == TT_fullIdentifier){
-    // save token->str maybe?
-    errCode = var_2(false);
-    if (errCode != ERR_OK)
-      return errCode;
-
-    getNewToken(token, errCode);
+  else{
+    //current token is anything but keyword - this could be STMT - we call stmt()
+    errCode = stmt_2();
+    CHECK_ERRCODE();
   }
-
-  else {
-		//current token is anything but keyword
-		errCode = stmt_2();
-		if (errCode != ERR_OK)
-			return errCode;
-	}
 
 	if (token->type != TT_rightCurlyBracket) {
 		errCode = funcBody_2();
-		if (errCode != ERR_OK)
-			return errCode;
+		CHECK_ERRCODE();
 	}
-	return ERR_OK;
+	return errCode;
 }
 
-// TODO: Did not pay attention to stmt_2 just yet
 eError stmt_2() {
 
 	eError errCode = ERR_OK;
-
   //RULE: stmt_2 -> { stmt_2_LIST }
 	switch(token->type) {
 
@@ -319,29 +292,27 @@ eError stmt_2() {
 			//If there is something between CurlyBrackets, we need to process it recursively
 			if (token->type != TT_rightCurlyBracket) {
 				errCode = stmt_2();
-				if (errCode != ERR_OK) {
-					return errCode;
-				}
+				CHECK_ERRCODE();
 			}
-			else {
+			if (token->type == TT_rightCurlyBracket) {
+				//read next token - at the end of the function we will determine what to do next
 				getNewToken(token, errCode);
 				break;
 			}
+
+			return ERR_SYNTAX;
 
 		case TT_keyword:
 			switch(token->keywordType){
 
 				//RULE: stmt_2 -> return RETURN_VAL ;
 				case KTT_return:
-
 					//we call expressions parsing to parse RETURN_VAL
-					//if there wasn't RETURN_var_2, result from expressions parsing will be NULL
 					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
-          // TODO iRET
+                    printf("PrecedenceParsing returned: %d\n", errCode);
+					CHECK_ERRCODE();
+
+                    AI(iRET, NULL , result, NULL);
 
 					//expressions parsing could stop on semicolon or right round bracket before semicolon
 					//otherwise, there is syntax error
@@ -353,205 +324,127 @@ eError stmt_2() {
 					getNewToken(token, errCode);
 					break;
 
-				//stmt_2 -> break ;
-				case KTT_break:
-
-					getNewToken(token, errCode);
-					if (token->type != TT_semicolon) {
-						return errCode;
-					}
-          // TODO GOTO next instruction
-					//read next token - at the end of the function we will determine what to do next
-					getNewToken(token, errCode);
-					break;
-
-				//stmt_2 -> continue ;
-				case KTT_continue:
-
-					getNewToken(token, errCode);
-					if (token->type != TT_semicolon) {
-						return errCode;
-					}
-          // TODO GOTO instruction starting the loop
-					//read next token - at the end of the function we will determine what to do next
-					getNewToken(token, errCode);
-					break;
-
 				//stmt_2 -> if ( EXPR ) stmt_2 ELSE
-				case KTT_if:
-
+				case KTT_if: {
 					//next token have to be left rounf bracket
 					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
-						return ERR_SYNTAX;
-					}
 
 					//call expressions parsing - parse condition
 					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if(errCode != ERR_OK) {
-						return errCode;
+					printf("PrecedenceParsing returned: %d\n", errCode);
+					CHECK_ERRCODE();
+
+					if(!result) {
+						EXIT(ERR_SYNTAX, "Expression expected.");
+						CHECK_ERRCODE();
 					}
 
-					//there have to be right round bracket after condition
-					if(token->type != TT_rightRoundBracket) {
-						return ERR_SYNTAX;
+					if(result->Type != eBOOL){
+						EXIT(ERR_SEM_TYPE, "Expression cannot be converted to boolean.");
+						CHECK_ERRCODE();
 					}
+
+
+					uint32_t indexIF;
+					AIwO(iIFNGOTO, NULL, result, NULL, indexIF);
+
 
 					//read next token and call stmt_2 processing
 					getNewToken(token, errCode);
 					errCode = stmt_2();
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
+					CHECK_ERRCODE();
 
 					//after SMTM - there can be else
-					if (token->type == TT_keyword && token->keywordType == KTT_else) {
+
+					uint32_t indexFalse = instrListGetNextInsertedIndex(instructionList);
+
+					if(token->type == TT_keyword && token->keywordType == KTT_else) {
+
+						//insert jump over false block, dst is to be refined later
+						uint32_t indexGOTO;
+						AIwO(iGOTO, NULL, NULL, NULL, indexGOTO);
+						indexFalse++;
+
 						getNewToken(token, errCode);
 						errCode = stmt_2();
-						if (errCode != ERR_OK) {
-							return errCode;
-						}
+						CHECK_ERRCODE();
 
+						//Refine where is it that we should jump on finished true block (over false block)
+						tInstructionPtr igoto = instrListGetInstruction(instructionList, indexGOTO);
+						igoto->dst = (void *) instrListGetNextInsertedIndex(instructionList);
 					}
 
+					//Refine where is it that we should jump on false condition
+					tInstructionPtr iIFN = instrListGetInstruction(instructionList, indexIF);
+					iIFN->dst = (void *) indexFalse;
+
 					break;
+				}
 
 				//stmt_2 -> while ( EXPR ) stmt_2
-				case KTT_while:
-
+				case KTT_while: {
 					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
-						return ERR_SYNTAX;
-					}
 
+					//get condition
 					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if(token->type != TT_rightRoundBracket) {
-						return ERR_SYNTAX;
-					}
+					printf("PrecedenceParsing returned: %d\n", errCode);
+					CHECK_ERRCODE();
+					//{?
 					getNewToken(token, errCode);
 
-					errCode = stmt_2();
-					if (errCode != ERR_OK) {
-						return errCode;
+					if(!result) {
+						EXIT(ERR_SYNTAX, "Expression expected.");
+						CHECK_ERRCODE();
 					}
+
+					if(result->Type != eBOOL){
+						EXIT(ERR_SEM_TYPE, "Expression cannot be converted to boolean.");
+						CHECK_ERRCODE();
+					}
+
+					//on false condition jump over while body - to be refined later
+					uint32_t indexIF;
+					AIwO(iIFNGOTO, NULL, result, NULL, indexIF);
+
+					//start while body
+					errCode = stmt_2();
+					CHECK_ERRCODE();
+
+					//add jump back to the condition
+					uint32_t whileEndBodyIndex;
+					AIwO(iGOTO, (void*)indexIF, NULL, NULL, whileEndBodyIndex);
+
+					////Refine where is it that we should jump on false condition - after while body
+					tInstructionPtr condition = instrListGetInstruction(instructionList, indexIF);
+					condition->dst = (void*)(whileEndBodyIndex + 1);
 
 					break;
-
-				case KTT_for:
-
-					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
-						return ERR_SYNTAX;
-					}
-
-					getNewToken(token, errCode);
-					errCode = var_2(true);			//vo var_2 spracujem uz aj semicolon, ale ostane ako posledny token
-					if(errCode != ERR_OK) {
-						return errCode;
-					}
-
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
-
-					if (token->type != TT_semicolon) {
-						return ERR_SYNTAX;
-					}
-
-					getNewToken(token, errCode);
-					if (token->type != TT_identifier && token->type != TT_fullIdentifier) {
-						return ERR_SYNTAX;
-					}
-					//zapamatat si id
-
-					getNewToken(token, errCode);
-					if (token->type != TT_assignment) {
-						return ERR_SYNTAX;
-					}
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
-
-					if (token->type != TT_rightRoundBracket) {
-						return ERR_SYNTAX;
-					}
-					getNewToken(token, errCode);
-
-					errCode = stmt_2();
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
-
-					break;
-
-				case KTT_do:
-					getNewToken(token, errCode);
-
-					errCode = stmt_2();
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
-
-					if (token->type != TT_keyword && token->keywordType != KTT_while) {
-						return ERR_SYNTAX;
-					}
-
-					getNewToken(token, errCode);
-					if (token->type != TT_leftRoundBracket) {
-						return ERR_SYNTAX;
-					}
-
-					errCode = precedenceParsing(NULL);
-          printf("PrecedenceParsing returned: %d\n", errCode);
-					if (errCode != ERR_OK) {
-						return errCode;
-					}
-
-					if(token->type != TT_rightRoundBracket) {
-						return ERR_SYNTAX;
-					}
-					getNewToken(token, errCode);
-
-					if (token->type != TT_semicolon) {
-						return ERR_SYNTAX;
-					}
-					getNewToken(token, errCode);
-
-					break;
+				}
 
 				default:
 					return ERR_SYNTAX;
 			}
 			break;
 
-		case TT_increment:
+/*		case TT_increment:
 		case TT_decrement:
 			errCode = precedenceParsing(NULL);
       printf("PrecedenceParsing returned: %d\n", errCode);
-			if (errCode != ERR_OK) {
-				return errCode;
-			}
-			if(token->type != TT_semicolon) {
-				return ERR_SYNTAX;
-			}
+			CHECK_ERRCODE();
+
 			getNewToken(token, errCode);
 			break;
+*/
 
+		//not a keyword
 		case TT_identifier:
 		case TT_fullIdentifier: {
-			//not LL case
-			//might be assignment or function call or id++/--
-			Token* helperToken;
+			Token *helperToken;
 			helperToken = newToken();
 			helperToken->type = token->type;
 			helperToken->str = strNew();
-			if (strCopyStr(helperToken->str, token->str) != ERR_OK) {
+
+			if (strCopyStr(symbolName, token->str) != ERR_OK) {
 				freeToken(&helperToken);
 				return ERR_INTERN;
 			}
@@ -561,13 +454,15 @@ eError stmt_2() {
 			if (token->type == TT_assignment) {
 				errCode = precedenceParsing(NULL);
         printf("PrecedenceParsing returned: %d\n", errCode);
-				if(errCode != ERR_OK) {
-					freeToken(&helperToken);
-					return errCode;
-				}
-
-
+				CHECK_ERRCODE();
+				checkTypesAndGenerateiMOV(errCode);
+				CHECK_ERRCODE();
 			} else if (token->type == TT_leftRoundBracket || token->type == TT_increment || token->type == TT_decrement) {
+				//not LL case, must create helperToken for precedenceParsing
+				helperToken = newToken();
+				helperToken->type = token->type;
+				helperToken->str = strNew();
+
 				errCode = precedenceParsing(helperToken);
         printf("PrecedenceParsing returned: %d\n", errCode);
 				if (errCode != ERR_OK) {
@@ -578,10 +473,6 @@ eError stmt_2() {
 
 			freeToken(&helperToken);
 
-			if (token->type != TT_semicolon) {
-				return ERR_SYNTAX;
-			}
-
 			getNewToken(token, errCode);
 			break;
 		}
@@ -591,9 +482,8 @@ eError stmt_2() {
 
 	}
 
-	if (token->type == TT_rightCurlyBracket) {
+	if (token->type == TT_rightCurlyBracket)
 		return ERR_OK;
-	}
 
 	if (token->type == TT_keyword) {
 		if (token->keywordType == KTT_boolean
@@ -605,129 +495,26 @@ eError stmt_2() {
 		}
 	}
 	errCode = stmt_2();
-	if (errCode != ERR_OK) {
-		return errCode;
-	}
+	CHECK_ERRCODE();
 	return ERR_OK;
 
 }
 
-eError var_2(bool defined) {
+eError var_2() {
 
 	eError errCode = ERR_OK;
-  tSymbolPtr foundSymbol;
-  if (!defined)
-    strCopyStr(symbolName, token->str);
-  else{
-    getNewToken(token, errCode);
-    strCopyStr(symbolName, token->str);
-  }
-
+  getNewToken(token, errCode);
+  strCopyStr(symbolName, token->str);
 	getNewToken(token, errCode);
+
 	if (token->type == TT_assignment) {
-		//call expressions parsing to parse intialize value
 		errCode = precedenceParsing(NULL);
-		//instr.type = iMOV;
-    // DO I HAVE SUCH SYMBOL? Checking for both defined and !define cause you never know, but might refactor later
-    if((foundSymbol = findSymbol(symbolName)) == NULL)
-      return ERR_SEM;
-    else{
-      //instr.dst = foundSymbol;
-      ;
-    }
-		// check na kompatibilitu typov -> tento provizorny zatial cajk, uvidime dokedy
-		if (foundSymbol->Type != result->Type){
-			printf("Types aren't equal\n");
-		}
-    {tInstruction instr = {iMOV, foundSymbol, result, NULL}; instrListInsertInstruction(instructionList, instr);}
-		//instr.arg1 = result; // p *(tSymbolPtr)instr.dst
-    //instr.arg2 = NULL;
-		//instrListInsertInstruction(instructionList, instr);
-    if (updateInstructionIndex){
-		  currentFunction->Data.FunctionData.InstructionIndex = instructionList->usedSize - 1;
-      updateInstructionIndex = false;
-    }
-    printf("PrecedenceParsing returned: %d\n", errCode);
-		if (errCode != ERR_OK)
-			return errCode;
+    CHECK_ERRCODE();
+    checkTypesAndGenerateiMOV(errCode);
+	CHECK_ERRCODE();
 	}
-	if (token->type == TT_leftRoundBracket){
-		eInstructionType functionCall = getFunctionCallForBuiltin(&symbolName);
-		if (functionCall != iSTOP){  // isBuiltin = true
-			//TODO: generate functionCall according to what individual FC need
-      if (functionCall == iPRINT){
-        // Want to iPRINT, must iCONV2STR first
-        // CONVERTING
-        errCode = precedenceParsing(NULL);
-        tSymbolPtr symbolTmp;
-        //strAddChar(tmpString, '#');
-        tmpString = strNewFromCStr("##");
-        instr.type = iCONV2STR;
-        //symbolTmp = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName);
-          tSymbolPtr tmp = symbolNew();
-          tmp->Defined = true;
-          tmp->Const = false;
-          tmp->Type = eSTRING;
-          tmp->Name = strNewFromStr(tmpString);
-          symbolTmp = htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, tmp, false);
-          symbolFree(tmp);
-
-        strFree(tmpString);
-        instr.dst = symbolTmp;
-        instr.arg1 = result;
-        instr.arg2 = NULL;
-        instrListInsertInstruction(instructionList, instr);
-        //PRINTING
-        instr.type = iPRINT;
-        instr.arg1 = symbolTmp;
-        instr.arg2 = NULL;
-        instr.dst = NULL;
-        instrListInsertInstruction(instructionList, instr);
-        if (updateInstructionIndex){
-          currentFunction->Data.FunctionData.InstructionIndex = instructionList->usedSize - 1;
-          updateInstructionIndex = false;
-        }
-      }
-      if (functionCall == iREAD){
-        // TODO
-        ;
-      }
-      if (functionCall == iLEN){
-        //ASSERT(((tSymbolPtr) i->dst)->Type == eINT);
-				//ASSERT(((tSymbolPtr) i->arg1)->Type == eSTRING);
-        ;
-      }
-    }
-    else{
-      if((foundSymbol = findSymbol(symbolName)) == NULL)
-        return ERR_SEM;
-      else{
-        /*
-
-        */
-        instr.dst = foundSymbol;
-        instr.type = iCALL;
-        instr.arg1 = NULL;
-        instr.arg2 = NULL;
-        instr.dst = NULL;
-        instrListInsertInstruction(instructionList, instr);
-        if (updateInstructionIndex){
-          currentFunction->Data.FunctionData.InstructionIndex = instructionList->usedSize - 1;
-          updateInstructionIndex = false;
-        }
-      }
-
-    }
-    skipFunctionCall(errCode);
-	}
-	else{
-		// Defined variable without initialization, nothing to do here
-		while (token->type != TT_semicolon){
-      getNewToken(token, errCode);
-      if (token->type == TT_EOF)
-        return ERR_SYNTAX;
-    }
-	}
+	if (token->type != TT_semicolon)
+    return ERR_SYNTAX;
 
   strClear(symbolName);
 	return ERR_OK;

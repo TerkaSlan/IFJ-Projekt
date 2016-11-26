@@ -266,8 +266,7 @@ dtStrPtr symbolToString(const tSymbolPtr symbol, const tSymbolData *data) {
         handleConversionError(string);
       break;
     case eBOOL:
-      string = strNew();
-      if (strAddChar(string,data->Bool + '0') == STR_ERROR)
+      if ((string = strNewFromCStr(data->Bool ? "true" : "false")) == NULL)
         handleConversionError(string);
       break;
     case eSTRING:

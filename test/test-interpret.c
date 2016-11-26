@@ -172,7 +172,7 @@ TEST_SUITE_START(InterpretTest)
 	{tInstruction instr = {iADD, Static7, Static7, y}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iCONV2STR, tmp, x, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iPRINT, NULL, tmp, NULL}; instrListInsertInstruction(list, instr);}
-	{tInstruction instr = {iFRAME, Cat, NULL, NULL}; instrListInsertInstruction(list, instr);}
+	{tInstruction instr = {iFRAME, NULL, Cat, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iCALL, NULL, NULL, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iGETRETVAL, tmp, NULL, NULL}; instrListInsertInstruction(list, instr);}
 	{tInstruction instr = {iPRINT, NULL , tmp, NULL}; instrListInsertInstruction(list, instr);}
@@ -185,11 +185,7 @@ TEST_SUITE_START(InterpretTest)
 
 	Interpret(globalTable, list);
 	symbolFree(sym);
-	htabFree(globalTable);
-	htabFree(MainTable);
-	htabFree(CatTable);
-	htabFree(RunTable);
-	constFree(constants);
+	htabRecursiveFree(globalTable);
 	instrListFree(list);
 
 

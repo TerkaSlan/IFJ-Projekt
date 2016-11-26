@@ -104,6 +104,13 @@ tInstructionPtr instrListGetActiveInstruction(tInstructionListPtr list);
 
 
 /**
+ * \brief Returns index of the instruction to be inserted next
+ * @param list Instruction list to get the index from
+ * @return Rertuns index of the instruction to be inserted next.
+ */
+static inline uint32_t instrListGetNextInsertedIndex(tInstructionListPtr list) {return list->usedSize;}
+
+/**
  * \brief Returns index of an instruction currently active
  * @param list Pointer to instruction list
  * @return returns index of currently active instruction, on error returns -2

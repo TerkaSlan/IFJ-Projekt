@@ -4,13 +4,11 @@
 
 #include "interpret.h"
 #include "frame.h"
-#include "instruction.h"
-#include "ial.h"
 #include <assert.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include "conversions.h"
 #include "builtin.h"
+#include "ial.h"
 
 
 //use assert for debugging, for speed without checks use compile flag NDEBUG
@@ -50,8 +48,8 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 	strClear(string);
 	strAddCStr(string, "run");
 	if((mainSymbol = htabGetSymbol(mainSymbol->Data.ClassData.LocalSymbolTable, string)) == NULL ||
-	   mainSymbol->Type != eFUNCTION || !mainSymbol->Defined)
-		EXIT(ERR_SEM, "In class Main there is no Run method.\n"); //3?
+	   mainSymbol->Type != eFUNCTION || mainSymbol->Data.FunctionData.NumberOfArguments !=0 || mainSymbol->Data.FunctionData.ReturnType != eNULL || !mainSymbol->Defined)
+		EXIT(ERR_SEM, "In class Main there is no run method.\n"); //3?
 
 	//current frame
 	tFrame *curFrame;
@@ -81,7 +79,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 		switch(i->type) {
 
 			case iMOV: {
-				ASSERT(((tSymbolPtr) (i->dst))->Type == ((tSymbolPtr) (i->arg1))->Type);
+				ASSERT(((tSymbolPtr) (i->dst))->Type == ((tSymbolPtr) (i->arg1))->Type || (((tSymbolPtr) (i->dst))->Type == eDOUBLE && ((tSymbolPtr) (i->arg1))->Type == eINT));
 
 				CHECK_INIT(i->arg1, curFrame);
 
@@ -90,9 +88,15 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						SD(i->dst, curFrame)->Integer = GD(i->arg1, curFrame)->Integer;
 						break;
 
-					case eDOUBLE:
-						SD(i->dst, curFrame)->Double = GD(i->arg1, curFrame)->Double;
+					case eDOUBLE:{
+						if(((tSymbolPtr)i->arg1)->Type == eDOUBLE)
+							SD(i->dst, curFrame)->Double = GD(i->arg1, curFrame)->Double;
+						else
+							//implicit conversion from Integer to Double
+							SD(i->dst, curFrame)->Double = (double)(GD(i->arg1, curFrame)->Integer);
 						break;
+					}
+
 
 					case eBOOL:
 						SD(i->dst, curFrame)->Bool = GD(i->arg1, curFrame)->Bool;
@@ -844,6 +848,8 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param)
 {
+	(void)param;
+
 	if(!symbol)
 		return NULL;
 

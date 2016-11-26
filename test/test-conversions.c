@@ -249,12 +249,12 @@ strFree(returnedString);
 symbol->Type = eBOOL;
 data.Bool = true;
 returnedString = symbolToString(symbol, &data);
-SHOULD_EQUAL("symbolToString() BOOL true", strcmp(returnedString->str, "1"), 0);
+SHOULD_EQUAL("symbolToString() BOOL true", strcmp(returnedString->str, "true"), 0);
 strFree(returnedString);
 
 data.Bool = false;
 returnedString = symbolToString(symbol, &data);
-SHOULD_EQUAL("symbolToString() BOOL false", strcmp(returnedString->str, "0"), 0);
+SHOULD_EQUAL("symbolToString() BOOL false", strcmp(returnedString->str, "false"), 0);
 strFree(returnedString);
 
 symbol->Type = eNULL;

@@ -258,6 +258,7 @@ void htabClear(tHashTablePtr table) {
 }
 static tSymbolPtr recursiveDelete(tSymbolPtr symbol, void* param)
 {
+	(void)param;
 	switch(symbol->Type)
 	{
 		case eCLASS:
