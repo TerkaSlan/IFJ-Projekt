@@ -1,6 +1,19 @@
-//
-// Created by Charvin on 6. 11. 2016.
-//
+/*
+ * Project: IFJ
+ * Implementace interpretu imperativního jazyka IFJ16.
+ *
+ * Description:
+ * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+ *
+ * Team:
+ * Michal Charvát          (xcharv16)
+ * Terézia Slanináková     (xslani06)
+ * Katarína Grešová        (xgreso00)
+ * Marek Schauer           (xschau00)
+ * Jakub Handzuš           (xhandz00)
+ */
+
+
 
 #ifndef FRAME_H
 #define FRAME_H

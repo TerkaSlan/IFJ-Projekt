@@ -93,7 +93,7 @@ typedef struct tHashTableItem {
 } tSymbol, *tSymbolPtr;
 
 
-#define HTAB_DEFAULT_SIZE 59
+#define HTAB_DEFAULT_SIZE 101
 
 /**
  *  \brief Creates a new hash table of size specified.
