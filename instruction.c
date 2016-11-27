@@ -138,7 +138,7 @@ void instrListPrint(tInstructionListPtr list) {
 	if (!list) {
 		printf("Pointer to instruction list is NULL\n");
 		return;
-	}	
+	}
 	static const char *types[] = {"iSTOP", "iMOV", "iFRAME", "iPUSH", "iCALL", "iRET", "iGETRETVAL", "iINC", "iDEC", "iADD", "iSUB", "iMUL", "iDIV", "iNEG", "iLE", "iLT", "iGE", "iGT", "iEQ", "iNEQ", "iLAND", "iLOR", "iLNOT", "iGOTO", "iIFGOTO", "iIFNGOTO", "iCONV2STR", "iCONV2INT", "iCONV2BOOL", "iCONV2DOUBLE", "iPRINT", "iREAD", "iLEN", "iCOMPARE", "iFIND", "iSORT", "iSUBSTR", "Unknown instr"};
 	uint32_t index = 0;
 
@@ -148,40 +148,49 @@ void instrListPrint(tInstructionListPtr list) {
 		printf("%s%c[1m%13s%c[0m%s ", KYEL, ESC, types[list->instructionArray[index].type], ESC, KNRM);
 
 		printf("  |   %sDst ", KMAG);
-		if (list->instructionArray[index].dst != NULL) {
-			if (((tSymbolPtr)list->instructionArray[index].dst)->Name != NULL && ((tSymbolPtr)list->instructionArray[index].dst)->Name->str != NULL) {
-				printf("Name: %s ", ((tSymbolPtr)list->instructionArray[index].dst)->Name->str);
-			} else {
-				if ( &(((tSymbolPtr)list->instructionArray[index].dst)->Data) != NULL || ((tSymbolPtr)list->instructionArray[index].dst)->Type == eNULL) {
-					switch (((tSymbolPtr)list->instructionArray[index].dst)->Type) {
-						case eNULL:
-							printf("eNULL ");
-							break;
-						case eINT:
-							printf( "eINT: ""%" SCNd32 " ", (int32_t)((tSymbolPtr)list->instructionArray[index].dst)->Data.Integer );
-							break;
-						case eDOUBLE:
-							printf( "eDOUBLE: %lf ", ((tSymbolPtr)list->instructionArray[index].dst)->Data.Double );
-							break;
-						case eBOOL:
-							printf("eBOOL: %s ", ((tSymbolPtr)list->instructionArray[index].dst)->Data.Bool ? "true" : "false");
-							break;
-						case eSTRING:
-							if (((tSymbolPtr)list->instructionArray[index].dst)->Data.String != NULL) {
-								printf("eSTRING: %s ", ((tSymbolPtr)list->instructionArray[index].dst)->Data.String->str );
-							} else {
-								printf("eSTRING: NULL ");	
-							}
-							break;
-						default:
-							printf("*UnknownType* ");
-					}
+		if(list->instructionArray[index].type == iGOTO || list->instructionArray[index].type == iIFGOTO || list->instructionArray[index].type == iIFNGOTO)
+			printf("idx: %lu", (unsigned long)list->instructionArray[index].dst);
+		else {
+			if(list->instructionArray[index].dst != NULL) {
+				if(((tSymbolPtr) list->instructionArray[index].dst)->Name != NULL &&
+				   ((tSymbolPtr) list->instructionArray[index].dst)->Name->str != NULL) {
+					printf("Name: %s ", ((tSymbolPtr) list->instructionArray[index].dst)->Name->str);
 				} else {
-					printf("Data = NULL ");
+					if(&(((tSymbolPtr) list->instructionArray[index].dst)->Data) != NULL ||
+					   ((tSymbolPtr) list->instructionArray[index].dst)->Type == eNULL) {
+						switch(((tSymbolPtr) list->instructionArray[index].dst)->Type) {
+							case eNULL:
+								printf("eNULL ");
+								break;
+							case eINT:
+								printf("eINT: ""%" SCNd32 " ",
+								       (int32_t) ((tSymbolPtr) list->instructionArray[index].dst)->Data.Integer);
+								break;
+							case eDOUBLE:
+								printf("eDOUBLE: %lf ", ((tSymbolPtr) list->instructionArray[index].dst)->Data.Double);
+								break;
+							case eBOOL:
+								printf("eBOOL: %s ",
+								       ((tSymbolPtr) list->instructionArray[index].dst)->Data.Bool ? "true" : "false");
+								break;
+							case eSTRING:
+								if(((tSymbolPtr) list->instructionArray[index].dst)->Data.String != NULL) {
+									printf("eSTRING: %s ",
+									       ((tSymbolPtr) list->instructionArray[index].dst)->Data.String->str);
+								} else {
+									printf("eSTRING: NULL ");
+								}
+								break;
+							default:
+								printf("*UnknownType* ");
+						}
+					} else {
+						printf("Data = NULL ");
+					}
 				}
+			} else {
+				printf("= NULL ");
 			}
-		} else {
-			printf("= NULL ");
 		}
 
 		printf("%s  |  %s Arg1 ", KNRM, KGRN);
@@ -209,7 +218,7 @@ void instrListPrint(tInstructionListPtr list) {
 							} else {
 								printf("eSTRING: NULL ");
 							}
-							break;					
+							break;
 						default:
 							printf("*UnknownType* ");
 					}
@@ -246,7 +255,7 @@ void instrListPrint(tInstructionListPtr list) {
 							} else {
 								printf("eSTRING: NULL ");
 							}
-							break;					
+							break;
 						default:
 							printf("*UnknownType* ");
 					}

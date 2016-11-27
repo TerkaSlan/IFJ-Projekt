@@ -7,7 +7,8 @@
 #include "str.h"
 #include <stdio.h> // FILE* TO ERASE: Just for testing purposes, won't be included in final build
 extern FILE* fSourceFile; // TODO:: Just for testing purposes, won't be included in final build
-
+// From scanner.c counting occurences of '\n'
+extern uint32_t LineCounter;
 /**
  * Opens the file located at sFileLocation and loads global variable
  * fSourceFile with the filestream

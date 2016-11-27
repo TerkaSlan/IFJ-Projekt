@@ -3,7 +3,9 @@
 #include "parser.h"
 #include "scanner.h"
 #include "interpret.h"
+#include "ial.h"
 
+static tHashTablePtr helperSymbolTable;
 tHashTablePtr globalScopeTable;
 tInstructionListPtr instructionList;
 tInstructionListPtr preInstructionList;
@@ -11,28 +13,93 @@ tConstContainerPtr constTable;
 
 
 #define CHECK_ERRCODE(jmpto) if(errCode != ERR_OK) goto jmpto
+#define INIT_ERRJUMP(jmpto) do{printError(ERR_INTERN, "Error allocating new space. Out of memory.\n"); errCode = ERR_INTERN; goto jmpto;}while(0)
 
 static eError initializeGlobalVariables(){
-  if((globalScopeTable = htabInit(HTAB_DEFAULT_SIZE)) == NULL){
-    return ERR_INTERN;
-  }
-  if((constTable = constNew()) == NULL) {
-    htabFree(globalScopeTable);
-    return ERR_INTERN;
-  }
-  if ((instructionList = instrListNew()) == NULL){
-    htabFree(globalScopeTable);
-    constFree(constTable);
-    return ERR_INTERN;
-  }
-  return ERR_OK;
+	eError errCode = ERR_OK;
+
+	if((globalScopeTable = htabInit(HTAB_DEFAULT_SIZE)) == NULL)
+        INIT_ERRJUMP(lFailedGlobalTableInit);
+
+	if((constTable = constNew()) == NULL)
+        INIT_ERRJUMP(lFailedConstTableInit);
+
+	if((preInstructionList = instrListNew()) == NULL)
+		INIT_ERRJUMP(lFailedPreInstructionListInit);
+
+	if ((instructionList = instrListNew()) == NULL)
+		INIT_ERRJUMP(lFailedInstructionListInit);
+
+
+	//create fake main and run
+	if((helperSymbolTable = htabInit(3)) == NULL)
+		INIT_ERRJUMP(lFailedHelperSymbolTableInit);
+
+	tHashTablePtr mainClassTable;
+	if((mainClassTable = htabInit(3)) == NULL)
+		INIT_ERRJUMP(lFailedHelperClassTableInit);
+
+	tSymbolPtr symbol;
+	if((symbol = symbolNew()) == NULL)
+		INIT_ERRJUMP(lFailedSymbolInit);
+
+	symbol->Type = eCLASS;
+	symbol->Const = true;
+	symbol->Defined = true;
+	symbol->Data.ClassData.LocalSymbolTable = mainClassTable;
+	if((symbol->Name = strNewFromCStr("Main")) == NULL)
+		INIT_ERRJUMP(lFailedClassNameInit);
+
+
+	if((mainClassTable->Parent = htabAddSymbol(helperSymbolTable, symbol, false)) == NULL)
+		INIT_ERRJUMP(lFailedClassNameInit);
+
+	tHashTablePtr runFunctionTable;
+	if((runFunctionTable = htabInit(3)) == NULL)
+		INIT_ERRJUMP(lFailedClassNameInit);
+
+	symbol->Type = eFUNCTION;
+	symbol->Data.FunctionData.ArgumentList = NULL;
+	symbol->Data.FunctionData.InstructionIndex = 1;
+	symbol->Data.FunctionData.NumberOfArguments = 0;
+	symbol->Data.FunctionData.ReturnType = eNULL;
+	symbol->Data.FunctionData.LocalSymbolTable = runFunctionTable;
+	strClear(symbol->Name);
+	if(strAddCStr(symbol->Name, "run") == STR_ERROR)
+		INIT_ERRJUMP(lFailedNameReSet);
+
+	if((runFunctionTable->Parent = htabAddSymbol(mainClassTable, symbol, false)) == NULL)
+		INIT_ERRJUMP(lFailedNameReSet);
+
+	symbolFree(symbol);
+	return ERR_OK;
+
+lFailedNameReSet:
+	htabFree(runFunctionTable);
+lFailedClassNameInit:
+	symbolFree(symbol);
+lFailedSymbolInit:
+	htabFree(mainClassTable);
+lFailedHelperClassTableInit:
+	htabFree(helperSymbolTable);
+lFailedHelperSymbolTableInit:
+	instrListFree(instructionList);
+lFailedInstructionListInit:
+	instrListFree(preInstructionList);
+lFailedPreInstructionListInit:
+	constFree(constTable);
+lFailedConstTableInit:
+	htabFree(globalScopeTable);
+lFailedGlobalTableInit:
+  return errCode;
 }
 
 static void freeGlobalVariables(){
-  constFree(constTable);
-  htabRecursiveFree(globalScopeTable);
-  instrListFree(instructionList);
-  instrListFree(preInstructionList);
+	constFree(constTable);
+	htabRecursiveFree(globalScopeTable);
+	htabRecursiveFree(helperSymbolTable);
+	instrListFree(instructionList);
+	instrListFree(preInstructionList);
 }
 
 int main(int argc, char const *argv[]) {
@@ -50,11 +117,12 @@ int main(int argc, char const *argv[]) {
 
 	errCode = fillSymbolTable();
 	CHECK_ERRCODE(lParserFailed);
-	printf("Retcode 1: %d \n", errCode);
 
 	errCode = generateInstructions();
 	CHECK_ERRCODE(lParserFailed);
-	printf("Retcode 2: %d \n", errCode);
+
+	instrListPrint(preInstructionList);
+	instrListPrint(instructionList);
 
 	Interpret(globalScopeTable, preInstructionList);
 	CHECK_ERRCODE(lParserFailed);

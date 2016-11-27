@@ -145,7 +145,7 @@ tSymbolPtr htabGetSymbol(const tHashTablePtr table, dtStrPtr name);
 
 /**
  *  \brief Executes function for each symbol in the hash table.
- *  
+ *
  *  \param [in] table tHashTablePtr, Pointer to the hashtable.
  *  \param [in] func tSymbolPtr(*)(tSymbolPtr), Pointer to a function to be executed for each symbol in the hash table.
  *  \param param [in] void*, param to be passed as second func param

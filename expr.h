@@ -65,12 +65,12 @@ uint32_t precedenceStackTopTerminal(tPrecedenceStackPtr stack);
 
 /**
  * Push item to precedence stack and increments top of precedence stack
- * 
+ *
  * @param  stack pointer to precedence stack
  * @param  item  value of item to by pushed
  * @return       ERR_OK if success, ERR_INTERN otherwise
  */
-eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item); 
+eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item);
 
 /**
  * Returns value of item on top of precedence stack and decrement top of precedence stack
@@ -102,7 +102,7 @@ tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack);
 
 eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
-eError buildinCall(dtStrPtr buildin, tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
+eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 

@@ -141,10 +141,10 @@ tSymbolPtr htabAddSymbol(tHashTablePtr table, const tSymbolPtr symbol, bool over
 		//hash name to get index into the hash table
 		uint32_t index = htabHashFunc(strGetCStr(symbolCopy->Name), table->Size);
 
-	//insert new item to the beginning of the list
-	symbolCopy->Next = table->Data[index];
-	table->Data[index] = symbolCopy;
-	table->NumberOfItems++;
+		//insert new item to the beginning of the list
+		symbolCopy->Next = table->Data[index];
+		table->Data[index] = symbolCopy;
+		table->NumberOfItems++;
 
 		return symbolCopy;
 	}
@@ -256,6 +256,7 @@ void htabClear(tHashTablePtr table) {
 	table->NumberOfItems = 0;
 
 }
+
 static tSymbolPtr recursiveDelete(tSymbolPtr symbol, void* param)
 {
 	(void)param;

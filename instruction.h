@@ -37,8 +37,8 @@ typedef enum {
 	iLOR,       ///Logical Or           dst = arg1 || arg2
 	iLNOT,      ///Logical Not          dst = !arg1
 	iGOTO,      ///Goto instr index     goto (uint32_t)dst
-	iIFGOTO,    ///if(arg1) goto dst
-	iIFNGOTO,   ///if(!arg1) goto dst
+	iIFGOTO,    ///if(arg1) goto (uint32_t)dst
+	iIFNGOTO,   ///if(!arg1) goto (uint32_t)dst
 	iCONV2STR,  /// dst = (string)arg1
 	iCONV2INT,  /// dst = (int)arg1
 	iCONV2BOOL,  /// dst = (boolean)arg1
@@ -50,6 +50,7 @@ typedef enum {
 	iFIND,      ///int find(string s, string substr) finds first occurance dst = find(arg1, arg2)
 	iSORT,      ///Sorts string: dst - new sorted string, arg1 string to be sorted
 	iSUBSTR,    ///Finds substring in string string substr(string, index, index)    RET = substr(dst, arg1,arg2) - required to add instruciton iGETRETVAL!!!
+	iINT,       ///Interrupt - instruction to be inserted between function to prevent unwanted exectution and make check return types possible - inserted automatically
 } eInstructionType;
 
 /*
