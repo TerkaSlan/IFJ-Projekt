@@ -486,28 +486,46 @@ eError classBody() {
 eError funcBody() {
 
 	eError errCode = ERR_OK;
-	//RULE: VAR -> type ID INITIALIZE
-	if (token->type == TT_keyword
-     && (token->keywordType == KTT_boolean
-     || token->keywordType == KTT_double
-     || token->keywordType == KTT_int
-     || token->keywordType == KTT_String)) {
-		  //current token is keyword type - we call var
-	 	  errCode = var();
-	 	  CHECK_ERRCODE();
-	 	  getNewToken(token, errCode);
-	} else {
-		//current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
-		errCode = stmt();
-		CHECK_ERRCODE();
-	}
+  do {
+  	//RULE: VAR -> type ID INITIALIZE
+  	if (token->type == TT_keyword
+       && (token->keywordType == KTT_boolean
+       || token->keywordType == KTT_double
+       || token->keywordType == KTT_int
+       || token->keywordType == KTT_String)) {
+  		  //current token is keyword type - we call var
+  	 	  errCode = var();
+  	 	  CHECK_ERRCODE();
+  	 	  getNewToken(token, errCode);
+  	} else {
+  		//current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
+  		errCode = stmt();
+  		CHECK_ERRCODE();
+  	}
+  }while (token->type != TT_rightCurlyBracket);
 
-	//after funcBody parsing we got one more token - to determine what to do next
-	if (token->type != TT_rightCurlyBracket) {
-		errCode = funcBody();
-		CHECK_ERRCODE();
-	}
+  return errCode;
+}
 
+eError stmtBody(){
+	eError errCode = ERR_OK;
+	getNewToken(token, errCode);
+	while (token->type != TT_rightCurlyBracket) {
+		if (token->type == TT_keyword
+		  && (token->keywordType == KTT_boolean
+		      || token->keywordType == KTT_double
+		      || token->keywordType == KTT_int
+		      || token->keywordType == KTT_String)) {
+
+		  //trying to declare a new variable inside a scope
+		  EXIT(ERR_SEM_OTHER, "Declarations in scope are not permitted.\n");
+		  return ERR_SEM_OTHER;
+		} else {
+		  //current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
+		  errCode = stmt();
+		  CHECK_ERRCODE();
+		}
+	}
   return errCode;
 }
 
@@ -519,21 +537,9 @@ eError stmt() {
 	switch(token->type) {
 
 		case TT_leftCurlyBracket:
-
-			getNewToken(token, errCode);
-			//If there is something between CurlyBrackets, we need to process it recursively
-			if (token->type != TT_rightCurlyBracket) {
-				errCode = stmt();
-				CHECK_ERRCODE();
-			}
-			if (token->type == TT_rightCurlyBracket) {
-		        //read next token - at the end of the function we will determine what to do next
-		        getNewToken(token, errCode);
-		        break;
-			}
-
-			EXIT(ERR_SYNTAX, "} expected.");
-			return ERR_SYNTAX;
+			errCode = stmtBody();
+			CHECK_ERRCODE();
+			break;
 
 		case TT_keyword:
 			switch(token->keywordType){
@@ -555,9 +561,6 @@ eError stmt() {
 							return ERR_SYNTAX;
 						}
 					}
-
-					//read next token - at the end of the function we will determine what to do next
-					getNewToken(token, errCode);
 					break;
 
 				//STMT -> if ( EXPR ) STMT ELSE
@@ -571,7 +574,7 @@ eError stmt() {
 					}
 
 					//call expressions parsing - parse condition
-					errCode = skipFunctionCall(errCode); //skipFunctionCall??? dat namin'
+					errCode = skipFunctionCall(errCode);
 					CHECK_ERRCODE();
 
 					//there have to be right round bracket after condition
@@ -580,18 +583,28 @@ eError stmt() {
 						return ERR_SYNTAX;
 					}
 
-					//read next token and call STMT processing
 					getNewToken(token, errCode);
-					errCode = stmt();
-					CHECK_ERRCODE();
-
-					//after SMTM - there can be else
-					if (token->type == TT_keyword && token->keywordType == KTT_else) {
-						getNewToken(token, errCode);
-						errCode = stmt();
-						CHECK_ERRCODE();
+					//{ check
+					if(token->type != TT_leftCurlyBracket) {
+						EXIT(ERR_SYNTAX, "{ expected.\n");
+						return ERR_SYNTAX;
 					}
+
+					errCode = stmtBody();
+					CHECK_ERRCODE();
 					break;
+
+		        case KTT_else:
+					getNewToken(token, errCode);
+					if(token->type != TT_leftCurlyBracket) {
+						EXIT(ERR_SYNTAX, "{ expected.\n");
+						return ERR_SYNTAX;
+					}
+
+					errCode = stmtBody();
+					CHECK_ERRCODE();
+					break;
+
 
 				//STMT -> while ( EXPR ) STMT
 				case KTT_while:
@@ -602,7 +615,7 @@ eError stmt() {
 						return ERR_SYNTAX;
 					}
 
-					errCode = skipFunctionCall(errCode); //lebo je to ukoncene zatvorkou, nie bodkociarkou
+					errCode = skipFunctionCall(errCode);
                     CHECK_ERRCODE();
 
 					//there have to be right round bracket after condition
@@ -612,13 +625,18 @@ eError stmt() {
 					}
 
                     getNewToken(token, errCode);
+					if(token->type != TT_leftCurlyBracket) {
+						EXIT(ERR_SYNTAX, "{ expected.\n");
+						return ERR_SYNTAX;
+					}
 
-                    errCode = stmt();
+                    errCode = stmtBody();
 					CHECK_ERRCODE();
 					break;
 
 				default:
-					return ERR_SYNTAX;
+					EXIT(ERR_SEM, "Statment expected.\n");
+					return ERR_SEM;
 			}
 			break;
 
@@ -630,7 +648,6 @@ eError stmt() {
 				EXIT(ERR_SYNTAX, "; expected.\n");
 				return ERR_SYNTAX;
 			}
-			getNewToken(token, errCode);
 			break;
 
 		case TT_identifier:
@@ -654,33 +671,23 @@ eError stmt() {
 				return ERR_SYNTAX;
 			}
 
-				if (token->type != TT_semicolon){
-					EXIT(ERR_SYNTAX, "; expected.\n");
-					return ERR_SYNTAX;
-				}
-
-				getNewToken(token, errCode);
-				break;
-			}
-
-			default:
+			if (token->type != TT_semicolon){
+				EXIT(ERR_SYNTAX, "; expected.\n");
 				return ERR_SYNTAX;
-	}
-
-	if (token->type == TT_rightCurlyBracket)
-		return ERR_OK;
-
-	if (token->type == TT_keyword) {
-		if (token->keywordType == KTT_boolean
-		 || token->keywordType == KTT_double
-		 || token->keywordType == KTT_int
-		 || token->keywordType == KTT_String
-		 || token->keywordType == KTT_else) {
-		 	return ERR_OK;
+			}
+			break;
 		}
+
+		case TT_EOF:
+			EXIT(ERR_SYNTAX, "Unexpected end of file.\n");
+			return ERR_SYNTAX;
+		default:
+			EXIT(ERR_SYNTAX, "Unexpected token.\n");
+			return ERR_SYNTAX;
 	}
-	errCode = stmt();
-	CHECK_ERRCODE();
+
+	//get token and return
+	getNewToken(token, errCode);
 
 	return ERR_OK;
 

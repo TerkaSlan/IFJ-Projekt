@@ -29,6 +29,7 @@ dtStrPtr tmpString;
 dtStrPtr tmpInt;
 dtStrPtr tmpDouble;
 dtStrPtr tmpBool;
+dtStrPtr tmpNull;
 
 #define convert(table, operand, instr, symbolTmp, dType)		\
 do{																\
@@ -61,13 +62,13 @@ do{																\
 /*
  * Creates new variable with given type, stores it into given table and returns pointer to it in symbolExprTmp
  */
-#define tmpVariable(table, symbolExprTmp, type)					\
+#define tmpVariable(table, symbolExprTmp, dType)				\
 do {															\
 	tSymbolPtr exprTmp = symbolNew();							\
 	exprTmp->Defined = true;									\
 	exprTmp->Const = false;										\
-	exprTmp->Type = type;										\
-	switch(type) {												\
+	exprTmp->Type = dType;										\
+	switch(dType) {												\
 		case eSTRING:											\
 			exprTmp->Name = strNewFromStr(tmpString);			\
 			strAddChar(tmpString, '@');							\
@@ -91,7 +92,7 @@ do {															\
 	symbolFree(exprTmp);										\
 } while (0);
 
-#define insertInstruction(instr) preinterpretation ? (errCode = instrListInsertInstruction(preInstructionList, instr)) : (errCode = instrListInsertInstruction(instructionList, instr));
+#define insertInstruction(instr) preinterpretation ? (insertErrCode = instrListInsertInstruction(preInstructionList, instr)) : (insertErrCode = instrListInsertInstruction(instructionList, instr));
 
 const uint32_t precedenceTable[26][26] =
 {
@@ -371,6 +372,8 @@ tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack) {
 eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	eError errCode;
+	int32_t insertErrCode;
+	tSymbolPtr symbolExprTmp;
 
 	int64_t funcId = precedenceStackPop(stack);
 	if (funcId != TT_identifier && funcId != TT_fullIdentifier) {
@@ -408,6 +411,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				return errCode;
 			}
 
+			strFree(className);
 			return errCode;
 		}
 
@@ -454,7 +458,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	tInstruction instr = {iFRAME, NULL, funcSymbol, NULL};
 	insertInstruction(instr);
-	if (errCode == -1) {
+	if (insertErrCode == -1) {
 		return ERR_INTERN;
 	}
 
@@ -480,7 +484,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 				//add instr to instructionList
 				insertInstruction(instr);
-				if (errCode == -1) {
+				if (insertErrCode == -1) {
 					return ERR_INTERN;
 				}
 				result = symbolTmp;
@@ -492,7 +496,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				instr.arg1 = result;
 				instr.arg2 = NULL;
 				insertInstruction(instr);
-				if (errCode == -1) {
+				if (insertErrCode == -1) {
 					return ERR_INTERN;
 				}
 				paramCount--;
@@ -521,7 +525,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	instr.arg2 = NULL;
 
 	insertInstruction(instr);
-	if (errCode == -1) {
+	if (insertErrCode == -1) {
 		return ERR_INTERN;
 	}
 
@@ -542,7 +546,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		instr.arg2 = NULL;
 
 		insertInstruction(instr);
-		if (errCode == -1) {
+		if (insertErrCode == -1) {
 			precedenceSymbolFree(funcPrecedenceSymbol);
 			return ERR_INTERN;
 		}
@@ -558,9 +562,17 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		precedenceStackPush(stack, TT_void);
 
+		tSymbolPtr exprTmp = symbolNew();							
+		exprTmp->Defined = true;									
+		exprTmp->Const = false;										
+		exprTmp->Type = eNULL;																				
+		exprTmp->Name = strNewFromStr(tmpNull);			
+		strAddChar(tmpNull, '*');							
+		symbolExprTmp = htabAddSymbol(funcSymbol->Data.FunctionData.LocalSymbolTable, exprTmp, true);	
+		symbolFree(exprTmp);
+
 		funcPrecedenceSymbol->type = TT_void;
-		funcPrecedenceSymbol->symbol = symbolNew();
-		funcPrecedenceSymbol->symbol->Type = eNULL;
+		funcPrecedenceSymbol->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, funcPrecedenceSymbol) == ERR_INTERN) {
 			precedenceSymbolFree(funcPrecedenceSymbol);
 			return ERR_INTERN;
@@ -589,14 +601,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 	if (strCmpCStr(builtin, "ifj16.substr") == 0) {
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has three parameters - first parameter have to be followed by comma
-		if (token->type != TT_comma) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has three parameters - first parameter have to be followed by comma
+		if (token->type == TT_rightRoundBracket) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_comma) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -605,14 +624,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tSymbolPtr s = result;
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has three parameters - second parameter have to be followed by comma
-		if (token->type != TT_comma) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has three parameters - second parameter have to be followed by comma
+		if (token->type == TT_rightRoundBracket) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_comma) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eINT) {
@@ -621,14 +647,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tSymbolPtr i = result;
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has three parameters - precedence parsing have to stop on right round bracket after third parameter
-		if (token->type != TT_rightRoundBracket) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has three parameters - precedence parsing have to stop on right round bracket after third parameter
+		if (token->type == TT_comma) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_rightRoundBracket) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eINT) {
@@ -642,8 +675,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = s;
         instr.arg1 = i;
         instr.arg2 = n;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -652,8 +684,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		instr.dst = symbolExprTmp;
 		instr.arg1 = NULL;
 		instr.arg2 = NULL;
-		errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+		if (instrListInsertInstruction(instructionList, instr) == -1 ) {
 			return ERR_INTERN;
 		}
 
@@ -690,8 +721,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = NULL;
         instr.arg2 = NULL;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -728,8 +758,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = NULL;
         instr.arg2 = NULL;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -766,8 +795,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = NULL;
         instr.arg2 = NULL;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -787,20 +815,26 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	}
 	if (strCmpCStr(builtin, "ifj16.print") == 0) {
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
-		if (token->type != TT_rightRoundBracket) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
+		if (token->type == TT_comma) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_rightRoundBracket) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
 			convert(currentFuncTable, result, instr, symbolTmp, eSTRING);
-			insertInstruction(instr);
-			if (errCode == -1) {
+			if (instrListInsertInstruction(instructionList, instr) == -1) {
 				return ERR_INTERN;
 			}
 		} else {
@@ -811,17 +845,24 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = NULL;
         instr.arg1 = symbolTmp;
         instr.arg2 = NULL;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+       if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
 		precedenceStackPush(stack, TT_void);
 
+		tSymbolPtr exprTmp = symbolNew();							
+		exprTmp->Defined = true;									
+		exprTmp->Const = false;										
+		exprTmp->Type = eNULL;																				
+		exprTmp->Name = strNewFromStr(tmpNull);			
+		strAddChar(tmpNull, '*');							
+		symbolExprTmp = htabAddSymbol(currentFuncTable, exprTmp, true);	
+		symbolFree(exprTmp);
+
 		tPrecedenceSymbolPtr returnVal = precedenceSymbolNew();
-		returnVal->type = TT_void;
-		returnVal->symbol = symbolNew();
-		returnVal->symbol->Type = eNULL;
+		returnVal->type = TT_E;
+		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
 			return ERR_INTERN;
@@ -833,14 +874,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	}
 	if (strCmpCStr(builtin, "ifj16.length") == 0) {
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
-		if (token->type != TT_rightRoundBracket) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
+		if (token->type == TT_comma) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_rightRoundBracket) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -853,8 +901,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = result;
         instr.arg2 = NULL;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -874,14 +921,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	}
 	if (strCmpCStr(builtin, "ifj16.compare") == 0) {
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has two parameters - first parameter have to be followed by comma
-		if (token->type != TT_comma) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has two parameters - first parameter have to be followed by comma
+		if (token->type == TT_rightRoundBracket) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_comma) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -890,14 +944,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tSymbolPtr s1 = result;
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
-		if (token->type != TT_rightRoundBracket) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
+		if (token->type == TT_comma) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_rightRoundBracket) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -912,8 +973,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = s1;
         instr.arg2 = s2;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -933,14 +993,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	}
 	if (strCmpCStr(builtin, "ifj16.find") == 0) {
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has two parameters - first parameter have to be followed by comma
-		if (token->type != TT_comma) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has two parameters - first parameter have to be followed by comma
+		if (token->type == TT_rightRoundBracket) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_comma) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -949,14 +1016,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tSymbolPtr s = result;
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
-		if (token->type != TT_rightRoundBracket) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
+		if (token->type == TT_comma) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_rightRoundBracket) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -971,8 +1045,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = s;
         instr.arg2 = search;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -992,14 +1065,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	}
 	if (strCmpCStr(builtin, "ifj16.sort") == 0) {
 
-		errCode = precedenceParsing(NULL);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
-		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
-		if (token->type != TT_rightRoundBracket) {
+		if (result == NULL) {
 			return ERR_SEM_TYPE;
+		}
+
+		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
+		if (token->type == TT_comma) {
+			return ERR_SEM_TYPE;
+		}
+		if (token->type != TT_rightRoundBracket) {
+			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
@@ -1012,8 +1092,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = symbolExprTmp;
         instr.arg1 = result;
         instr.arg2 = NULL;
-        errCode = instrListInsertInstruction(instructionList, instr);
-        if (errCode == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
 			return ERR_INTERN;
 		}
 
@@ -1038,6 +1117,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	eError errCode;
+	int32_t insertErrCode;
 	tHashTablePtr currentFuncTable = currentFunction->Data.FunctionData.LocalSymbolTable;
 	if (currentFuncTable == NULL) {
 	}
@@ -1204,7 +1284,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(constant);
-			//free(symbolConst); //nemozem pouzit symbolFree, lebo ten zrusi aj nieco, co je v kontajneri konstant TODO::possibly different free?
 
 			precedenceStackPush(stack, TT_E);
 			break;
@@ -1228,17 +1307,163 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			precedenceStackPush(stack, TT_E);
 			break;
 
-		// all E -> E op E
-		case TT_minus:
-		case TT_plus:
-		case TT_multiply:
-		case TT_divide:
 		case TT_less:
 		case TT_lessEqual:
 		case TT_greater:
 		case TT_greaterEqual:
 		case TT_equal:
 		case TT_notEqual: {
+
+			if (precedenceStackPop(stack) != TT_E) {
+				return ERR_SYNTAX;
+			}
+
+			int64_t operator = precedenceStackPop(stack);
+			if (operator == -1 ) {
+				return ERR_SYNTAX;
+			}
+
+			if (precedenceStackPop(stack) != TT_E) {
+				return ERR_SYNTAX;
+			}
+
+			if (precedenceStackPop(stack) != TT_start) {
+				return ERR_SYNTAX;
+			}
+
+			tPrecedenceSymbolPtr operand2 = symbolStackPop(symbolStack);
+			tPrecedenceSymbolPtr operand1 = symbolStackPop(symbolStack);
+			tSymbolPtr symbolExprTmp;
+			tSymbolPtr symbolTmp;
+			tInstruction instr;
+
+			if (operand1->symbol->Type == eINT) {
+				if (operand2->symbol->Type == eINT) {
+
+					goto generateBoolInstruction;
+				} else if (operand2->symbol->Type == eDOUBLE) {
+
+					//generovat instrukciu na prevod prveho operandu na double
+					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+
+					//pridat instrukciu na instrukcnu pasku
+					insertInstruction(instr);
+					if (insertErrCode == -1) {
+						precedenceSymbolFree(operand1);
+						precedenceSymbolFree(operand2);
+						return ERR_INTERN;
+					}
+					operand1->symbol = symbolTmp;
+
+					goto generateBoolInstruction;
+				} else {
+
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SEM_TYPE;
+				}
+			} else if (operand1->symbol->Type == eDOUBLE) {
+				if (operand2->symbol->Type == eINT) {
+
+					//generovat instrukciu na prevod druheho operandu na double
+					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+
+					//pridat instrukciu na instrukcnu pasku
+					insertInstruction(instr);
+					if (insertErrCode == -1) {
+						precedenceSymbolFree(operand1);
+						precedenceSymbolFree(operand2);
+						return ERR_INTERN;
+					}
+					operand2->symbol = symbolTmp;
+
+					goto generateBoolInstruction;
+				} else if (operand2->symbol->Type == eDOUBLE) {
+
+					goto generateInstruction;
+				} else {
+					//uvolnit vsetko
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SEM_TYPE;
+				}
+			} else {
+				//uvolnit vsetko
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_SEM_TYPE;
+			}
+
+			generateBoolInstruction: {
+
+			tmpVariable(currentFuncTable, symbolExprTmp, eBOOL);
+			eInstructionType instruction;
+			switch(operator) {
+				case TT_less:
+					instruction = iLT;
+
+					break;
+				case TT_lessEqual:
+					instruction = iLE;
+
+					break;
+				case TT_greater:
+					instruction = iGT;
+
+					break;
+				case TT_greaterEqual:
+					instruction = iGE;
+
+					break;
+				case TT_equal:
+					instruction = iEQ;
+
+					break;
+				case TT_notEqual:
+					instruction = iNEQ;
+
+					break;
+				default:
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					return ERR_SYNTAX;
+			}
+
+			instr.type = instruction;
+			instr.dst = symbolExprTmp;
+			instr.arg1 = operand1->symbol;
+			instr.arg2 = operand2->symbol;
+
+			//pridat na instrukcnu pasku
+			insertInstruction(instr);
+			if (insertErrCode == -1) {
+				precedenceSymbolFree(operand1);
+				precedenceSymbolFree(operand2);
+				return ERR_INTERN;
+			}
+
+			precedenceSymbolFree(operand1);
+			precedenceSymbolFree(operand2);
+
+			//na symbolStack ulozit ukazatel na vyslednu hodnotu
+			tPrecedenceSymbolPtr result = precedenceSymbolNew();
+			result->type = TT_E;
+			result->symbol = symbolExprTmp;
+			if (symbolStackPush(symbolStack, result) == ERR_INTERN) {
+				precedenceSymbolFree(result);
+				return ERR_INTERN;
+			}
+			precedenceSymbolFree(result);
+
+			precedenceStackPush(stack, TT_E);
+			break;
+			}
+
+		}
+		case TT_minus:
+		case TT_plus:
+		case TT_multiply:
+		case TT_divide: {
 
 			if (precedenceStackPop(stack) != TT_E) {
 				return ERR_SYNTAX;
@@ -1271,7 +1496,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eSTRING);
 
 					insertInstruction(instr);
-						if (errCode == -1) {
+						if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
 						return ERR_INTERN;
@@ -1297,7 +1522,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
-					if (errCode == -1) {
+					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
 						return ERR_INTERN;
@@ -1328,7 +1553,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
-					if (errCode == -1) {
+					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
 						return ERR_INTERN;
@@ -1353,7 +1578,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
-					if (errCode == -1) {
+					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
 						return ERR_INTERN;
@@ -1402,30 +1627,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					instruction = iDIV;
 
 					break;
-				case TT_less:
-					instruction = iLT;
-
-					break;
-				case TT_lessEqual:
-					instruction = iLE;
-
-					break;
-				case TT_greater:
-					instruction = iGT;
-
-					break;
-				case TT_greaterEqual:
-					instruction = iGE;
-
-					break;
-				case TT_equal:
-					instruction = iEQ;
-
-					break;
-				case TT_notEqual:
-					instruction = iNEQ;
-
-					break;
 				default:
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
@@ -1439,7 +1640,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			//pridat na instrukcnu pasku
 			insertInstruction(instr);
-			if (errCode == -1) {
+			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
 				return ERR_INTERN;
@@ -1512,7 +1713,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 			insertInstruction(instr);
-			if (errCode == -1) {
+			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
 				return ERR_INTERN;
@@ -1560,7 +1761,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			tInstruction instr = {iLNOT, symbolExprTmp, operand->symbol, NULL};
 			//vlozenie instrukcie na zasobnik instrukcii
 			insertInstruction(instr);
-			if (errCode == -1) {
+			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand);
 				return ERR_INTERN;
 			}
@@ -1646,13 +1847,30 @@ eError precedenceParsing(Token* helpToken) {
 		strFree(tmpBool);
 		return ERR_INTERN;
 	}
+	tmpNull = strNew();
+	if (tmpNull == NULL) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		strFree(tmpDouble);
+		strFree(tmpBool);
+		return ERR_INTERN;
+	}
+	if (strAddChar(tmpNull, '*') != ERR_OK) {
+		strFree(tmpString);
+		strFree(tmpInt);
+		strFree(tmpDouble);
+		strFree(tmpBool);
+		strFree(tmpNull);
+		return ERR_INTERN;
+	}
 
 	eError errCode = parsing(helpToken);
 
-//	strFree(tmpString);
-//	strFree(tmpInt);
-//	strFree(tmpDouble);
-//	strFree(tmpBool);
+	strFree(tmpString);
+	strFree(tmpInt);
+	strFree(tmpDouble);
+	strFree(tmpBool);
+	strFree(tmpNull);
 
 	return errCode;
 
@@ -1800,6 +2018,7 @@ eError parsing(Token* helpToken) {
 
 				errCode = reduce(stack, symbolStack);
 				if (errCode != ERR_OK) {
+					result = NULL;
 					goto freeAndExit;
 				}
 
@@ -1809,6 +2028,7 @@ eError parsing(Token* helpToken) {
 
 				errCode = functionParse(stack, symbolStack);
 				if (errCode != ERR_OK) {
+					result = NULL;
 					goto freeAndExit;
 				}
 				break;
@@ -1816,6 +2036,7 @@ eError parsing(Token* helpToken) {
 			case 'u':
 				printError(ERR_SYNTAX, "unary not supported yet\n");
 				errCode = ERR_SYNTAX;
+				result = NULL;
 				goto freeAndExit;
 
 			case 'e':
@@ -1833,6 +2054,7 @@ eError parsing(Token* helpToken) {
 			default:
 
 				errCode = ERR_SYNTAX;
+				result = NULL;
 				goto freeAndExit;
 
 		}

@@ -33,6 +33,8 @@ static eError funcBody_2();
 
 static eError stmt_2();
 
+static eError stmtBody_2();
+
 static eError var_2();
 
 //static eInstructionType getFunctionCallForBuiltin(dtStrPtr *string); //TODO::where is it used??
@@ -354,11 +356,13 @@ eError classBody_2() {
  */
 eError funcBody_2() {
 	eError errCode = ERR_OK;
-	if(token->type == TT_keyword) {
-		if(token->keywordType == KTT_boolean
-		   || token->keywordType == KTT_double
-		   || token->keywordType == KTT_int
-		   || token->keywordType == KTT_String) {
+
+	do {
+		if(token->type == TT_keyword
+		   && (token->keywordType == KTT_boolean
+		       || token->keywordType == KTT_double
+		       || token->keywordType == KTT_int
+		       || token->keywordType == KTT_String)) {
 			//Keyword, calling var() with parameter true as for 'defined'
 			errCode = var_2();
 			CHECK_ERRCODE();
@@ -368,18 +372,37 @@ eError funcBody_2() {
 			errCode = stmt_2();
 			CHECK_ERRCODE();
 		}
-	} else {
-		//current token is anything but keyword - this could be STMT - we call stmt()
-		errCode = stmt_2();
-		CHECK_ERRCODE();
-	}
 
-	if(token->type != TT_rightCurlyBracket) {
-		errCode = funcBody_2();
-		CHECK_ERRCODE();
+
+	}while(token->type != TT_rightCurlyBracket);
+
+	return errCode;
+}
+
+eError stmtBody_2(){
+	eError errCode = ERR_OK;
+	getNewToken(token, errCode);
+	while (token->type != TT_rightCurlyBracket) {
+		if (token->type == TT_keyword
+		    && (token->keywordType == KTT_boolean
+		        || token->keywordType == KTT_double
+		        || token->keywordType == KTT_int
+		        || token->keywordType == KTT_String)) {
+
+			//trying to declare a new variable inside a scope
+			EXIT(ERR_SEM_OTHER, "Declarations in scope are not permitted.\n");
+			return ERR_SEM_OTHER;
+		} else {
+			//current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
+			errCode = stmt_2();
+			CHECK_ERRCODE();
+		}
 	}
 	return errCode;
 }
+
+
+
 
 /**
  *  \brief Handles instruction generation for statements
@@ -392,20 +415,10 @@ eError stmt_2() {
 	switch(token->type) {
 
 		case TT_leftCurlyBracket:
-
+			errCode = stmtBody_2();
+			CHECK_ERRCODE();
 			getNewToken(token, errCode);
-			//If there is something between CurlyBrackets, we need to process it recursively
-			if(token->type != TT_rightCurlyBracket) {
-				errCode = stmt_2();
-				CHECK_ERRCODE();
-			}
-			if(token->type == TT_rightCurlyBracket) {
-				//read next token - at the end of the function we will determine what to do next
-				getNewToken(token, errCode);
-				break;
-			}
-
-			return ERR_SYNTAX;
+			break;
 
 		case TT_keyword:
 			switch(token->keywordType) {
@@ -444,7 +457,6 @@ eError stmt_2() {
 						getNewToken(token, errCode);
 					}
 
-					//read next token - at the end of the function we will determine what to do next
 					getNewToken(token, errCode);
 					break;
 
@@ -474,13 +486,14 @@ eError stmt_2() {
 
 					//read next token and call stmt_2 processing
 					getNewToken(token, errCode);
-					errCode = stmt_2();
+					errCode = stmtBody_2();
 					CHECK_ERRCODE();
 
 					//after SMTM - there can be else
 
 					uint32_t indexFalse = instrListGetNextInsertedIndex(instructionList);
 
+					getNewToken(token, errCode); //else check
 					if(token->type == TT_keyword && token->keywordType == KTT_else) {
 
 						//insert jump over false block, dst is to be refined later
@@ -488,13 +501,15 @@ eError stmt_2() {
 						AIwO(iGOTO, NULL, NULL, NULL, indexGOTO);
 						indexFalse++;
 
-						getNewToken(token, errCode);
+						getNewToken(token, errCode); // {
 						errCode = stmt_2();
 						CHECK_ERRCODE();
 
 						//Refine where is it that we should jump on finished true block (over false block)
 						tInstructionPtr igoto = instrListGetInstruction(instructionList, indexGOTO);
 						igoto->dst = (void *) instrListGetNextInsertedIndex(instructionList);
+
+						getNewToken(token, errCode); // next after }
 					}
 
 					//Refine where is it that we should jump on false condition
@@ -507,6 +522,11 @@ eError stmt_2() {
 					//stmt_2 -> while ( EXPR ) stmt_2
 				case KTT_while: {
 					getNewToken(token, errCode);
+
+
+					//Get index of condition
+					uint32_t indexCond = instrListGetNextInsertedIndex(instructionList);
+
 
 					//get condition
 					errCode = precedenceParsing(NULL);
@@ -530,12 +550,14 @@ eError stmt_2() {
 					AIwO(iIFNGOTO, NULL, result, NULL, indexIF);
 
 					//start while body
-					errCode = stmt_2();
+					errCode = stmtBody_2();
 					CHECK_ERRCODE();
+
+					getNewToken(token, errCode); // next after }
 
 					//add jump back to the condition
 					uint32_t whileEndBodyIndex;
-					AIwO(iGOTO, (void *) indexIF, NULL, NULL, whileEndBodyIndex);
+					AIwO(iGOTO, (void *) indexCond, NULL, NULL, whileEndBodyIndex);
 
 					////Refine where is it that we should jump on false condition - after while body
 					tInstructionPtr condition = instrListGetInstruction(instructionList, indexIF);
@@ -545,7 +567,8 @@ eError stmt_2() {
 				}
 
 				default:
-					return ERR_SYNTAX;
+					EXIT(ERR_SEM, "Statment expected.\n");
+					return ERR_SEM;
 			}
 			break;
 
@@ -595,7 +618,7 @@ eError stmt_2() {
 			} else if(token->type == TT_leftRoundBracket || token->type == TT_increment ||
 			          token->type == TT_decrement) {
 
-				errCode = precedenceParsing(helperToken);
+				errCode = precedenceParsing(helperToken); //TODO::empty func call returns eNULL!
 				freeToken(&helperToken);
 				CHECK_ERRCODE();
 			}
@@ -605,24 +628,10 @@ eError stmt_2() {
 		}
 
 		default:
+			EXIT(ERR_SYNTAX, "Unexpected token.\n");
 			return ERR_SYNTAX;
-
 	}
 
-	if(token->type == TT_rightCurlyBracket)
-		return ERR_OK;
-
-	if(token->type == TT_keyword) {
-		if(token->keywordType == KTT_boolean
-		   || token->keywordType == KTT_double
-		   || token->keywordType == KTT_int
-		   || token->keywordType == KTT_String
-		   || token->keywordType == KTT_else) {
-			return ERR_OK;
-		}
-	}
-	errCode = stmt_2();
-	CHECK_ERRCODE();
 	return ERR_OK;
 
 }
@@ -639,8 +648,10 @@ eError var_2() {
 		CHECK_ERRCODE();
 		checkTypesAndGenerateiMOV(errCode);
 	}
-	if(token->type != TT_semicolon)
+	if(token->type != TT_semicolon) { //TODO::precedence parsing may stop on )??
+		EXIT(ERR_SYNTAX, "Assignment expected. Missing ';'?");
 		return ERR_SYNTAX;
+	}
 
 	strClear(symbolName);
 	return ERR_OK;

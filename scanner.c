@@ -51,13 +51,13 @@ do {                                                                    \
 eError openFile(const char *sFileLocation) {
 
 	if(sFileLocation == NULL) {
-		printError(ERR_OTHER, "Invalid input file.\n");
-		return ERR_OTHER;
+		printError(ERR_INTERN, "Invalid input file.\n");
+		return ERR_INTERN;
 	}
 	if((fSourceFile = fopen(sFileLocation, "r")) == NULL) {
-		printError(ERR_OTHER, "Error opening input file %s.\n", sFileLocation);
+		printError(ERR_INTERN, "Error opening input file %s.\n", sFileLocation);
 		fSourceFile = NULL;
-		return ERR_OTHER;
+		return ERR_INTERN;
 	}
 	return ERR_OK;
 }

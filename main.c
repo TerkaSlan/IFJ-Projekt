@@ -104,8 +104,8 @@ static void freeGlobalVariables(){
 
 int main(int argc, char const *argv[]) {
 	if(argc < 2) {
-		printError(ERR_OTHER, "Parameter with filename is required for the interpret to run.\n");
-		return ERR_OTHER;
+		printError(ERR_INTERN, "Parameter with filename is required for the interpret to run.\n");
+		return ERR_INTERN;
 	}
 
 	eError errCode;
@@ -121,8 +121,6 @@ int main(int argc, char const *argv[]) {
 	errCode = generateInstructions();
 	CHECK_ERRCODE(lParserFailed);
 
-	instrListPrint(preInstructionList);
-	instrListPrint(instructionList);
 
 	Interpret(globalScopeTable, preInstructionList);
 	CHECK_ERRCODE(lParserFailed);
