@@ -7,7 +7,6 @@ $_name
 aaaaabbbbcccc
 veeeeeeeeeeeeeeeeeeeeeery_loooooooooooooooooooooooooong
 q
-9aaaa
 0002
 2147483646
 0x1
@@ -43,7 +42,6 @@ Upper.Upper
 "Ahoj\nSve'te\\\042"
 "Ahoj\nSve'te\t\"\155"
 "\164\145\162\153\141"
-"\041non-octal\040\057"
 break
 brea
 reak
