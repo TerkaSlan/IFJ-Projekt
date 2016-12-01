@@ -115,10 +115,6 @@ Test_TT_id_fullId("aaaaabbbbcccc", TT_identifier, getToken(token), token, string
 Test_TT_id_fullId("veeeeeeeeeeeeeeeeeeeeeery_loooooooooooooooooooooooooong", TT_identifier, getToken(token), token, string);
 Test_TT_id_fullId("q", TT_identifier, getToken(token), token, string);
 
-// '9aaaa' as an invalid input is spotted by syntactic analyzer. As far as scanner is concerned it's a number and an identifier
-Test_TT_number("9aaaa -> 9", TT_number, getToken(token), token, 9);
-Test_TT_id_fullId("aaaa", TT_identifier, getToken(token), token, string);
-
 // Numbers
 Test_TT_number("0002 -> 2", TT_number, getToken(token), token, 2);
 // boundary check
@@ -166,7 +162,6 @@ Test_TT_string("Ahoj\nSve'te\\\042", TT_string, getToken(token), token, string);
 strAddCStr(string, "Ahoj\nSve'te\t\"m");
 Test_TT_string("Ahoj\nSve'te\t\"\155", TT_string, getToken(token), token, string);
 Test_TT_string("terka", TT_string, getToken(token), token, string);
-Test_TT_string("!non-octal /", TT_string, getToken(token), token, string);
 cleanToken(&token);
 // Keywords
 TestKeyword("break", TT_keyword, getToken(token), token, string);
@@ -228,44 +223,40 @@ if (openFile("scanner-test-invalid") != ERR_OK){
 
 retval = getToken(token);
 SHOULD_NOT_EQUAL("\n.1* not identifier",TT_identifier, token->type);
-SHOULD_EQUAL("\n.1* ERR_LEX",retval, ERR_LEX);
+SHOULD_EQUAL("\n.1* ERR_LEX", retval, ERR_LEX);
 getc(fSourceFile); // skipping over 1
-getc(fSourceFile); // shipping over *
+getc(fSourceFile); // skipping over *
 
-token = newToken(); // creating new token since the old one was freed when handling error
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_NOT_EQUAL("\nsample.0999 not identifier",TT_fullIdentifier, token->type);
 SHOULD_EQUAL("\nsample.0999 ERR_LEX",retval, ERR_LEX);
 
-token = newToken(); // creating new token since the old one was freed while handling error
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_NOT_EQUAL("\n0_ not identifier",TT_fullIdentifier, token->type);
-SHOULD_EQUAL("\n0 number",TT_number, token->type);
+SHOULD_EQUAL("\n_ cannot be at the end of number", retval, ERR_LEX);
 cleanToken(&token);
 retval = getToken(token);
-SHOULD_EQUAL("\n_ identifier", TT_identifier, token->type);
+SHOULD_EQUAL("\n0xGG - invalid hexa", retval, ERR_LEX);
 cleanToken(&token);
-retval = getToken(token);
-SHOULD_EQUAL("\n0xGG -> 0 as number", token->iNum, 0);
-cleanToken(&token);
-retval = getToken(token);
-SHOULD_EQUAL("\n0xGG -> xGG as id", token->type, TT_identifier);
-cleanToken(&token);
+getc(fSourceFile); // skipping over G
+getc(fSourceFile); // skipping over G
 retval = getToken(token);
 SHOULD_EQUAL("\nb1 as an id (not binary)", token->type, TT_identifier)
 cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n08 -> conversion error", retval, ERR_LEX);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n1233333333333333333333333333 ERR_LEX",retval, ERR_LEX);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n> ASCII", retval, ERR_LEX);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\nnon-octal in octal escape", retval, ERR_LEX);
 // skipping over invalid octal
@@ -277,29 +268,47 @@ getc(fSourceFile);
 getc(fSourceFile);
 getc(fSourceFile);
 
-token = newToken();
+cleanToken(&token);
+retval = getToken(token);
+SHOULD_EQUAL("\n2digits in octal escape", retval, ERR_LEX);
+// skipping over invalid octal
+getc(fSourceFile);
+getc(fSourceFile);
+getc(fSourceFile);
+
+cleanToken(&token);
+retval = getToken(token);
+SHOULD_EQUAL("\n2digits in octal escape", retval, ERR_LEX);
+
+cleanToken(&token);
+retval = getToken(token);
+SHOULD_EQUAL("\n4digits in octal escape", retval, ERR_LEX);
+
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n9_$ ", retval, ERR_LEX);
 getc(fSourceFile);
+getc(fSourceFile);
+getc(fSourceFile);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n3_.1", retval, ERR_LEX);
 //skipping over '1'
 getc(fSourceFile);
 getc(fSourceFile);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n3._1", retval, ERR_LEX);
 //skipping over '1'
 getc(fSourceFile);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n0x52_", retval, ERR_LEX);
 
-token = newToken();
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n+++ -> ++", token->type, TT_increment);
 cleanToken(&token);
@@ -311,7 +320,10 @@ SHOULD_EQUAL("\n--- -> --", token->type, TT_decrement);
 cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n--- -> -", token->type, TT_minus);
-
+cleanToken(&token);
+retval = getToken(token);
+SHOULD_EQUAL("\n9aaaa not a valid combination", retval, ERR_LEX);
+cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n EOF", retval, ERR_OK);
 

@@ -89,6 +89,7 @@ eError precedenceStackPush(tPrecedenceStackPtr stack, uint32_t item);
 
 /**
  * Returns value of item on top of precedence stack and decrement top of precedence stack
+ *
  * @param  stack pointer to precedence stack
  * @return       value of item on top of precedence stack
  */
@@ -96,35 +97,106 @@ int64_t precedenceStackPop(tPrecedenceStackPtr stack);
 
 /**
  * Inserts value representing shift before top most terminal on stack
+ *
  * @param  stack pointer to precedence stack
  * @return       ERR_OK if success, ERR_INTERN otherwise
  */
 eError precedenceStackShift(tPrecedenceStackPtr stack);
 
+/**
+ * Allocates memory for new precedence symbol
+ *
+ * @return pointer to new precedence symbol
+ */
 tPrecedenceSymbolPtr precedenceSymbolNew();
 
+/**
+ * Deallocates precedence symbol and its data.
+ *
+ * @param symbol pointer to precedence symbol to be freed
+ */
 void precedenceSymbolFree(tPrecedenceSymbolPtr symbol);
 
+/**
+ * Deallocates data in symbol and sets its type to TT_empty
+ *
+ * @param symbol pointer to precedence symbol to be cleaned
+ */
 void precedenceSymbolClean(tPrecedenceSymbolPtr symbol);
 
+/**
+ * Allocates and initializes new precedence symbol stack.
+ *
+ * @return new precedence symbol stack, NULL if error
+ */
 tSymbolStackPtr symbolStackNew();
 
+/**
+ * Deallocates precedence symbol stack and its data.
+ *
+ * @param pointer to stack to be freed
+ */
 void symbolStackFree(tSymbolStackPtr stack);
 
-int64_t symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item);
+/**
+ * Push item to precedence symbol stack and increments top of precedence symbol stack
+ *
+ * @param  stack pointer to precedence symbol stack
+ * @param  item  value of item to by pushed
+ * @return       ERR_OK if success, ERR_INTERN otherwise
+ */
+eError symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item);
 
+/**
+ * Returns value of item on top of precedence symbol stack and decrement top of precedence symbol stack
+ *
+ * @param  stack pointer to precedence symbol stack
+ * @return       item on top of precedence symbol stack
+ */
 tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack);
 
+/**
+ * Handle function call and all its parameters
+ *
+ * @param  stack       pointer to precedence stack
+ * @param  symbolStack pointer to precedence symbol stack
+ * @return             ERR_OK if success, correct error code otherwise
+ */
 eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
+/**
+ * Hande builtin call and all its parameters
+ *
+ * @param  builtin     pointer to dtStr containing name of called builtin
+ * @param  stack       pointer to precedence stack
+ * @param  symbolStack pointer to precedence symbol stack
+ * @return             ERR_OK if success, correct error code otherwise
+ */
 eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
+/**
+ * Reduces expression on top of precedence stack
+ *
+ * @param  stack       pointer to precedence stack
+ * @param  symbolStack pointer to precedence symbol stack
+ * @return             ERR_OK if success, correct error code otherwise
+ */
 eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack);
 
-void printStack(tPrecedenceStackPtr stack);
-
+/**
+ * Entry function of expressions parsing. Allocates necessary varilble before calling precedenceParsing
+ *
+ * @param  helpToken pointer to Token, which will be pushed on precedence and precedence symbol stack before processing will start
+ * @return           ERR_OK if success, correct error code otherwise
+ */
 eError precedenceParsing(Token* helpToken);
 
+/**
+ * Processes expression
+ *
+ * @param  helpToken pointer to Token, which will be pushed on precedence and precedence symbol stack before processing will start
+ * @return           ERR_OK if success, correct error code otherwise
+ */
 eError parsing(Token* helpToken);
 
 #endif

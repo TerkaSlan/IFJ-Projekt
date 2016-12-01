@@ -1,18 +1,3 @@
-/*
- * Project: IFJ
- * Implementace interpretu imperativního jazyka IFJ16.
- *
- * Description:
- * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
- *
- * Team:
- * Michal Charvát          (xcharv16)
- * Terézia Slanináková     (xslani06)
- * Katarína Grešová        (xgreso00)
- * Marek Schauer           (xschau00)
- * Jakub Handzuš           (xhandz00)
- */
-
 #include "scanner.h"
 #include <stdio.h> // eof, FILE*
 
@@ -20,48 +5,61 @@ FILE *fSourceFile; // TO ADD 'static' to the final build, can't do it now since 
 uint32_t LineCounter = 1;
 
 typedef enum {
-	SEmpty,
-	SId,
-	SFullId,
-	SEqual,
-	SNotEqual,
-	SNumber,
-	SDecimal,
-	SDouble,
-	SDoubleDecimalPart,
-	SDoubleExponentPart,
-	SDoubleExponentSign,
-	SDoubleExponent,
-	SAssignment,
-	SGreater,
-	SLess,
-	SDivide,
-	SBlockCommentStart,
-	SBlockCommentFinish,
-	SComment,
-	SExclamation,
-	SString,
-	SEscape,
-	SOctal,
-	SMinus,
-	SZero,
-	SAnd,
-	SOr,
-	SPlus
-}        tFSMState;
+		SEmpty,
+		SId,
+		SFullId,
+		SEqual,
+		SNumber,
+		SDecimal,
+		SDouble,
+		SDoubleDecimalPart,
+		SDoubleExponentPart,
+		SDoubleExponentSign,
+		SDoubleExponent,
+		SAssignment,
+		SGreater,
+		SLess,
+		SDivide,
+		SBlockCommentStart,
+		SBlockCommentFinish,
+		SComment,
+		SExclamation,
+		SString,
+		SEscape,
+		SOctal,
+		SMinus,
+		SZero,
+		SAnd,
+		SOr,
+		SPlus
+}tFSMState;
 
 #define MIN_ASCII_VALUE 32  // min value to be recognized as an ASCII assocring to specs
 
 /**
  * Handles any error encountered during lexical analysis
+ * FIX: Removed freeToken, since token is freed in parser to eliminate double free
  */
 #define handleLexError(token, errorType)                                \
 do {                                                                    \
     if (token->str != NULL)   strFree(token->str);                      \
-    freeToken(&token);                                                  \
     printError(errorType, "Line: %lu - Scanner encountered an error.\n", (unsigned long)LineCounter );\
     return errorType;                                                   \
 } while (0)
+
+static inline bool isOperator(char symbol){
+	if (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/' || symbol == '<' || symbol == '>' || symbol == '|'  || symbol == '&' || symbol == '!')
+		return true;
+	else
+		return false;
+}
+
+static inline bool isLexicallyValid(char symbol){
+	if (symbol == ')' || symbol == '(' || symbol == ')' || symbol == '{' || symbol == '}' || symbol == '=' || symbol == ',' || symbol == ';')
+		return true;
+	else
+		return false;
+}
 
 eError openFile(const char *sFileLocation) {
 
@@ -314,6 +312,7 @@ eError getToken(Token *token) {
 						handleLexError(token, ERR_INTERN);
 					}
 					cPrevSymbol = iCurrentSymbol;
+					// BONUS: BASE
 				} else if(iCurrentSymbol == '_') {
 					cPrevSymbol = iCurrentSymbol;
 				} else if(iCurrentSymbol == '.') {
@@ -337,7 +336,7 @@ eError getToken(Token *token) {
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else {
+				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
 					ungetc(iCurrentSymbol, fSourceFile);
 					int32_t number;
 					if(cPrevSymbol == '_')
@@ -359,6 +358,9 @@ eError getToken(Token *token) {
 					token->type = TT_number;
 					return ERR_OK;
 				}
+				else{
+					handleLexError(token, ERR_LEX);
+				}
 				break;
 			}
 			case SDouble: {
@@ -379,6 +381,7 @@ eError getToken(Token *token) {
 						handleLexError(token, ERR_INTERN);
 					}
 					cPrevSymbol = iCurrentSymbol;
+				// BONUS: BASE
 				} else if(iCurrentSymbol == '_') {
 					cPrevSymbol = iCurrentSymbol;
 				} else if(iCurrentSymbol == 'e' || iCurrentSymbol == 'E') {
@@ -388,7 +391,8 @@ eError getToken(Token *token) {
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else {
+				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
+
 					ungetc(iCurrentSymbol, fSourceFile);
 
 					double db = stringToDouble(token->str);
@@ -399,6 +403,9 @@ eError getToken(Token *token) {
 					token->dNum = db;
 					token->type = TT_double;
 					return ERR_OK;
+				}
+				else{
+					handleLexError(token, ERR_LEX);
 				}
 				break;
 			}
@@ -424,7 +431,7 @@ eError getToken(Token *token) {
 					cPrevSymbol = iCurrentSymbol;
 				} else if(iCurrentSymbol == '_')
 					cPrevSymbol = iCurrentSymbol;
-				else {
+				else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
 					ungetc(iCurrentSymbol, fSourceFile);
 					if(cPrevSymbol == '_')
 						handleLexError(token, ERR_LEX);
@@ -436,6 +443,9 @@ eError getToken(Token *token) {
 					token->dNum = db;
 					token->type = TT_double;
 					return ERR_OK;
+				}
+				else {
+					handleLexError(token, ERR_LEX);
 				}
 				break;
 			}
@@ -462,7 +472,7 @@ eError getToken(Token *token) {
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else {
+				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
 					ungetc(iCurrentSymbol, fSourceFile);
 
 					KeywordTokenType keywordType = getKeywordType(token->str);
@@ -477,6 +487,9 @@ eError getToken(Token *token) {
 						return ERR_OK;
 					}
 				}
+				else{
+					handleLexError(token, ERR_LEX);
+				}
 				break;
 			}
 			case SFullId: {
@@ -486,7 +499,7 @@ eError getToken(Token *token) {
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else {
+				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
 					// checks if char after '.' is a digit, if it is, fullId won't be valid
 					if(isdigit(token->str->str[strCharPos(token->str, '.') + 1]))
 						handleLexError(token, ERR_LEX);
@@ -500,6 +513,9 @@ eError getToken(Token *token) {
 					}
 					return ERR_OK;
 				}
+				else{
+					handleLexError(token, ERR_LEX);
+				}
 				break;
 			}
 			case SDivide: {
@@ -507,7 +523,7 @@ eError getToken(Token *token) {
 					state = SBlockCommentStart;
 				} else if(iCurrentSymbol == '/') {
 					state = SComment;
-				} else {
+				} else if (isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
 					ungetc(iCurrentSymbol, fSourceFile);
 					token->type = TT_divide;
 					return ERR_OK;
@@ -521,7 +537,7 @@ eError getToken(Token *token) {
 					return ERR_OK;
 				}
 					// You can't just EOF on me with " as a previous symbol
-				else if(iCurrentSymbol == EOF) {
+				else if(iCurrentSymbol == EOF || iCurrentSymbol == '\n') {
 					handleLexError(token, ERR_LEX);
 				} else {
 					if(iCurrentSymbol >= MIN_ASCII_VALUE) {
@@ -576,10 +592,8 @@ eError getToken(Token *token) {
 									handleLexError(token, ERR_INTERN);
 								}
 								octalLength++;
-							} else if(iCurrentSymbol <= MIN_ASCII_VALUE) {
-								handleLexError(token, ERR_LEX);
 							} else {
-								state = SString;
+								handleLexError(token, ERR_LEX);
 							}
 						}
 					}
@@ -591,7 +605,12 @@ eError getToken(Token *token) {
 						state = SOctal;
 						strAddChar(octalString, iCurrentSymbol);
 						octalLength++;
-					} else {
+					} else if ((isspace(iCurrentSymbol) || iCurrentSymbol == '"' || iCurrentSymbol == '\\') && octalLength == 3){
+						// 000 not permitted
+						if(strCmpCStr(octalString, "000") == 0){
+							strFree(octalString);
+							handleLexError(token, ERR_LEX);
+						}
 						ungetc(iCurrentSymbol, fSourceFile);
 						int32_t intFromOctal = octalToInt(octalString);
 						strFree(octalString);
@@ -603,6 +622,10 @@ eError getToken(Token *token) {
 							handleLexError(token, ERR_INTERN);
 						}
 						state = SString;
+					}
+					else{
+						strFree(octalString);
+						handleLexError(token, ERR_LEX);
 					}
 					break;
 				}
@@ -651,12 +674,15 @@ eError getToken(Token *token) {
 						token->type = TT_decrement;
 						strFree(token->str);
 						return ERR_OK;
-					} else {
-						ungetc(iCurrentSymbol, fSourceFile);
-						token->type = TT_minus;
-						strFree(token->str);
-						return ERR_OK;
-					}
+					}else if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
+							ungetc(iCurrentSymbol, fSourceFile);
+							token->type = TT_minus;
+							strFree(token->str);
+							return ERR_OK;
+						}
+						else{
+							handleLexError(token, ERR_LEX);
+						}
 					break;
 				}
 				//BASE: dealing with other number format adepts
@@ -671,6 +697,9 @@ eError getToken(Token *token) {
 							handleLexError(token, ERR_INTERN);
 						}
 						state = SNumber; // potom urobim search na b in token->str ALE pozor na iba digit v SNumber
+					} else if(iCurrentSymbol == '_') {
+						state = SNumber;
+						ungetc(iCurrentSymbol, fSourceFile); // More elaborate checks related to _ in SNumber
 					}
 						// octal literal
 					else if(isdigit(iCurrentSymbol)) {
@@ -690,12 +719,15 @@ eError getToken(Token *token) {
 						}
 					}
 						// just plain 0
-					else {
+					 else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
 						ungetc(iCurrentSymbol, fSourceFile);
 						strFree(token->str);
 						token->iNum = 0;
 						token->type = TT_number;
 						return ERR_OK;
+					}
+					else{
+						handleLexError(token, ERR_LEX);
 					}
 					break;
 				}
@@ -703,27 +735,35 @@ eError getToken(Token *token) {
 					if(iCurrentSymbol == '&') {
 						token->type = TT_and;
 						return ERR_OK;
-					} else {
+					}
+					else {
 						handleLexError(token, ERR_LEX);
 					}
+					break;
 				}
 				case SOr: {
 					if(iCurrentSymbol == '|') {
 						token->type = TT_or;
 						return ERR_OK;
-					} else {
+					}
+					else {
 						handleLexError(token, ERR_LEX);
 					}
+					break;
 				}
 				case SPlus: {
-					if(iCurrentSymbol != '+') {
-						ungetc(iCurrentSymbol, fSourceFile);
-						token->type = TT_plus;
-						return ERR_OK;
-					} else {
+					if(iCurrentSymbol == '+') {
 						token->type = TT_increment;
 						return ERR_OK;
-					}
+						}	else if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
+							ungetc(iCurrentSymbol, fSourceFile);
+							token->type = TT_plus;
+							return ERR_OK;
+						}
+						else{
+							handleLexError(token, ERR_LEX);
+						}
+					break;
 				}
 				default: {
 					handleLexError(token, ERR_LEX);

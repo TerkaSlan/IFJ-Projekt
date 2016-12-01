@@ -152,8 +152,9 @@ tSymbolPtr findSymbol(dtStrPtr symbolName) {
 	}
 		// Simple Identifier
 	else {
-		if((symbolAdept = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName)) == NULL) {
-			if((symbolAdept = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName)) == NULL) {
+
+		if(currentFunction == NULL || (symbolAdept = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName)) == NULL) {
+			if(currentClass == NULL || (symbolAdept = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName)) == NULL) {
 				return NULL;
 			} else {
 				// I'm in currentClass, not in currentFunction
@@ -221,6 +222,7 @@ eError classList_2() {
 	if(token->type == TT_keyword && token->keywordType == KTT_static) {
 		errCode = classBody_2();
 		CHECK_ERRCODE();
+		currentClass = NULL;
 	}
 	if(token->type == TT_rightCurlyBracket) {
 		getNewToken(token, errCode);
@@ -319,7 +321,7 @@ eError classBody_2() {
 
 				errCode = funcBody_2();
 				CHECK_ERRCODE();
-
+				currentFunction = NULL;
 			}
 
 			//checking for correct return value
@@ -579,8 +581,8 @@ eError stmt_2() {
 				}
 
 				default:
-					EXIT(ERR_SEM, "Statment expected.\n");
-					return ERR_SEM;
+					EXIT(ERR_SYNTAX, "Statment expected.\n");
+					return ERR_SYNTAX;
 			}
 			break;
 

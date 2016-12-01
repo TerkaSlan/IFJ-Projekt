@@ -23,18 +23,18 @@
 
 
 /**
- * 	Creates a new dtStr which contains substring of parameter s starting from beginIndex to endIndex -1.
+ * 	Creates a new dtStr which contains substring of parameter 's' starting from 'beginIndex' with length 'length'.
  * 	WARNING - after using, must be freed returned dtStr.
- * 	Example s->str="abcde", substring(s,2,3) = "c"
+ * 	Example s->str="abcde", substring(s,2,3) = "cde"
  *
  * @param      s           dtStr
  * @param[in]  beginIndex  The begin index
- * @param[in]  endIndex    The end index
+ * @param[in]  length      Length of substring
  * @param      subStr      New substring (uses strNew())
  *
  * @return     Error code
  */
-eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *subStr);
+eError substr(const dtStr *s, int32_t beginIndex, int32_t length, dtStrPtr *subStr);
 
 /**
  * Reads data from stdin, and saves it to 'data' according to data type on 'symbol->Type'

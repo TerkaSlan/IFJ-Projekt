@@ -12,7 +12,6 @@
  * Marek Schauer           (xschau00)
  * Jakub Handzuš           (xhandz00)
  */
-
 //TODO
 //	unary ++,--, -
 
@@ -46,6 +45,9 @@ dtStrPtr tmpDouble;
 dtStrPtr tmpBool;
 dtStrPtr tmpNull;
 
+/*
+ * Creates instruction for converting operand to given type
+ */
 #define convert(table, operand, instr, symbolTmp, dType)		\
 do{																\
 	dtStrPtr name;												\
@@ -255,11 +257,7 @@ tPrecedenceSymbolPtr precedenceSymbolNew() {
 
 void precedenceSymbolFree(tPrecedenceSymbolPtr symbol) {
 	if (symbol != NULL) {
-		if ((symbol->type == TT_string)
-		 || (symbol->type == TT_identifier
-		 || (symbol->type == TT_fullIdentifier))) {
-			strFree(symbol->stringOrId);
-		}
+		precedenceSymbolClean(symbol);
 		free(symbol);
 	}
 }
@@ -308,7 +306,7 @@ void symbolStackFree(tSymbolStackPtr stack) {
 
 }
 
-int64_t symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item) {
+eError symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item) {
 
 	if (stack == NULL || stack->data == NULL) {
 		return ERR_INTERN;
@@ -342,7 +340,7 @@ int64_t symbolStackPush(tSymbolStackPtr stack, tPrecedenceSymbolPtr item) {
 
 	}
 
-	return stack->top;
+	return ERR_OK;
 
 }
 
@@ -392,14 +390,17 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	int64_t funcId = precedenceStackPop(stack);
 	if (funcId != TT_identifier && funcId != TT_fullIdentifier) {
+		printError(ERR_SYNTAX, "Unexpected symbol in function call\n");
 		return ERR_SYNTAX;
 	}
 	if (precedenceStackPop(stack) != TT_start) {
+		printError(ERR_SYNTAX, "Unexpected symbol in function call\n");
 		return ERR_SYNTAX;
 	}
 
 	tPrecedenceSymbolPtr funcName = symbolStackPop(symbolStack);
 	if (funcName == NULL) {
+		printError(ERR_INTERN, "Unexpected symbol on symbol stack\n");
 		return ERR_INTERN;
 	}
 
@@ -435,6 +436,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		strFree(className);
 		if (classSymbol == NULL) {
 			precedenceSymbolFree(funcName);
+			printError(ERR_SEM, "Using undefined class\n");
 			return ERR_SEM;
 		}
 
@@ -442,6 +444,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		tHashTablePtr classTable = classSymbol->Data.ClassData.LocalSymbolTable;
 		if (classTable == NULL) {
 			precedenceSymbolFree(funcName);
+			printError(ERR_INTERN, "No symbol table assigned to class\n");
 			return ERR_INTERN;
 		}
 
@@ -457,6 +460,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		funcSymbol = htabGetSymbol(classTable, func);
 		strFree(func);
 		if (funcSymbol == NULL) {
+			printError(ERR_SEM, "Using undefined function\n");
 			return ERR_SEM;
 		}
 
@@ -465,6 +469,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		//function have to be in current class
 		funcSymbol = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, funcName->stringOrId);
 		if (funcSymbol == NULL) {
+			printError(ERR_SEM, "Using undefined function\n");
 			return ERR_SEM;
 		}
 		precedenceSymbolFree(funcName);
@@ -474,6 +479,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	tInstruction instr = {iFRAME, NULL, funcSymbol, NULL};
 	insertInstruction(instr);
 	if (insertErrCode == -1) {
+		printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 		return ERR_INTERN;
 	}
 
@@ -489,7 +495,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		if (paramCount > 0 ) {
 			if (result == NULL) {
-				printError(ERR_SEM_TYPE, "Function call with too few arguments.");
+				printError(ERR_SEM_TYPE, "Too few paramaters in function call\n");
 				return ERR_SEM_TYPE;
 			}
 			if (result->Type == eINT && argument->Symbol->Type == eDOUBLE) {
@@ -500,10 +506,12 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				//add instr to instructionList
 				insertInstruction(instr);
 				if (insertErrCode == -1) {
+					printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 					return ERR_INTERN;
 				}
 				result = symbolTmp;
 			}
+
 			if (result->Type == argument->Symbol->Type) {
 
 				instr.type = iPUSH;
@@ -512,19 +520,22 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				instr.arg2 = NULL;
 				insertInstruction(instr);
 				if (insertErrCode == -1) {
+					printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 					return ERR_INTERN;
 				}
 				paramCount--;
 				argument = argument->Next;
 
 			} else {
-				printError(ERR_SEM_TYPE, "Incompatible argument type in function call.");
+				printError(ERR_SEM_TYPE, "Incompatible argument type in function call\n");
 				return ERR_SEM_TYPE;
 			}
 
 		} else {
-			printError(ERR_SEM_TYPE, "Function call with too much arguments.");
-			return ERR_SEM_TYPE;
+			if (token->type != TT_rightRoundBracket) {
+				printError(ERR_SEM_TYPE, "Too much paramaters in function call\n");
+				return ERR_SEM_TYPE;
+			}
 		}
 
 		//expressions parsing stoped on something else then right round bracket or comma - syntax error
@@ -534,6 +545,11 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	}
 
+	if (paramCount != 0) {
+		printError(ERR_SEM_TYPE, "Too few parameters in function call\n");
+		return ERR_SEM_TYPE;
+	}
+
 	instr.type = iCALL;
 	instr.dst = NULL;
 	instr.arg1 = NULL;
@@ -541,6 +557,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	insertInstruction(instr);
 	if (insertErrCode == -1) {
+		printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 		return ERR_INTERN;
 	}
 
@@ -563,12 +580,14 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		insertInstruction(instr);
 		if (insertErrCode == -1) {
 			precedenceSymbolFree(funcPrecedenceSymbol);
+			printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
 		funcPrecedenceSymbol->symbol = symbolExprTmp;
 
 		if (symbolStackPush(symbolStack, funcPrecedenceSymbol) == ERR_INTERN) {
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			precedenceSymbolFree(funcPrecedenceSymbol);
 			return ERR_INTERN;
 		}
@@ -577,18 +596,19 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		precedenceStackPush(stack, TT_void);
 
-		tSymbolPtr exprTmp = symbolNew();							
-		exprTmp->Defined = true;									
-		exprTmp->Const = false;										
-		exprTmp->Type = eNULL;																				
-		exprTmp->Name = strNewFromStr(tmpNull);			
-		strAddChar(tmpNull, '*');							
-		symbolExprTmp = htabAddSymbol(funcSymbol->Data.FunctionData.LocalSymbolTable, exprTmp, true);	
+		tSymbolPtr exprTmp = symbolNew();
+		exprTmp->Defined = true;
+		exprTmp->Const = false;
+		exprTmp->Type = eNULL;
+		exprTmp->Name = strNewFromStr(tmpNull);
+		strAddChar(tmpNull, '*');
+		symbolExprTmp = htabAddSymbol(funcSymbol->Data.FunctionData.LocalSymbolTable, exprTmp, true);
 		symbolFree(exprTmp);
 
 		funcPrecedenceSymbol->type = TT_void;
 		funcPrecedenceSymbol->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, funcPrecedenceSymbol) == ERR_INTERN) {
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			precedenceSymbolFree(funcPrecedenceSymbol);
 			return ERR_INTERN;
 		}
@@ -614,7 +634,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	eError errCode;
 	tHashTablePtr currentFuncTable = currentFunction->Data.FunctionData.LocalSymbolTable;
 
-	if (strCmpCStr(builtin, "ifj16.substr") == 0) {
+		if (strCmpCStr(builtin, "ifj16.substr") == 0) {
 
 		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
@@ -622,18 +642,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has three parameters - first parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too few paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_comma) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -645,18 +669,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has three parameters - second parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too few paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_comma) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eINT) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -668,18 +696,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has three parameters - precedence parsing have to stop on right round bracket after third parameter
 		if (token->type == TT_comma) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eINT) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -691,6 +723,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = i;
         instr.arg2 = n;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -700,6 +733,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		instr.arg1 = NULL;
 		instr.arg2 = NULL;
 		if (instrListInsertInstruction(instructionList, instr) == -1 ) {
+			printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -710,6 +744,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -727,6 +762,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		//this builtin has no parameters - next token should be right round bracket
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -737,6 +773,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = NULL;
         instr.arg2 = NULL;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -747,6 +784,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -764,6 +802,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		//this builtin has no parameters - next token should be right round bracket
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -774,6 +813,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = NULL;
         instr.arg2 = NULL;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -784,6 +824,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -801,6 +842,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		//this builtin has no parameters - next token should be right round bracket
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -811,6 +853,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = NULL;
         instr.arg2 = NULL;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -821,6 +864,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -836,20 +880,24 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
 		if (token->type == TT_comma) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
 			convert(currentFuncTable, result, instr, symbolTmp, eSTRING);
 			if (instrListInsertInstruction(instructionList, instr) == -1) {
+				printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 				return ERR_INTERN;
 			}
 		} else {
@@ -860,19 +908,20 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.dst = NULL;
         instr.arg1 = symbolTmp;
         instr.arg2 = NULL;
-       if (instrListInsertInstruction(instructionList, instr) == -1) {
+        if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
 		precedenceStackPush(stack, TT_void);
 
-		tSymbolPtr exprTmp = symbolNew();							
-		exprTmp->Defined = true;									
-		exprTmp->Const = false;										
-		exprTmp->Type = eNULL;																				
-		exprTmp->Name = strNewFromStr(tmpNull);			
-		strAddChar(tmpNull, '*');							
-		symbolExprTmp = htabAddSymbol(currentFuncTable, exprTmp, true);	
+		tSymbolPtr exprTmp = symbolNew();
+		exprTmp->Defined = true;
+		exprTmp->Const = false;
+		exprTmp->Type = eNULL;
+		exprTmp->Name = strNewFromStr(tmpNull);
+		strAddChar(tmpNull, '*');
+		symbolExprTmp = htabAddSymbol(currentFuncTable, exprTmp, true);
 		symbolFree(exprTmp);
 
 		tPrecedenceSymbolPtr returnVal = precedenceSymbolNew();
@@ -880,6 +929,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -895,18 +945,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
 		if (token->type == TT_comma) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -917,6 +971,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = result;
         instr.arg2 = NULL;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -927,6 +982,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -942,18 +998,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has two parameters - first parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too few paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_comma) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -965,18 +1025,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
 		if (token->type == TT_comma) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -989,6 +1053,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = s1;
         instr.arg2 = s2;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -999,6 +1064,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -1014,18 +1080,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has two parameters - first parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
+			printError(ERR_SEM_TYPE, "Too few paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_comma) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -1037,18 +1107,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
 		if (token->type == TT_comma) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -1061,6 +1135,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = s;
         instr.arg2 = search;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -1071,6 +1146,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -1086,18 +1162,22 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Result from precedenceParsing shouldn't be NULL\n");
 			return ERR_SEM_TYPE;
 		}
 
 		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
 		if (token->type == TT_comma) {
+			printError(ERR_SEM_TYPE, "Too much paramaters in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 		if (token->type != TT_rightRoundBracket) {
+			printError(ERR_SYNTAX, "Unexpected symbol in builtin call\n");
 			return ERR_SYNTAX;
 		}
 
 		if (result->Type != eSTRING) {
+			printError(ERR_SEM_TYPE, "Incompatible type of parameter in builtin call\n");
 			return ERR_SEM_TYPE;
 		}
 
@@ -1108,6 +1188,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
         instr.arg1 = result;
         instr.arg2 = NULL;
         if (instrListInsertInstruction(instructionList, instr) == -1) {
+        	printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 			return ERR_INTERN;
 		}
 
@@ -1118,6 +1199,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		returnVal->symbol = symbolExprTmp;
 		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
 			precedenceSymbolFree(returnVal);
+			printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 			return ERR_INTERN;
 		}
 		precedenceSymbolFree(returnVal);
@@ -1133,9 +1215,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	eError errCode;
 	int32_t insertErrCode;
-	tHashTablePtr currentFuncTable = currentFunction->Data.FunctionData.LocalSymbolTable;
-	if (currentFuncTable == NULL) {
-	}
 
 	switch(precedenceStackTopTerminal(stack)) {
 
@@ -1143,26 +1222,39 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_identifier: {
 
 			if (precedenceStackPop(stack) != TT_identifier) {
-				return ERR_INTERN;
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
+				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			//get precedence symbol representing current id from symbol stack
 			tPrecedenceSymbolPtr id = symbolStackPop(symbolStack);
 
-			//look up id in symbol table of current function scope
 			tSymbolPtr symbolId;
-			symbolId = htabGetSymbol(currentFuncTable, id->stringOrId);
-			if (symbolId == NULL) {
 
-				//id isn't in current function symbol table - but it still could be static id in current class symbol table
+			if (preinterpretation) {
 				symbolId = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, id->stringOrId);
 				if (symbolId == NULL) {
 					precedenceSymbolFree(id);
+					printError(ERR_SEM, "Using undefined identfier\n");
 					return ERR_SEM;
+				}
+			} else {
+				//look up id in symbol table of current function scope
+				symbolId = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, id->stringOrId);
+				if (symbolId == NULL) {
+
+					//id isn't in current function symbol table - but it still could be static id in current class symbol table
+					symbolId = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, id->stringOrId);
+					if (symbolId == NULL) {
+						precedenceSymbolFree(id);
+						printError(ERR_SEM, "Using undefined identfier\n");
+						return ERR_SEM;
+					}
 				}
 			}
 
@@ -1172,6 +1264,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			id->symbol = symbolId;
 			if (symbolStackPush(symbolStack, id) == ERR_INTERN) {
 				precedenceSymbolFree(id);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(id);
@@ -1183,10 +1276,12 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_fullIdentifier: {
 
 			if (precedenceStackPop(stack) != TT_fullIdentifier) {
-				return ERR_INTERN;
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
+				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
@@ -1205,6 +1300,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			strFree(className);
 			if (classSymbol == NULL) {
 				precedenceSymbolFree(fullId);
+				printError(ERR_SEM, "Using undefined class\n");
 				return ERR_SEM;
 			}
 
@@ -1228,6 +1324,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			strFree(id);
 			if (symbolId == NULL) {
 				precedenceSymbolFree(fullId);
+				printError(ERR_SEM, "Using undefined identifier\n");
 				return ERR_SEM;
 			}
 
@@ -1236,6 +1333,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			fullId->symbol = symbolId;
 			if (symbolStackPush(symbolStack, fullId) == ERR_INTERN) {
 				precedenceSymbolFree(fullId);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 
@@ -1254,6 +1352,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			precedenceStackPop(stack);
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
@@ -1293,9 +1392,10 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			constant->symbol = constInsertSymbol(constTable, *symbolConst);
 			constant->type = TT_E;
 
-			free(symbolConst); //nemozem pouzit symbolFree, lebo ten zrusi aj nieco, co je v kontajneri konstant
+			free(symbolConst);
 			if (symbolStackPush(symbolStack, constant) == ERR_INTERN) {
 				precedenceSymbolFree(constant);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(constant);
@@ -1307,15 +1407,19 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_rightRoundBracket:
 
 			if (precedenceStackPop(stack) != TT_rightRoundBracket) {
-				return ERR_INTERN;
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
+				return ERR_SYNTAX;
 			}
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 			if (precedenceStackPop(stack) != TT_leftRoundBracket) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
@@ -1330,19 +1434,23 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_notEqual: {
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			int64_t operator = precedenceStackPop(stack);
 			if (operator == -1 ) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
@@ -1358,14 +1466,14 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					goto generateBoolInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
-					//generovat instrukciu na prevod prveho operandu na double
-					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+					//convert first operand to double
+					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
-					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
+						printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 						return ERR_INTERN;
 					}
 					operand1->symbol = symbolTmp;
@@ -1375,19 +1483,20 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
+					printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 					return ERR_SEM_TYPE;
 				}
 			} else if (operand1->symbol->Type == eDOUBLE) {
 				if (operand2->symbol->Type == eINT) {
 
-					//generovat instrukciu na prevod druheho operandu na double
-					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+					//convert second operand to double
+					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
-					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
+						printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 						return ERR_INTERN;
 					}
 					operand2->symbol = symbolTmp;
@@ -1397,21 +1506,23 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					goto generateInstruction;
 				} else {
-					//uvolnit vsetko
+
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
+					printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 					return ERR_SEM_TYPE;
 				}
 			} else {
-				//uvolnit vsetko
+
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
+				printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 				return ERR_SEM_TYPE;
 			}
 
 			generateBoolInstruction: {
 
-			tmpVariable(currentFuncTable, symbolExprTmp, eBOOL);
+			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL);
 			eInstructionType instruction;
 			switch(operator) {
 				case TT_less:
@@ -1449,23 +1560,24 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			instr.arg1 = operand1->symbol;
 			instr.arg2 = operand2->symbol;
 
-			//pridat na instrukcnu pasku
 			insertInstruction(instr);
 			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
+				printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 				return ERR_INTERN;
 			}
 
 			precedenceSymbolFree(operand1);
 			precedenceSymbolFree(operand2);
 
-			//na symbolStack ulozit ukazatel na vyslednu hodnotu
+			//push pointer to result on symbol stack
 			tPrecedenceSymbolPtr result = precedenceSymbolNew();
 			result->type = TT_E;
 			result->symbol = symbolExprTmp;
 			if (symbolStackPush(symbolStack, result) == ERR_INTERN) {
 				precedenceSymbolFree(result);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(result);
@@ -1481,19 +1593,23 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_divide: {
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			int64_t operator = precedenceStackPop(stack);
 			if (operator == -1 ) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
@@ -1505,120 +1621,124 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			if (operand1->symbol->Type == eSTRING) {
 				if (operator == TT_plus) {
-				if (operand2->symbol->Type != eSTRING) {
+					if (operand2->symbol->Type != eSTRING) {
 
-					//pretypovat 2. operand na string
-					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eSTRING);
+						//convert second operand to string
+						convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eSTRING);
 
-					insertInstruction(instr);
+						insertInstruction(instr);
 						if (insertErrCode == -1) {
-						precedenceSymbolFree(operand1);
-						precedenceSymbolFree(operand2);
-						return ERR_INTERN;
+							precedenceSymbolFree(operand1);
+							precedenceSymbolFree(operand2);
+							printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
+							return ERR_INTERN;
+						}
+						operand2->symbol = symbolTmp;
 					}
-					operand2->symbol = symbolTmp;
-				}
-				//pomocna premenna typy string symbolTmp
-				tmpVariable(currentFuncTable, symbolExprTmp, eSTRING)
-				goto generateInstruction;
+
+					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eSTRING)
+					goto generateInstruction;
 
 				} else {
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
+					printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 					return ERR_SEM_TYPE;
 				}
 			}
 			if (operand2->symbol->Type == eSTRING) {
 				if (operator == TT_plus) {
-				if (operand1->symbol->Type != eSTRING) {
+					if (operand1->symbol->Type != eSTRING) {
 
-					//pretypovat 1. operand na string
-					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eSTRING);
+						//convert first operand to string
+						convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eSTRING);
 
-					//pridat instrukciu na instrukcnu pasku
-					insertInstruction(instr);
-					if (insertErrCode == -1) {
-						precedenceSymbolFree(operand1);
-						precedenceSymbolFree(operand2);
-						return ERR_INTERN;
+						insertInstruction(instr);
+						if (insertErrCode == -1) {
+							precedenceSymbolFree(operand1);
+							precedenceSymbolFree(operand2);
+							printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
+							return ERR_INTERN;
+						}
+						operand1->symbol = symbolTmp;
 					}
-					operand1->symbol = symbolTmp;
-				}
-				//pomocna premenna typu string
-				tmpVariable(currentFuncTable, symbolExprTmp, eSTRING)
 
-				goto generateInstruction;
-			} else {
-				precedenceSymbolFree(operand1);
-				precedenceSymbolFree(operand2);
-				return ERR_SEM_TYPE;
-			}
+					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eSTRING)
+
+					goto generateInstruction;
+				} else {
+					precedenceSymbolFree(operand1);
+					precedenceSymbolFree(operand2);
+					printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
+					return ERR_SEM_TYPE;
+				}
 			}
 
 			if (operand1->symbol->Type == eINT) {
 				if (operand2->symbol->Type == eINT) {
-					//pomocna premenna typu int
-					tmpVariable(currentFuncTable, symbolExprTmp, eINT)
+
+					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eINT)
 
 					goto generateInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
-					//generovat instrukciu na prevod prveho operandu na double
-					convert(currentFuncTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+					//convert first operand to double
+					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
-					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
+						printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 						return ERR_INTERN;
 					}
 					operand1->symbol = symbolTmp;
 
-					//pomocna premenna typu double
-					tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else {
 
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
+					printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 					return ERR_SEM_TYPE;
 				}
 			} else if (operand1->symbol->Type == eDOUBLE) {
 				if (operand2->symbol->Type == eINT) {
 
-					//generovat instrukciu na prevod druheho operandu na double
-					convert(currentFuncTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+					//convert second operand to double
+					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
-					//pridat instrukciu na instrukcnu pasku
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
 						precedenceSymbolFree(operand1);
 						precedenceSymbolFree(operand2);
+						printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 						return ERR_INTERN;
 					}
 					operand2->symbol = symbolTmp;
 
-					//pomocna premenna typu double
-					tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
-					//pomocna premenna typu double
-					tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE)
+
+					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else {
-					//uvolnit vsetko
+
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
+					printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 					return ERR_SEM_TYPE;
 				}
 			} else {
-				//uvolnit vsetko
+
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
+				printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 				return ERR_SEM_TYPE;
 			}
 
@@ -1653,23 +1773,23 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			instr.arg1 = operand1->symbol;
 			instr.arg2 = operand2->symbol;
 
-			//pridat na instrukcnu pasku
 			insertInstruction(instr);
 			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
+				printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 				return ERR_INTERN;
 			}
 
 			precedenceSymbolFree(operand1);
 			precedenceSymbolFree(operand2);
 
-			//na symbolStack ulozit ukazatel na vyslednu hodnotu
 			tPrecedenceSymbolPtr result = precedenceSymbolNew();
 			result->type = TT_E;
 			result->symbol = symbolExprTmp;
 			if (symbolStackPush(symbolStack, result) == ERR_INTERN) {
 				precedenceSymbolFree(result);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(result);
@@ -1683,19 +1803,23 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_or: {
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			int64_t operator = precedenceStackPop(stack);
 			if (operator != TT_and && operator != TT_or) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
@@ -1705,12 +1829,12 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			if (operand1->symbol->Type != eBOOL || operand2->symbol->Type != eBOOL) {
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
+				printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 				return ERR_SEM_TYPE;
 			}
 
-			//pomocna premenna typu bool
 			tSymbolPtr symbolExprTmp;
-			tmpVariable(currentFuncTable, symbolExprTmp, eBOOL)
+			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL)
 
 			tInstruction instr;
 
@@ -1731,18 +1855,19 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand1);
 				precedenceSymbolFree(operand2);
+				printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 				return ERR_INTERN;
 			}
 
 			precedenceSymbolFree(operand1);
 			precedenceSymbolFree(operand2);
 
-			//na symbolStack ulozit ukazatel na vyslednu hodnotu
 			tPrecedenceSymbolPtr result = precedenceSymbolNew();
 			result->type = TT_E;
 			result->symbol = symbolExprTmp;
 			if (symbolStackPush(symbolStack, result) == ERR_INTERN) {
 				precedenceSymbolFree(result);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(result);
@@ -1755,40 +1880,45 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_not:
 
 			if (precedenceStackPop(stack) != TT_E) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 			if (precedenceStackPop(stack) != TT_not) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 			if (precedenceStackPop(stack) != TT_start) {
+				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
 			}
 
 			tPrecedenceSymbolPtr operand = symbolStackPop(symbolStack);
 			if (operand->symbol->Type != eBOOL) {
 				precedenceSymbolFree(operand);
+				printError(ERR_SEM_TYPE, "Incompatible types in expression\n");
 				return ERR_SEM_TYPE;
 			}
 
 			tSymbolPtr symbolExprTmp;
-			tmpVariable(currentFuncTable, symbolExprTmp, eBOOL);
+			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL);
 
 			tInstruction instr = {iLNOT, symbolExprTmp, operand->symbol, NULL};
-			//vlozenie instrukcie na zasobnik instrukcii
+
 			insertInstruction(instr);
 			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand);
+				printError(ERR_INTERN, "Insert of instruction wasn't successful\n");
 				return ERR_INTERN;
 			}
 
 			precedenceSymbolFree(operand);
 
-			//na symbolStack ulozit ukazatel na vyslednu hodnotu
 			tPrecedenceSymbolPtr result = precedenceSymbolNew();
 			result->type = TT_E;
 			result->symbol = symbolExprTmp;
 			if (symbolStackPush(symbolStack, result) == ERR_INTERN) {
 				precedenceSymbolFree(result);
+				printError(ERR_INTERN, "Push on symbol stack wasn't successful\n");
 				return ERR_INTERN;
 			}
 			precedenceSymbolFree(result);
@@ -1992,7 +2122,7 @@ eError parsing(Token* helpToken) {
 				}
 
 				precedenceStackPush(stack, token->type);
-				if (token->type < TT_increment && token->type > TT_notEqual) {//TODO: bude sa mozno este menit
+				if (token->type < TT_increment && token->type > TT_notEqual) {
 
 					precedenceSymbolClean(symbol);
 					symbol->type = token->type;

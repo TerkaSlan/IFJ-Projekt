@@ -634,8 +634,8 @@ eError stmt() {
 					break;
 
 				default:
-					EXIT(ERR_SEM, "Statment expected.\n");
-					return ERR_SEM;
+					EXIT(ERR_SYNTAX, "Statment expected.\n");
+					return ERR_SYNTAX;
 			}
 			break;
 

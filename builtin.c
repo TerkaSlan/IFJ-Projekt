@@ -40,7 +40,7 @@ eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *su
 		printError(ERR_OTHER, "In substr: String index is out of range\n");
 		return ERR_OTHER;
 	}
-	
+
 	if (uBeginIndex > uEndIndex) {
 		printError(ERR_OTHER, "In substr: String index is out of range\n");
 		return ERR_OTHER;
@@ -52,7 +52,7 @@ eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *su
 		return ERR_INTERN;
 	}
 	for (uint32_t i = uBeginIndex; i < uEndIndex; i++) {
-		strAddChar(*subStr, s->str[i]);	
+		strAddChar(*subStr, s->str[i]);
 	}
 	return ERR_OK;
 }
@@ -62,8 +62,8 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 	switch (symbol->Type) {
 		case eINT:
 		case eDOUBLE:
-			
-			c = getchar();			
+
+			c = getchar();
 
 			if ( isspace(c) || c == EOF || c == '\n') {
 				if (c != EOF && c != '\n') {
@@ -102,7 +102,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				if (symbol->Type == eINT) {
 					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
 				} else {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");				
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");
 				}
 				if (c != EOF && c != '\n') {
 					do {
@@ -123,7 +123,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 			}
 			while ((c = getchar()) != EOF && c != '\n') {
 				if (c == '\\') {
-					c = getchar();					 
+					c = getchar();
 					switch (c) {
 						case 'n': {
 							if (strAddChar(data->String, '\n') == STR_ERROR) {
@@ -180,7 +180,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 									printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequences\n");
 									return ERR_RUN_INPUT;
 								}
-							}							
+							}
 							else {
 								printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequences\n");
 								return ERR_RUN_INPUT;

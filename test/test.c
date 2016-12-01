@@ -4,10 +4,7 @@
 
 #include "test.h"
 #include <unistd.h>
-#include "../ial.h"
-#include "../instruction.h"
-#include "../constants.h"
-#include "../error.h"
+
 TestEP testSuites[256];
 uint8_t testSuiteCount = 0;
 uint32_t testCountOk = 0, testCountFailed = 0;
@@ -68,7 +65,6 @@ void freeGlobalVariables(){
 
 int main(int argc, char **argv)
 {
-    initializeGlobalVariables();
     int32_t opt;
     while ((opt = getopt(argc, argv, "hfvb")) != -1)
     {
@@ -110,7 +106,10 @@ int main(int argc, char **argv)
     REGISTER_TEST_SUITE(InstructionListTest)
     REGISTER_TEST_SUITE(ConversionsTest)
     REGISTER_TEST_SUITE(ScannerTest)
-    REGISTER_TEST_SUITE(ParserTest)
+    REGISTER_TEST_SUITE(InterpretTest)
+    REGISTER_TEST_SUITE(ialTest)
+    REGISTER_TEST_SUITE(BuiltinTest)
+
     RUN_TEST_SUITES
 
     if (!(testFlags & OnlyFailed)) {
@@ -121,6 +120,6 @@ int main(int argc, char **argv)
         printf("Total tests failed: ");
         printfc(1, 31, "%38u\n", testCountFailed);
     }
-    freeGlobalVariables();
+
     return (testCountFailed > 0);
 }
