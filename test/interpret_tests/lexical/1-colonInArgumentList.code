@@ -1,0 +1,20 @@
+/*This test should throw error because of ',' (colon) in argument list when calling function */
+
+class Main
+{
+	static void run()
+	{
+		Someclass.someFunction(10,15,);
+	} // end of static void run()
+	
+} // end of class Main
+
+
+class Someclass
+{
+	/*Adds two numbers*/
+	static int someFunction(int x, int y)
+	{
+		return (x + y);
+	}
+}

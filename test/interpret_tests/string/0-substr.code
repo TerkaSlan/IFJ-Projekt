@@ -1,0 +1,19 @@
+/*Builtins test, everything should be ok and pass correctly. */
+
+class Main
+{
+	static void run()
+	{
+		/*Substr*/
+		str = "This is some pretty cool text.";
+		String subStr = ifj16.substr(str, 5, 4);
+		cmpResult = ifj16.compare(subStr, "is s");
+		ifj16.print(subStr+"\n");
+		if (cmpResult != 0) {
+			ifj16.print("[FAIL]: Substring is not correct\n");
+			return;
+		}
+
+		ifj16.print("Success!\n");
+	} // end of static void run()
+} // end of class Main

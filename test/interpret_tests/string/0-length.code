@@ -1,0 +1,20 @@
+class Main
+{
+	static void run()
+	{
+		/*Length*/
+		int len = ifj16.length("Hello world!");
+		if (len != 12) {
+			ifj16.print("[FAIL]: ifj16.length(\"Hello world!\") != "+len);
+			return;
+		}
+
+		len = ifj16.length("Hello world!\n\042\t\"x\nz");
+		if (len != 19) {
+			ifj16.print("[FAIL]: ifj16.length(\"Hello world!\") != "+len);
+			return;
+		}
+
+		ifj16.print("Success!\n");
+	}
+}

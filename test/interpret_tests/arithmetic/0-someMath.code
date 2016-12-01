@@ -1,0 +1,59 @@
+class Main
+{
+	static int x;
+	static void run()
+	{
+		int a = 10;
+		int b = 15;
+		int c = 20;
+		int d = 25;
+		int e = 42;
+		int f = 3;
+		int addition = Math.sum(a,b);
+		ifj16.print(a + " + " + b + " = " + addition + "\n");
+		int sub = Math.sub(c,d);
+		ifj16.print(c + " + " + d + " = " + sub + "\n");
+		int power = Math.pow(e,f);
+		ifj16.print(e + "^" + f + " = " + power + "\n");
+		
+		ifj16.print(Pi.pi + "\n");
+	} // end of static void run()
+} // end of class Main
+ 
+/*
+ Basic math operations
+ */
+class Math
+{
+	static int sum(int x, int y)
+	{
+		x = x + y;
+		return x;
+	}
+
+	static int sub(int x, int y)
+	{
+		x = x - y;
+		return x;
+	}
+
+	static int pow(int x, int y)
+	{
+		int result = 1;
+		int exp = 1;
+		while (exp <= y) {
+			result = result * x;
+			exp = exp + 1;
+		}
+		return result;
+	}
+} // end of class Math
+
+
+/*
+ Some class with only static variable
+ */
+class Pi
+{
+	static double pi = 3.1415926536;
+}

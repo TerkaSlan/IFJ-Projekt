@@ -1,0 +1,14 @@
+/*This test should throw error because of more arguments in calling function than in declaration */
+
+class Main
+{
+	static void run()
+	{
+		int a = someFunc(10,15);
+	} // end of static void run()
+	
+	static int someFunc(int x)
+	{
+		return (x+42);
+	}
+} // end of class Main

@@ -1,0 +1,20 @@
+/*This test should throw error because in name of class 1SomeClass starts with number */
+
+class Main
+{
+	static void run()
+	{
+		1Someclass.someFunction(10,15);
+	} // end of static void run()
+	
+} // end of class Main
+
+
+class 1Someclass
+{
+	/*Adds two numbers*/
+	static int someFunction(int x, int y)
+	{
+		return (x+y);
+	}
+}

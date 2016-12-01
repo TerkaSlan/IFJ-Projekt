@@ -1,0 +1,12 @@
+class Main
+{
+	static void run()
+	{
+		ifj16.print("Print called from first Main.run");
+	} // end of static void run()
+	
+	static void run()
+	{
+		ifj16.print("Print called from second Main.run");
+	}
+} // end of class Main
