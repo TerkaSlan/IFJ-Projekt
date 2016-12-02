@@ -215,13 +215,25 @@ eError skipPrecedenceParsing(eError errCode){
  * A mock of function call, which I don't generate in 1. run,
  * but need to check for correct syntax and skip tokens.
  */
-eError skipFunctionCall(eError errCode){
-  while (token->type != TT_rightRoundBracket) {
+eError skipFunctionCall(eError errCode) {
+  uint32_t counter = 1;
+  while (token->type < TT_assignment && counter != 0) {
     getNewToken(token, errCode);
+    if (token->type == TT_leftRoundBracket) {
+    	counter++;
+    }
+    if (token->type == TT_rightRoundBracket) {
+    	counter--;
+    }
     if (token->type == TT_EOF)
       return ERR_SYNTAX;
   }
-  return ERR_OK;
+
+  if (counter == 0) {
+  	return ERR_OK;
+  } else {
+  	return ERR_SYNTAX;
+  }
 }
 
 
