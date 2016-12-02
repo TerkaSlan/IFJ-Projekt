@@ -150,6 +150,10 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 									c = getchar();
 									if (c >= '0' && c <= '7') {
 										tmp = tmp + (c - '0');
+										if (tmp == 0) {
+											printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequence \\000\n");
+											return ERR_RUN_INPUT;
+										}
 										if (strAddChar(data->String, tmp) == STR_ERROR) {
 											printError(ERR_INTERN, "In readData: Cannot add char to string.\n");
 											return ERR_INTERN;

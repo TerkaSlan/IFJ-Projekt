@@ -1,0 +1,15 @@
+/*This test should throw error because value in condition is not boolean type */
+
+class Main
+{
+	static void run()
+	{
+		String tmp = "hello";
+		if (tmp) {
+			ifj16.print("I'm here, not good");
+		} else {
+			ifj16.print("I'm here, also not good");
+		}
+	} // end of static void run()
+	  	
+} // end of class Main

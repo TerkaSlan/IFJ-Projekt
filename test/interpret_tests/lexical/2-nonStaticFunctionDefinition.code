@@ -1,0 +1,19 @@
+/*This test should throw error because of function defined as not static */
+
+class Main
+{
+	static void run()
+	{
+		ifj16.print("Print called from first Main.run");
+	} // end of static void run()
+	
+} // end of class Main
+
+
+class Someclass
+{
+	void someFunction()
+	{
+		ifj16.print("Print called from function, which is not static so it should be fail.\n");
+	}
+}

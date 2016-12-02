@@ -1,0 +1,11 @@
+/*This test should throw error because of forbidden operation * with strings */
+
+class Main
+{
+	static void run()
+	{
+		String a = "Hello";
+		String b = "world";
+		String c = a * b;
+	} // end of static void run()
+} // end of class Main

@@ -1,0 +1,15 @@
+/*This test should throw error because of more arguments in calling function than in declaration */
+
+class Main
+{
+	static void run()
+	{
+		int a = someFunc(10);
+	} // end of static void run()
+	
+	static void someFunc(int x)
+	{
+		ifj16.print("someFunc was called");
+		return x;
+	}
+} // end of class Main

@@ -1,0 +1,14 @@
+/*This test should throw error because of definition of local variable in while cycle */
+
+class Main
+{
+	static void run()
+	{
+		int a = 5;
+		int b = 3;
+		while (a > b) {
+			int c = 5;
+		}
+	} // end of static void run()
+	  	
+} // end of class Main
