@@ -116,15 +116,15 @@ const uint32_t precedenceTable[26][26] =
 // columns represent token->type
 //    +   -   *   /   <   >  <=  >=  ==  !=  id f.id str  d   i   b  ++  --  not and or   (   )   ,   ;   $
 	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_plus,
-	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_minus,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_multiply,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_divide,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_less,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_greater,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_lessEqual,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_greaterEqual,
-	{'<','<','<','<','<','<','<','<','x','x','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_equal,
-	{'<','<','<','<','<','<','<','<','x','x','<','<','x','<','<','x','u','u','<','>','>','<','>','>','>','x'}, //TT_notEqual,
+	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_minus,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_multiply,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_divide,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_less,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_greater,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_lessEqual,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_greaterEqual,
+	{'<','<','<','<','<','<','<','<','x','x','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_equal,
+	{'<','<','<','<','<','<','<','<','x','x','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_notEqual,
 	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','x','>','>','f','>','>','>','x'}, //TT_identifier,
 	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','x','>','>','f','>','>','>','x'}, //TT_fullIdentifier,
 	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_string,
@@ -133,9 +133,9 @@ const uint32_t precedenceTable[26][26] =
 	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','x','>','>','>','x'}, //TT_boolean,
 	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','x','x','<','>','>','<','>','>','>','x'}, //TT_increment,
 	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','x','x','<','>','>','<','>','>','>','x'}, //TT_decrement,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','x','x','x','<','u','u','<','>','>','<','>','>','>','x'}, //TT_not,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','x','x','x','<','u','u','<','>','>','<','>','>','>','x'}, //TT_and,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','x','x','x','<','u','u','<','>','>','<','>','>','>','x'}, //TT_or,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_not,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_and,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_or,
 	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','=','x','>','x'}, //TT_leftRoundBracket,
 	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','>','>','>','x','>','x','>','x'}, //TT_rightRoundBracket,
 	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','x','>','x','>','x'}, //TT_comma,
@@ -540,6 +540,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		//expressions parsing stoped on something else then right round bracket or comma - syntax error
 		if (token->type != TT_rightRoundBracket && token->type != TT_comma) {
+			printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 			return ERR_SYNTAX;
 		}
 
@@ -1504,7 +1505,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					goto generateBoolInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
-					goto generateInstruction;
+					goto generateBoolInstruction;
 				} else {
 
 					precedenceSymbolFree(operand1);
@@ -1597,7 +1598,8 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				return ERR_SYNTAX;
 			}
 
-			int64_t operator = precedenceStackPop(stack);
+			int64_t operator = -1;
+			operator = precedenceStackPop(stack);
 			if (operator == -1 ) {
 				printError(ERR_SYNTAX, "Unexpected symbol in expression\n");
 				return ERR_SYNTAX;
@@ -1763,8 +1765,10 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					break;
 				default:
-					precedenceSymbolFree(operand1);
-					precedenceSymbolFree(operand2);
+					free(operand1);
+					free(operand2);
+			//		precedenceSymbolFree(operand1);
+			//		precedenceSymbolFree(operand2);
 					return ERR_SYNTAX;
 			}
 
@@ -1938,6 +1942,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			return ERR_SYNTAX;
 
 		default:
+			printError(ERR_SYNTAX, "Unexpected symbol in expression parsing\n");
 			return ERR_SYNTAX;
 	}
 
@@ -2104,6 +2109,7 @@ eError parsing(Token* helpToken) {
 		}
 
 		if (token->type > NONTERMINALBORDER) {
+			printError(ERR_SYNTAX, "unexpected symbol in expression parsing\n");
 			errCode = ERR_SYNTAX;
 			goto freeAndExit;
 		}
@@ -2198,6 +2204,7 @@ eError parsing(Token* helpToken) {
 
 			default:
 
+				printError(ERR_SYNTAX, "Unexpected symbol in expression parsing\n");
 				errCode = ERR_SYNTAX;
 				result = NULL;
 				goto freeAndExit;
