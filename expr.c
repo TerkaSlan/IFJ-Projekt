@@ -636,7 +636,12 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	tSymbolPtr symbolExprTmp;
 	tInstruction instr;
 	eError errCode;
-	tHashTablePtr currentFuncTable = currentFunction->Data.FunctionData.LocalSymbolTable;
+	tHashTablePtr currentFuncTable;
+	if (preinterpretation) {
+		currentFuncTable = currentClass->Data.ClassData.LocalSymbolTable;
+	} else {
+		currentFuncTable = currentFunction->Data.FunctionData.LocalSymbolTable;
+	}
 
 		if (strCmpCStr(builtin, "ifj16.substr") == 0) {
 
