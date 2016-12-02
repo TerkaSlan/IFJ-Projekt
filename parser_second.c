@@ -415,8 +415,8 @@ eError stmtBody_2(){
 		        || token->keywordType == KTT_String)) {
 
 			//trying to declare a new variable inside a scope
-			EXIT(ERR_SEM_OTHER, "Declarations in scope are not permitted.\n");
-			return ERR_SEM_OTHER;
+			EXIT(ERR_SYNTAX, "Declarations in scope are not permitted.\n");
+			return ERR_SYNTAX;
 		} else {
 			//current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
 			errCode = stmt_2();
