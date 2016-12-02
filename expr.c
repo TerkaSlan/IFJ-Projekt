@@ -453,7 +453,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		//get function name from fullIdentifier
 		dtStrPtr func;
-		errCode = substr(funcName->stringOrId, strCharPos(funcName->stringOrId, '.') + 1, strGetLength(funcName->stringOrId), &func);
+		errCode = substr(funcName->stringOrId, strCharPos(funcName->stringOrId, '.') + 1, strGetLength(funcName->stringOrId) - (strCharPos(funcName->stringOrId, '.') + 1), &func);
 		precedenceSymbolFree(funcName);
 		if (errCode != ERR_OK) {
 			return errCode;
@@ -1293,7 +1293,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			//get class name from fullIdentifier
 			dtStrPtr className;
-			errCode = substr(fullId->stringOrId, 0, strCharPos(fullId->stringOrId, '.'), &className);
+			errCode = substr(fullId->stringOrId, 0, strCharPos(fullId->stringOrId, '.') + 1, &className);
 			if (errCode != ERR_OK) {
 				precedenceSymbolFree(fullId);
 				return errCode;
@@ -1316,7 +1316,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 			dtStrPtr id;
-			errCode = substr(fullId->stringOrId, strCharPos(fullId->stringOrId, '.') + 1, strGetLength(fullId->stringOrId), &id);
+			errCode = substr(fullId->stringOrId, strCharPos(fullId->stringOrId, '.') + 1, strGetLength(fullId->stringOrId) - (strCharPos(fullId->stringOrId, '.') + 1), &id);
 			if (errCode != ERR_OK) {
 				precedenceSymbolFree(fullId);
 				strFree(className);

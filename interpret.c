@@ -838,6 +838,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 					ret = result;
 					goto lbFinish;
 				}
+				break;
 			}
 
 			case iSTOP:
