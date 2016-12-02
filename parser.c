@@ -404,7 +404,7 @@ eError classBody() {
 			errCode = skipPrecedenceParsing(errCode);
 			CHECK_ERRCODE();
 
-			createStaticVariable(symbolTokenType, true, symbolName);
+			createStaticVariable(symbolTokenType, false, symbolName);
 			CHECK_ERRCODE();
 
 			//expressions parsing read one token outside of expression - has to be semicolon
