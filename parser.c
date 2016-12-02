@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "scanner.h"
 #include "ial.h"
+#include "token.h"
 
 /*
 *  Converts between token type and symbol type
@@ -90,7 +91,7 @@ do{																										\
 	functionSymbol->Data.FunctionData.ReturnType = type;\
 	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
 	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
-	if(htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name))\
+	if((currentClass != NULL && htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name))) /*TODO:: add recursive check for variables inside functions to tell if there is a collision*/\
 		{EXIT(ERR_SEM, "Redefining symbol.\n"); htabFree(newTable); symbolFree(functionSymbol);name = NULL; break;  }			\
 																				\
 	if ((addedFunc = htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, false)) == NULL) \
@@ -138,7 +139,7 @@ do{																										\
 	currentVariable->Const = false;																                                        \
 	currentVariable->Defined = defined;															                                      \
 	currentVariable->Name = name;                                                                        \
-	if(htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, name))\
+	if((currentFunction != NULL && htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, name)) || (currentClass != NULL && (addedVar = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name)) != NULL && addedVar->Type == eFUNCTION))\
 		{EXIT(ERR_SEM, "Redefining symbol.\n"); symbolFree(currentVariable); name = NULL; break;  }			\
 																				\
 	if ((addedVar = htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, false)) == NULL) \
@@ -286,6 +287,7 @@ eError classList() {
 		//recursive call
 		errCode = classBody();
 		CHECK_ERRCODE();
+		currentClass = NULL;
 	}
 
 	//[<KTT_CLASS>][<TT_identifier>][{]4. Token -> [}]
@@ -407,7 +409,7 @@ eError classBody() {
 
 				//we have a type
 				// adds argument as a local variable to function scope
-				TTtoeSymbolType(token->type, symbolTokenType);
+				TTtoeSymbolType(token->keywordType, symbolTokenType);
 				getNewToken(token, errCode);
 
 				if (token->type != TT_identifier){
@@ -452,6 +454,7 @@ eError classBody() {
 				//recursive call
 				errCode = funcBody();
 				CHECK_ERRCODE();
+				currentFunction = NULL;
 
 				//checks if there really is right curly bracket after funcBody
 				if (token->type != TT_rightCurlyBracket) {

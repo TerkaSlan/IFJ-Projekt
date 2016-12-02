@@ -137,17 +137,28 @@ tSymbolPtr findSymbol(dtStrPtr symbolName) {
 		if(substr(symbolName, dotPosition + 1, strGetLength(symbolName), &functionName) != ERR_OK)
 			return NULL;
 		if(substr(symbolName, 0, dotPosition, &className) != ERR_OK)
+		{
+			strFree(functionName);
 			return NULL;
+		}
 
 		if((classSymbol = htabGetSymbol(globalScopeTable, className)) == NULL)
+		{
+			strFree(className);
+			strFree(functionName);
 			return NULL;
-		else {
-			if((functionSymbol = htabGetSymbol(classSymbol->Data.ClassData.LocalSymbolTable, functionName)) == NULL)
-				return NULL;
-			else {
-				return functionSymbol;
-			}
 		}
+
+		if((functionSymbol = htabGetSymbol(classSymbol->Data.ClassData.LocalSymbolTable, functionName)) == NULL)
+		{
+			strFree(className);
+			strFree(functionName);
+			return NULL;
+		}
+
+		strFree(className);
+		strFree(functionName);
+		return functionSymbol;
 
 	}
 		// Simple Identifier
@@ -304,7 +315,7 @@ eError classBody_2() {
 					return ERR_SYNTAX;
 
 				// Incoming parameters in function definition, don't care in 2.run
-				getNewToken(token, errCode);
+				//getNewToken(token, errCode);
 				getNewToken(token, errCode);
 				if(token->type == TT_comma)
 					getNewToken(token, errCode);
@@ -321,7 +332,6 @@ eError classBody_2() {
 
 				errCode = funcBody_2();
 				CHECK_ERRCODE();
-				currentFunction = NULL;
 			}
 
 			//checking for correct return value
@@ -339,7 +349,8 @@ eError classBody_2() {
 						return ERR_SEM;
 					}
 				}
-
+				//end of function
+				currentFunction = NULL;
 
 				//Insert padding after each function for the return type detection to be even possible - like INT3
 				AI(iINT, NULL, NULL, NULL);
@@ -516,19 +527,19 @@ eError stmt_2() {
 						indexFalse++;
 
 						getNewToken(token, errCode); // {
-						errCode = stmt_2();
+						errCode = stmtBody_2();
 						CHECK_ERRCODE();
 
 						//Refine where is it that we should jump on finished true block (over false block)
 						tInstructionPtr igoto = instrListGetInstruction(instructionList, indexGOTO);
-						igoto->dst = (void *) instrListGetNextInsertedIndex(instructionList);
+						igoto->dst = (void *) (intptr_t) instrListGetNextInsertedIndex(instructionList);
 
 						getNewToken(token, errCode); // next after }
 					}
 
 					//Refine where is it that we should jump on false condition
 					tInstructionPtr iIFN = instrListGetInstruction(instructionList, indexIF);
-					iIFN->dst = (void *) indexFalse;
+					iIFN->dst = (void *) (intptr_t) indexFalse;
 
 					break;
 				}
@@ -571,11 +582,11 @@ eError stmt_2() {
 
 					//add jump back to the condition
 					uint32_t whileEndBodyIndex;
-					AIwO(iGOTO, (void *) indexCond, NULL, NULL, whileEndBodyIndex);
+					AIwO(iGOTO, (void *) (intptr_t) indexCond, NULL, NULL, whileEndBodyIndex);
 
 					////Refine where is it that we should jump on false condition - after while body
 					tInstructionPtr condition = instrListGetInstruction(instructionList, indexIF);
-					condition->dst = (void *) (whileEndBodyIndex + 1);
+					condition->dst = (void *) (intptr_t) (whileEndBodyIndex + 1);
 
 					break;
 				}

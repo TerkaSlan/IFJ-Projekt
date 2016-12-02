@@ -136,11 +136,10 @@ int main(int argc, char const *argv[]) {
 	errCode = generateInstructions();
 	CHECK_ERRCODE(lParserFailed);
 
-
-	Interpret(globalScopeTable, preInstructionList);
+	errCode = Interpret(globalScopeTable, preInstructionList);
 	CHECK_ERRCODE(lParserFailed);
 
-	Interpret(globalScopeTable, instructionList);
+	errCode = Interpret(globalScopeTable, instructionList);
 
 lParserFailed:
 	freeGlobalVariables();

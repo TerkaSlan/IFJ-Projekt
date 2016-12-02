@@ -79,7 +79,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 	tInstructionPtr i = NULL;
 	while(1) {
 		if(!(i = instrListGetNextInstruction(instrList)))
-			EXIT(ERR_OTHER, "Error getting next instruction.\n");
+			EXIT(ERR_INTERN, "Error getting next instruction.\n");
 
 #define GD symbolGetData        //Gets pointer to tSymbolData where data of the symbol are stored
 #define SD symbolSetData        //Gets pointer to tSybmolData where data of the symbol are stored and sets it as initialized
@@ -128,7 +128,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER,
+						EXIT(ERR_SEM_TYPE,
 						     "Trying to assign class or func.\n");
 				}
 				break;
@@ -139,7 +139,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				//check if function being called is ok
 				tSymbolPtr func = (tSymbolPtr)(i->arg1);
 				if(!func->Defined || func->Type != eFUNCTION)
-					EXIT(ERR_RUN_UNINITIALIZED, "Calling undefined function %s.\n", strGetCStr(func->Name));
+					EXIT(ERR_SEM, "Calling undefined function %s.\n", strGetCStr(func->Name));
 
 				//create new prepared frame
 				if(frameBuild(&(frames.Prepared), func) == NULL)
@@ -188,7 +188,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER,
+						EXIT(ERR_SEM_TYPE,
 						     "Trying to pass class or func into the function.\n");
 				}
 				break;
@@ -249,7 +249,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER, "Trying to return class or func.\n");
+						EXIT(ERR_SEM_TYPE, "Trying to return class or func.\n");
 				}
 
 
@@ -293,7 +293,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER,
+						EXIT(ERR_SEM_TYPE,
 						     "Trying to assign class or func.\n");
 				}
 				break;
@@ -306,7 +306,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				if(tmp->Type == eINT)
 					GD(tmp, curFrame)->Integer++;
 				else
-					EXIT(ERR_OTHER,"Trying to increment non int.\n");
+					EXIT(ERR_SEM_TYPE,"Trying to increment non int.\n");
 				break;
 			}
 
@@ -317,7 +317,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				if(tmp->Type == eINT)
 					GD(tmp, curFrame)->Integer--;
 				else
-					EXIT(ERR_OTHER,"Trying to decrement non int.\n");
+					EXIT(ERR_SEM_TYPE,"Trying to decrement non int.\n");
 				break;
 			}
 
@@ -357,7 +357,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER, "Operands %s and %s doesnt support addition.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
+						EXIT(ERR_SEM_TYPE, "Operands %s and %s doesnt support addition.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
 				}
 				break;
 			}
@@ -378,7 +378,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operands %s and %s doesnt support subtraction.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
+						EXIT(ERR_SEM_TYPE, "Operands %s and %s doesnt support subtraction.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
 				}
 				break;
 
@@ -401,7 +401,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 
 					default:
-						EXIT(ERR_OTHER, "Operands %s and %s doesnt support multiplication.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
+						EXIT(ERR_SEM_TYPE, "Operands %s and %s doesnt support multiplication.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
 				}
 				break;
 
@@ -431,7 +431,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operands %s and %s doesnt support division.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
+						EXIT(ERR_SEM_TYPE, "Operands %s and %s doesnt support division.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name),strGetCStr(((tSymbolPtr)(i->arg2))->Name) );
 				}
 				break;
 
@@ -451,7 +451,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support arithmetic negation.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name));
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support arithmetic negation.\n", strGetCStr(((tSymbolPtr)(i->arg1))->Name));
 				}
 				break;
 			}
@@ -473,7 +473,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support logic comparision.\n",
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support logic comparision.\n",
 						     strGetCStr(((tSymbolPtr) (i->arg1))->Name));
 						break;
 				}
@@ -497,7 +497,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support logic comparision.\n",
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support logic comparision.\n",
 						     strGetCStr(((tSymbolPtr) (i->arg1))->Name));
 						break;
 				}
@@ -521,7 +521,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support logic comparision.\n",
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support logic comparision.\n",
 						     strGetCStr(((tSymbolPtr) (i->arg1))->Name));
 						break;
 				}
@@ -544,7 +544,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support logic comparision.\n",
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support logic comparision.\n",
 						     strGetCStr(((tSymbolPtr) (i->arg1))->Name));
 						break;
 				}
@@ -577,7 +577,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support logic comparision.\n",
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support logic comparision.\n",
 						     strGetCStr(((tSymbolPtr) (i->arg1))->Name));
 						break;
 				}
@@ -613,7 +613,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 						break;
 					}
 					default:
-						EXIT(ERR_OTHER, "Operand %s doesnt support logic comparision.\n",
+						EXIT(ERR_SEM_TYPE, "Operand %s doesnt support logic comparision.\n",
 						     strGetCStr(((tSymbolPtr) (i->arg1))->Name));
 					break;
 				}
@@ -865,11 +865,6 @@ tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param)
 	if(!symbol)
 		return NULL;
 
-	if(!symbol->Defined)
-	{
-		printError(ERR_SEM, "Symbol \"%s\" is undefined.\n", strGetCStr(symbol->Name));
-		return NULL;
-	}
 
 	switch(symbol->Type)
 	{

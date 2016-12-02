@@ -1,6 +1,6 @@
 #IFJ Project 2016
 CC=gcc
-CFLAGS=-std=c99 -O2 -Wno-int-to-pointer-cast -DNDEBUG
+CFLAGS=-std=c99 -O2 -Wall -Wextra -g
 LIB=-lm
 
 SRC_C_FILES=builtin.c constants.c conversions.c error.c frame.c ial.c instruction.c interpret.c str.c scanner.c token.c expr.c parser.c parser_second.c
