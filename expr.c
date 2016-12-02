@@ -1298,7 +1298,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			//get class name from fullIdentifier
 			dtStrPtr className;
-			errCode = substr(fullId->stringOrId, 0, strCharPos(fullId->stringOrId, '.') + 1, &className);
+			errCode = substr(fullId->stringOrId, 0, strCharPos(fullId->stringOrId, '.'), &className);
 			if (errCode != ERR_OK) {
 				precedenceSymbolFree(fullId);
 				return errCode;
