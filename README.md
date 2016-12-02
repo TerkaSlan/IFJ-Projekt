@@ -4,7 +4,9 @@
 
  **Stage 2: Symbol table, grammar, basic scanner implementation, elaborate lexical analysis**
 
-We're at **Stage 3: Parser, interpret, expressions and instruction modules implementation.**
+ **Stage 3: Parser, interpret, expressions and instruction modules implementation.**
+ 
+ We're at **Stage 4: Testing, debugging, fixing, optimalizations, low-priority bonus extensions**
 
 _Week 1 [4.10. - 11.10]_
   
@@ -84,13 +86,13 @@ _Week 8 [23.11 - 29.11]_
 
 _Week 9 [30.11 - 6.12]_
 
-  Finish parser implementation - **Terka**, **Michal**, **Katka**
+  Finish parser implementation - **Terka**, **Michal**, **Katka** :white_medium_square:
 
-  Fix general bugs - **ALL**
+  Fix general bugs - **ALL** :white_medium_square:
   
-  Adjust Makefile for 2nd submission (/tests directory) - **Michal**
+  Adjust Makefile for 2nd submission (/tests directory) - **Michal** :white_medium_square:
   
-  Start to work on documentation - **Marek, Jakub**
+  Start to work on documentation - **Marek, Jakub** :white_medium_square:
   
   Focus all efforts to make program functional for 2nd submission
   
