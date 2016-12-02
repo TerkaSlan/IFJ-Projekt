@@ -1,0 +1,12 @@
+/*This test should throw error because there is not a variable on the left side of assignment */
+
+class Main
+{
+	static void run()
+	{
+		int a = 5;
+		int b = 3;
+		10 = a + b;
+	} // end of static void run()
+	  	
+} // end of class Main

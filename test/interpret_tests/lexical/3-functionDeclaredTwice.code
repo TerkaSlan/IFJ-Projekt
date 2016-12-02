@@ -1,0 +1,24 @@
+/*This test should throw error because of 2 definitions of the same function in same class*/
+
+class Main
+{
+	static void run()
+	{
+		ifj16.print("Print called from first Main.run");
+	} // end of static void run()
+	
+} // end of class Main
+
+
+class Someclass
+{
+	static void someFunction()
+	{
+		ifj16.print("Print called from first definition of Someclass.someFunction\n");
+	}
+
+	static void someFunction()
+	{
+		ifj16.print("Print called from second definition of Someclass.someFunction\n");
+	}
+}

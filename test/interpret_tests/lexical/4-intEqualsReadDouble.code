@@ -1,0 +1,9 @@
+/*This test should throw error because of forbidden operation > with strings */
+
+class Main
+{
+	static void run()
+	{
+		int a = ifj16.readDouble();
+	} // end of static void run()
+} // end of class Main

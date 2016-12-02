@@ -1,0 +1,21 @@
+/*This test should throw error because returning string in function, which should return int */
+
+class Main
+{
+	static void run()
+	{
+		Someclass.someFunction(10,15);
+	} // end of static void run()
+	
+} // end of class Main
+
+
+class Someclass
+{
+	/*Returns string, but should return int */
+	static int someFunction(int x, int y)
+	{
+		String pozdrav = "ahojky";
+		return pozdrav;
+	}
+}

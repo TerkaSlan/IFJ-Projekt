@@ -1,0 +1,19 @@
+/*Builtins test, everything should be ok and pass correctly. */
+
+class Main
+{
+	static void run()
+	{
+		/*Printing tests*/
+		ifj16.print("At first, we will print this easy line.\n");
+		return;
+		int a = 15;
+		ifj16.print("And second line, also with some variable. E.g. a = " + a + "\n");
+		double b = 3.14159265358979;
+		ifj16.print("Third line - printing b variable: " + b + "\n");
+		ifj16.print("And now more concat." + " Still in 1 print." + " Still the same print, concatenation of string and double " + a + b + "\n");
+		ifj16.print("Also trying escape sequences. Tab \t, new line \n, backslash \\ and quotation mark \". And now some nice chars, for example \\100: \100\n");
+
+	} // end of static void run()
+	
+} // end of class Main
