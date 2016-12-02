@@ -134,9 +134,9 @@ tSymbolPtr findSymbol(dtStrPtr symbolName) {
 		dtStrPtr   functionName, className;
 		tSymbolPtr classSymbol, functionSymbol;
 
-		if(substr(symbolName, dotPosition + 1, strGetLength(symbolName) + 1, &functionName) != ERR_OK)
+		if(substr(symbolName, dotPosition + 1, strGetLength(symbolName) - dotPosition - 1, &functionName) != ERR_OK)
 			return NULL;
-		if(substr(symbolName, 0, dotPosition + 1, &className) != ERR_OK)
+		if(substr(symbolName, 0, dotPosition, &className) != ERR_OK)
 		{
 			strFree(functionName);
 			return NULL;
