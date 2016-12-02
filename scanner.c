@@ -421,6 +421,9 @@ eError getToken(Token *token) {
 					}
 				} else if((iCurrentSymbol == '+') || (iCurrentSymbol == '-')) {
 					state = SDoubleExponentSign;
+					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
 				} else {
 					handleLexError(token, ERR_LEX);
 				}
