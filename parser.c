@@ -91,7 +91,7 @@ do{																										\
 	functionSymbol->Data.FunctionData.ReturnType = type;\
 	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
 	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
-	if((currentClass != NULL && htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name))) /*TODO:: add recursive check for variables inside functions to tell if there is a collision*/\
+  if (currentClass != NULL && !htabForEach(currentClass->Data.ClassData.LocalSymbolTable, checkForIdConflictWithinClass, name)) \
 		{EXIT(ERR_SEM, "Redefining symbol.\n"); htabFree(newTable); symbolFree(functionSymbol);name = NULL; break;  }			\
 																				\
 	if ((addedFunc = htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, false)) == NULL) \
@@ -182,6 +182,21 @@ static tSymbolPtr currentFunction;
 static tSymbolPtr currentClass;
 static dtStrPtr symbolName;
 static eSymbolType symbolTokenType;
+
+tSymbolPtr checkForIdConflictWithinClass(tSymbolPtr symbol, void* name){
+  if (symbol->Type == eFUNCTION){
+    if (htabGetSymbol(symbol->Data.FunctionData.LocalSymbolTable, name) == NULL) {
+      return symbol;
+    } else {
+      return NULL;
+    }
+  }
+  else {
+    if ((strCmpStr(symbol->Name, (dtStrPtr)name)) == 0)
+      return NULL;
+  return symbol;
+  }
+}
 
 /*
  * A mock of expression evaluation, which I don't really need in 1. run,
@@ -358,7 +373,7 @@ eError classBody() {
 			}
 
 			// treba overit co sa vyhodnocuje (iba konstanty + uz zname staticke) - asi check vo vyrazoch - over
-            createStaticVariable(symbolTokenType, false, symbolName);
+      createStaticVariable(symbolTokenType, false, symbolName);
 			CHECK_ERRCODE();
 
 			getNewToken(token, errCode);
@@ -377,7 +392,7 @@ eError classBody() {
 			errCode = skipPrecedenceParsing(errCode);
 			CHECK_ERRCODE();
 
-			createStaticVariable(symbolTokenType, false, symbolName);
+			createStaticVariable(symbolTokenType, true, symbolName);
 			CHECK_ERRCODE();
 
 			//expressions parsing read one token outside of expression - has to be semicolon
