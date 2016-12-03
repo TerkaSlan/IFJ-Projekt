@@ -339,5 +339,14 @@ for (int i = strlen(charArrayStr6); i >=0; i--)
 SHOULD_NOT_EQUAL("readString(): Hello\\9999World", readData(symbol_str_6, &symbol_str_6->Data), ERR_OK);
 symbolFree(symbol_str_6);
 
+tSymbolPtr symbol_str_7 = symbolNew();
+symbol_str_7->Type = eSTRING;
+char charArrayStr7[] = "Hello\\000World\n";
+for (int i = strlen(charArrayStr7); i >=0; i--)
+{
+	ungetc(charArrayStr7[i], stdin);
+}
+SHOULD_NOT_EQUAL("readString(): Hello\\000World", readData(symbol_str_7, &symbol_str_7->Data), ERR_OK);
+symbolFree(symbol_str_7);
 
 TEST_SUITE_END
