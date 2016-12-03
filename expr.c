@@ -496,7 +496,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			return errCode;
 		}
 
-		if (paramCount > 0 ) {
+		if (paramCount > 0) {
 			if (result == NULL) {
 				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in function call\n", (unsigned long)LineCounter);
 				return ERR_SEM_TYPE;
@@ -535,7 +535,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 		} else {
-			if (token->type != TT_rightRoundBracket) {
+			if (result != NULL) {
 				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in function call\n", (unsigned long)LineCounter);
 				return ERR_SEM_TYPE;
 			}
