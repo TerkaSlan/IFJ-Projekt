@@ -128,6 +128,7 @@ tFrame *frameBuild(tFrame *frame, const tSymbolPtr funcSymbol) {
 
 		frame->Size = frameSize;
 		frame->ReturnInstruction = 0;
+		frame->ReturnType = funcSymbol->Data.FunctionData.ReturnType;
 	} else
 		abort(); //Something is really wrong.
 

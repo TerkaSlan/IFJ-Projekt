@@ -843,6 +843,23 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 
 			case iSTOP:
 				goto lbFinish;
+
+			case iINT: {
+				//if void funciton, goto iRET
+				if(curFrame->ReturnType == eNULL){
+					if(frames.ReturnType == eSTRING && frames.ReturnData.String)
+					{
+						strFree(frames.ReturnData.String);
+						frames.ReturnData.String = NULL;
+					}
+					frames.ReturnType = eNULL;
+					goto ret_void;
+				}
+
+
+				EXIT(ERR_RUN_UNINITIALIZED, "Non void function must return a value.\n");
+
+			}
 			default:
 				EXIT(ERR_INTERN, "Invalid instruction.\n");
 		}

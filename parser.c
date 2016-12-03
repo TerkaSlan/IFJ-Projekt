@@ -563,6 +563,7 @@ eError stmt() {
 		case TT_leftCurlyBracket:
 			errCode = stmtBody();
 			CHECK_ERRCODE();
+			getNewToken(token, errCode);
 			break;
 
 		case TT_keyword:
@@ -585,6 +586,7 @@ eError stmt() {
 							return ERR_SYNTAX;
 						}
 					}
+					getNewToken(token, errCode);
 					break;
 
 				//STMT -> if ( EXPR ) STMT ELSE
@@ -608,24 +610,15 @@ eError stmt() {
 					}
 
 					getNewToken(token, errCode);
-					//{ check
-					if(token->type != TT_leftCurlyBracket) {
-						EXIT(ERR_SYNTAX, "{ expected.\n");
-						return ERR_SYNTAX;
-					}
+					errCode = stmt();
 
-					errCode = stmtBody();
 					CHECK_ERRCODE();
 					break;
 
 		        case KTT_else:
 					getNewToken(token, errCode);
-					if(token->type != TT_leftCurlyBracket) {
-						EXIT(ERR_SYNTAX, "{ expected.\n");
-						return ERR_SYNTAX;
-					}
+					errCode = stmt();
 
-					errCode = stmtBody();
 					CHECK_ERRCODE();
 					break;
 
@@ -649,12 +642,8 @@ eError stmt() {
 					}
 
                     getNewToken(token, errCode);
-					if(token->type != TT_leftCurlyBracket) {
-						EXIT(ERR_SYNTAX, "{ expected.\n");
-						return ERR_SYNTAX;
-					}
+					errCode = stmt();
 
-                    errCode = stmtBody();
 					CHECK_ERRCODE();
 					break;
 
@@ -672,6 +661,7 @@ eError stmt() {
 				EXIT(ERR_SYNTAX, "; expected.\n");
 				return ERR_SYNTAX;
 			}
+			getNewToken(token, errCode);
 			break;
 
 		case TT_identifier:
@@ -699,6 +689,7 @@ eError stmt() {
 				EXIT(ERR_SYNTAX, "; expected.\n");
 				return ERR_SYNTAX;
 			}
+			getNewToken(token, errCode);
 			break;
 		}
 
@@ -710,8 +701,6 @@ eError stmt() {
 			return ERR_SYNTAX;
 	}
 
-	//get token and return
-	getNewToken(token, errCode);
 
 	return ERR_OK;
 

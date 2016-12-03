@@ -334,28 +334,13 @@ eError classBody_2() {
 				CHECK_ERRCODE();
 			}
 
-			//checking for correct return value
-			{
-				uint32_t lastInstructionInsertedIndex = instrListGetNextInsertedIndex(instructionList) - 1; //returns only > 0 - no underflow
-				tInstructionPtr instr = instrListGetInstruction(instructionList, lastInstructionInsertedIndex);
 
-				if(instr->type != iRET) {
-					if(currentFunction->Data.FunctionData.ReturnType == eNULL) {
-						//OK - void type
-						AI(iRET, NULL, NULL, NULL);
-					}
-					else{
-						EXIT(ERR_SEM, "Non void function must return a value.");
-						return ERR_SEM;
-					}
-				}
-				//end of function
-				currentFunction = NULL;
+			//end of function
+			currentFunction = NULL;
 
-				//Insert padding after each function for the return type detection to be even possible - like INT3
-				AI(iINT, NULL, NULL, NULL);
+			//Insert padding after each function for the return type detection to be even possible - like INT3
+			AI(iINT, NULL, NULL, NULL);
 
-			}
 
 
 			getNewToken(token, errCode);
@@ -511,7 +496,7 @@ eError stmt_2() {
 
 					//read next token and call stmt_2 processing
 					getNewToken(token, errCode);
-					errCode = stmtBody_2();
+					errCode = stmt_2();
 					CHECK_ERRCODE();
 
 					//after SMTM - there can be else
@@ -526,8 +511,8 @@ eError stmt_2() {
 						AIwO(iGOTO, NULL, NULL, NULL, indexGOTO);
 						indexFalse++;
 
-						getNewToken(token, errCode); // {
-						errCode = stmtBody_2();
+						getNewToken(token, errCode);
+						errCode = stmt_2();
 						CHECK_ERRCODE();
 
 						//Refine where is it that we should jump on finished true block (over false block)
@@ -575,7 +560,7 @@ eError stmt_2() {
 					AIwO(iIFNGOTO, NULL, result, NULL, indexIF);
 
 					//start while body
-					errCode = stmtBody_2();
+					errCode = stmt_2();
 					CHECK_ERRCODE();
 
 					getNewToken(token, errCode); // next after }

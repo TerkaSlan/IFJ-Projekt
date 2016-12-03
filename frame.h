@@ -38,6 +38,7 @@ typedef struct {
 	uint32_t   ReturnInstruction;   ///Instruction index to be returned to after iRET instruction
 	uint32_t   CallInstruction;     ///Instruction index of the first instruction in the function - loaded from the symboltable
 	uint32_t   Size;                ///Number of frame items in the symbolArray (also size)
+	eSymbolType ReturnType;
 } tFrame;
 
 
