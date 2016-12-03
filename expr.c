@@ -60,16 +60,13 @@ do{																\
 		strAddChar(tmpString, '@');								\
 		instr.type = iCONV2STR;									\
 	}															\
-	symbolTmp = htabGetSymbol(table, name);						\
-	if (symbolTmp == NULL) {									\
-		tSymbolPtr tmp = symbolNew();							\
-		tmp->Defined = true;									\
-		tmp->Const = false;										\
-		tmp->Type = dType;										\
-		tmp->Name = strNewFromStr(name);						\
-		symbolTmp = htabAddSymbol(table, tmp, false);			\
-		symbolFree(tmp);										\
-	}															\
+	tSymbolPtr tmp = symbolNew();								\
+	tmp->Defined = true;										\
+	tmp->Const = false;											\
+	tmp->Type = dType;											\
+	tmp->Name = strNewFromStr(name);							\
+	symbolTmp = htabAddSymbol(table, tmp, true);				\
+	symbolFree(tmp);											\
 	strFree(name);												\
 	instr.dst = symbolTmp;										\
 	instr.arg1 = operand;										\
@@ -489,70 +486,78 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	int32_t paramCount = funcSymbol->Data.FunctionData.NumberOfArguments;
 	tArgumentListItem* argument = funcSymbol->Data.FunctionData.ArgumentList;
 
-	while (token->type != TT_rightRoundBracket) {
+	errCode = parsing(NULL);
+	if (errCode != ERR_OK) {
+		return errCode;
+	}
 
+	if (paramCount == 0 && result == NULL) {
+		goto afterParams;
+	}
+
+	while (paramCount > 0) {
+
+		if (result == NULL) {
+			printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in function call\n", (unsigned long)LineCounter);
+			return ERR_SEM_TYPE;
+		}
+
+		if (result->Type == eINT && argument->Symbol->Type == eDOUBLE) {
+			//convert result from expressions parsing to double
+			tSymbolPtr symbolTmp;
+			convert(funcSymbol->Data.FunctionData.LocalSymbolTable, result, instr, symbolTmp, eDOUBLE);
+			//add instr to instructionList
+			insertInstruction(instr);
+			if (insertErrCode == -1) {
+				printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
+				return ERR_INTERN;
+			}
+			result = symbolTmp;
+		}
+
+		if (result->Type == argument->Symbol->Type) {
+
+			instr.type = iPUSH;
+			instr.dst = NULL;
+			instr.arg1 = result;
+			instr.arg2 = NULL;
+			insertInstruction(instr);
+			if (insertErrCode == -1) {
+				printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
+				return ERR_INTERN;
+			}
+			paramCount--;
+			argument = argument->Next;
+
+		} else {
+			printError(ERR_SEM_TYPE, "Line: %lu - Incompatible argument type in function call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+		}
+
+		if (paramCount > 0) {
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+		}
+
+	}
+
+	if (token->type != TT_rightRoundBracket) {
 		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
-
-		if (paramCount > 0) {
-			if (result == NULL) {
-				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in function call\n", (unsigned long)LineCounter);
-				return ERR_SEM_TYPE;
-			}
-			if (result->Type == eINT && argument->Symbol->Type == eDOUBLE) {
-				//convert result from expressions parsing to double
-				tSymbolPtr symbolTmp;
-				convert(funcSymbol->Data.FunctionData.LocalSymbolTable, result, instr, symbolTmp, eDOUBLE);
-
-				//add instr to instructionList
-				insertInstruction(instr);
-				if (insertErrCode == -1) {
-					printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
-					return ERR_INTERN;
-				}
-				result = symbolTmp;
-			}
-
-			if (result->Type == argument->Symbol->Type) {
-
-				instr.type = iPUSH;
-				instr.dst = NULL;
-				instr.arg1 = result;
-				instr.arg2 = NULL;
-				insertInstruction(instr);
-				if (insertErrCode == -1) {
-					printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
-					return ERR_INTERN;
-				}
-				paramCount--;
-				argument = argument->Next;
-
-			} else {
-				printError(ERR_SEM_TYPE, "Line: %lu - Incompatible argument type in function call\n", (unsigned long)LineCounter);
-				return ERR_SEM_TYPE;
-			}
-
+		if (result != NULL) {
+			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in function call\n", (unsigned long)LineCounter);
+			return ERR_SEM_TYPE;
 		} else {
-			if (result != NULL) {
-				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in function call\n", (unsigned long)LineCounter);
-				return ERR_SEM_TYPE;
-			}
-		}
-
-		//expressions parsing stoped on something else then right round bracket or comma - syntax error
-		if (token->type != TT_rightRoundBracket && token->type != TT_comma) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
 		}
-
 	}
 
-	if (paramCount != 0) {
-		printError(ERR_SEM_TYPE, "Line: %lu - Too few parameters in function call\n", (unsigned long)LineCounter);
-		return ERR_SEM_TYPE;
-	}
+	afterParams: 
 
 	instr.type = iCALL;
 	instr.dst = NULL;
@@ -574,7 +579,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		funcPrecedenceSymbol->type = TT_E;
 
 		tSymbolPtr symbolExprTmp;
-		tmpVariable(funcSymbol->Data.FunctionData.LocalSymbolTable, symbolExprTmp, funcSymbol->Data.FunctionData.ReturnType)
+		tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, funcSymbol->Data.FunctionData.ReturnType);
 
 		instr.type = iGETRETVAL;
 		instr.dst = symbolExprTmp;
@@ -1392,6 +1397,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				default:
 					precedenceSymbolFree(constant);
 					symbolFree(symbolConst);
+					printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression\n", (unsigned long)LineCounter);
 					return ERR_SYNTAX;
 			}
 
@@ -1561,6 +1567,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				default:
 					precedenceSymbolFree(operand1);
 					precedenceSymbolFree(operand2);
+					printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression\n", (unsigned long)LineCounter);
 					return ERR_SYNTAX;
 			}
 
@@ -1775,8 +1782,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				default:
 					free(operand1);
 					free(operand2);
-			//		precedenceSymbolFree(operand1);
-			//		precedenceSymbolFree(operand2);
+					printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression\n", (unsigned long)LineCounter);
 					return ERR_SYNTAX;
 			}
 
