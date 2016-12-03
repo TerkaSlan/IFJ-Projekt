@@ -134,7 +134,7 @@ tSymbolPtr findSymbol(dtStrPtr symbolName) {
 		dtStrPtr   functionName, className;
 		tSymbolPtr classSymbol, functionSymbol;
 
-		if(substr(symbolName, dotPosition + 1, strGetLength(symbolName), &functionName) != ERR_OK)
+		if(substr(symbolName, dotPosition + 1, strGetLength(symbolName) - dotPosition - 1, &functionName) != ERR_OK)
 			return NULL;
 		if(substr(symbolName, 0, dotPosition, &className) != ERR_OK)
 		{
@@ -415,8 +415,8 @@ eError stmtBody_2(){
 		        || token->keywordType == KTT_String)) {
 
 			//trying to declare a new variable inside a scope
-			EXIT(ERR_SEM_OTHER, "Declarations in scope are not permitted.\n");
-			return ERR_SEM_OTHER;
+			EXIT(ERR_SYNTAX, "Declarations in scope are not permitted.\n");
+			return ERR_SYNTAX;
 		} else {
 			//current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
 			errCode = stmt_2();

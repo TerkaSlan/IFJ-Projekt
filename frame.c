@@ -38,7 +38,7 @@ int32_t fstackInit(tFrameStack *stack) {
 
 void fstackDeinit(tFrameStack *stack) {
 	if(stack->FrameArray) {
-		for(int64_t i = 0; i < stack->Top; i++) {
+		for(int64_t i = 0; i <= stack->Top; i++) {
 			if(stack->FrameArray[i].symbolArray) {
 				//check for strings in frame
 				for(uint32_t j = 0; j < stack->FrameArray[i].Size; j++)

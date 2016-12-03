@@ -129,7 +129,7 @@ dtStrPtr doubleToString(double number) {
   /*DBL_MAX_10_EXP = the largest power-of-10 exponent needed to represent
                      all double values*/
   char temp[DBL_MAX_10_EXP + 2];
-  if (sprintf(temp, "%lf", number) > 0){
+  if (sprintf(temp, "%g", number) > 0){
     dtStrPtr string = strNewFromCStr(temp);
     return string;
   }

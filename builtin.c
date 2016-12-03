@@ -22,27 +22,22 @@
 #define MIN_ASCII_VALUE 32  // min value to be recognized as an ASCII assocring to specs
 
 
-eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *subStr) {
+eError substr(const dtStr *s, int32_t beginIndex, int32_t length, dtStrPtr *subStr) {
 	if (s == NULL || s->str == NULL) {
 		printError(ERR_INTERN, "In substr: Parameter or its member is NULL\n");
 		return ERR_INTERN;
 	}
-
-	if (beginIndex < 0 || endIndex < 0) {
-		printError(ERR_OTHER, "In substr: String index is out of range\n");
+	
+	if (beginIndex < 0) {
+		printError(ERR_OTHER, "In substr: Begin index is below zero\n");
 		return ERR_OTHER;
 	}
-	uint32_t uBeginIndex, uEndIndex;
-	uBeginIndex = (uint32_t) beginIndex;
-	uEndIndex = (uint32_t) endIndex;
-
-	if (uEndIndex > s->uiLength) {
-		printError(ERR_OTHER, "In substr: String index is out of range\n");
+	if (length < 0) {
+		printError(ERR_OTHER, "In substr: Length of substring is below zero\n");
 		return ERR_OTHER;
 	}
-
-	if (uBeginIndex > uEndIndex) {
-		printError(ERR_OTHER, "In substr: String index is out of range\n");
+	if ((uint32_t)(beginIndex + length) > s->uiLength) {
+		printError(ERR_OTHER, "In substr: One of the arguments is out of range\n");
 		return ERR_OTHER;
 	}
 
@@ -51,8 +46,11 @@ eError substr(const dtStr *s, int32_t beginIndex, int32_t endIndex, dtStrPtr *su
 		printError(ERR_INTERN, "In substr: Cannot create string. Out of memory.\n");
 		return ERR_INTERN;
 	}
-	for (uint32_t i = uBeginIndex; i < uEndIndex; i++) {
-		strAddChar(*subStr, s->str[i]);
+	for (int32_t i = beginIndex; i <= (beginIndex - 1 + length); i++) {
+		if (strAddChar(*subStr, s->str[i]) == STR_ERROR) {
+			printError(ERR_INTERN, "In substr: Cannot create string. Out of memory.\n");
+			return ERR_INTERN;
+		}
 	}
 	return ERR_OK;
 }
@@ -62,8 +60,8 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 	switch (symbol->Type) {
 		case eINT:
 		case eDOUBLE:
-
-			c = getchar();
+			
+			c = getchar();			
 
 			if ( isspace(c) || c == EOF || c == '\n') {
 				if (c != EOF && c != '\n') {
@@ -102,7 +100,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				if (symbol->Type == eINT) {
 					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
 				} else {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");				
 				}
 				if (c != EOF && c != '\n') {
 					do {
@@ -123,7 +121,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 			}
 			while ((c = getchar()) != EOF && c != '\n') {
 				if (c == '\\') {
-					c = getchar();
+					c = getchar();					 
 					switch (c) {
 						case 'n': {
 							if (strAddChar(data->String, '\n') == STR_ERROR) {
@@ -166,6 +164,10 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 									c = getchar();
 									if (c >= '0' && c <= '7') {
 										tmp = tmp + (c - '0');
+										if (tmp == 0) {
+											printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequence \\000\n");
+											return ERR_RUN_INPUT;
+										}
 										if (strAddChar(data->String, tmp) == STR_ERROR) {
 											printError(ERR_INTERN, "In readData: Cannot add char to string.\n");
 											return ERR_INTERN;
@@ -180,7 +182,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 									printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequences\n");
 									return ERR_RUN_INPUT;
 								}
-							}
+							}							
 							else {
 								printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequences\n");
 								return ERR_RUN_INPUT;

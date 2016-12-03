@@ -91,7 +91,7 @@ do{																										\
 	functionSymbol->Data.FunctionData.ReturnType = type;\
 	functionSymbol->Data.FunctionData.InstructionIndex = 0;\
 	functionSymbol->Data.FunctionData.LocalSymbolTable = newTable;\
-	if((currentClass != NULL && htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name))) /*TODO:: add recursive check for variables inside functions to tell if there is a collision*/\
+  if (currentClass != NULL && !htabForEach(currentClass->Data.ClassData.LocalSymbolTable, checkForIdConflictWithinClass, name)) \
 		{EXIT(ERR_SEM, "Redefining symbol.\n"); htabFree(newTable); symbolFree(functionSymbol);name = NULL; break;  }			\
 																				\
 	if ((addedFunc = htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, functionSymbol, false)) == NULL) \
@@ -183,6 +183,16 @@ static tSymbolPtr currentClass;
 static dtStrPtr symbolName;
 static eSymbolType symbolTokenType;
 
+tSymbolPtr checkForIdConflictWithinClass(tSymbolPtr symbol, void* name){
+	if ((strCmpStr(symbol->Name, (dtStrPtr)name)) == 0)
+		return NULL;
+
+	if (symbol->Type == eFUNCTION && htabGetSymbol(symbol->Data.FunctionData.LocalSymbolTable, name))
+		return NULL;
+
+  return symbol;
+}
+
 /*
  * A mock of expression evaluation, which I don't really need in 1. run,
  * but need to check for correct syntax and skip tokens.
@@ -200,13 +210,25 @@ eError skipPrecedenceParsing(eError errCode){
  * A mock of function call, which I don't generate in 1. run,
  * but need to check for correct syntax and skip tokens.
  */
-eError skipFunctionCall(eError errCode){
-  while (token->type != TT_rightRoundBracket) {
+eError skipFunctionCall(eError errCode) {
+  uint32_t counter = 1;
+  while (token->type < TT_assignment && counter != 0) {
     getNewToken(token, errCode);
+    if (token->type == TT_leftRoundBracket) {
+    	counter++;
+    }
+    if (token->type == TT_rightRoundBracket) {
+    	counter--;
+    }
     if (token->type == TT_EOF)
       return ERR_SYNTAX;
   }
-  return ERR_OK;
+
+  if (counter == 0) {
+  	return ERR_OK;
+  } else {
+  	return ERR_SYNTAX;
+  }
 }
 
 
@@ -358,7 +380,7 @@ eError classBody() {
 			}
 
 			// treba overit co sa vyhodnocuje (iba konstanty + uz zname staticke) - asi check vo vyrazoch - over
-            createStaticVariable(symbolTokenType, false, symbolName);
+      			createStaticVariable(symbolTokenType, false, symbolName);
 			CHECK_ERRCODE();
 
 			getNewToken(token, errCode);
@@ -520,8 +542,8 @@ eError stmtBody(){
 		      || token->keywordType == KTT_String)) {
 
 		  //trying to declare a new variable inside a scope
-		  EXIT(ERR_SEM_OTHER, "Declarations in scope are not permitted.\n");
-		  return ERR_SEM_OTHER;
+		  EXIT(ERR_SYNTAX, "Declarations in scope are not permitted.\n");
+		  return ERR_SYNTAX;
 		} else {
 		  //current token isnt a keyword or isnt a type - this could be STMT - we call stmt()
 		  errCode = stmt();
