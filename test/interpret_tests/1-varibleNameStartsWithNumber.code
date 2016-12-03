@@ -1,0 +1,21 @@
+/*This test should throw error because name of variable cannot start with number */
+
+class Main
+{
+	static void run()
+	{
+		Someclass.someFunction(10,15);
+	} // end of static void run()
+	
+} // end of class Main
+
+
+class Someclass
+{
+	static int 1variable;
+	/*Adds two numbers*/
+	static int someFunction(int x, int y)
+	{
+		return (x+y);
+	}
+}

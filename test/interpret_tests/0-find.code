@@ -1,0 +1,29 @@
+/*Builtins test, everything should be ok and pass correctly. */
+
+class Main
+{
+	static void run()
+	{
+		/*Find*/
+		String str4 = "What a beautiful weather!";
+		int position = ifj16.find(str4, "a b");
+		if (position != 5) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+		}
+		position = ifj16.find(str4, "");
+		if (position != 0) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+		}
+		position = ifj16.find(str4, "xyz");
+		if (position >= 0) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");	
+		}
+		String str5 = "a";
+		position = ifj16.find(str4, str5);
+		if (position != 2) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+		}
+		ifj16.print("Success!\n");
+	} // end of static void run()
+	
+} // end of class Main

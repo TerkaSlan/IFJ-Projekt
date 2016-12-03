@@ -1,0 +1,21 @@
+/*Builtins test, everything should be ok and pass correctly. */
+
+class Main
+{
+	static void run()
+	{
+		/*Compare*/
+		String str = "This is some pretty cool text.";
+		String str2 = "This is some pretty cool text.";
+		String str3 = "This is some pretty cool text";
+		int cmpResult = ifj16.compare(str, str2);
+		int cmpResult2 = ifj16.compare(str, str3);
+		if (cmpResult != 0) {
+			ifj16.print("[FAIL]: Compare didn't work as expected.\n");
+			return;
+		} else {
+			ifj16.print("Success!\n");
+		}
+	} // end of static void run()
+	
+} // end of class Main
