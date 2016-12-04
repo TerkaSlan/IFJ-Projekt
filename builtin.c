@@ -13,7 +13,7 @@ eError substr(const dtStr *s, int32_t beginIndex, int32_t length, dtStrPtr *subS
 		printError(ERR_INTERN, "In substr: Parameter or its member is NULL\n");
 		return ERR_INTERN;
 	}
-	
+
 	if (beginIndex < 0) {
 		printError(ERR_OTHER, "In substr: Begin index is below zero\n");
 		return ERR_OTHER;
@@ -46,8 +46,8 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 	switch (symbol->Type) {
 		case eINT:
 		case eDOUBLE:
-			
-			c = getchar();			
+
+			c = getchar();
 
 			if ( isspace(c) || c == EOF || c == '\n') {
 				if (c != EOF && c != '\n') {
@@ -77,7 +77,10 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 
 			char * ptr;
 			if (symbol->Type == eINT) {
-				data->Integer = (int32_t)strtol(tmpStr->str, &ptr, 10);
+				long tempLong = strtol(tmpStr->str, &ptr, 10);
+				if (tempLong > INT32_MAX || *ptr != '\0')
+			    return ERR_RUN_INPUT;
+				data->Integer = (int32_t)tempLong;	
 			} else {
 				data->Double = strtod(tmpStr->str, &ptr);
 			}
@@ -86,7 +89,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				if (symbol->Type == eINT) {
 					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
 				} else {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");				
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");
 				}
 				if (c != EOF && c != '\n') {
 					do {
@@ -107,7 +110,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 			}
 			while ((c = getchar()) != EOF && c != '\n') {
 				if (c == '\\') {
-					c = getchar();					 
+					c = getchar();
 					switch (c) {
 						case 'n': {
 							if (strAddChar(data->String, '\n') == STR_ERROR) {
@@ -168,7 +171,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 									printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequences\n");
 									return ERR_RUN_INPUT;
 								}
-							}							
+							}
 							else {
 								printError(ERR_RUN_INPUT, "In readString: Unexpected escape sequences\n");
 								return ERR_RUN_INPUT;

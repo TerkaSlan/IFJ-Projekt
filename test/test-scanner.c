@@ -322,9 +322,6 @@ retval = getToken(token);
 SHOULD_EQUAL("\n--- -> -", token->type, TT_minus);
 cleanToken(&token);
 retval = getToken(token);
-SHOULD_EQUAL("\n9aaaa not a valid combination", retval, ERR_LEX);
-cleanToken(&token);
-retval = getToken(token);
 SHOULD_EQUAL("\n EOF", retval, ERR_OK);
 
 strFree(string);

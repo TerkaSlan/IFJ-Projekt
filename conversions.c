@@ -18,6 +18,7 @@
 #include <math.h> // fabs()
 #include <stdio.h> // sprintf()
 #include "conversions.h"
+#include "builtin.h"
 
 typedef enum {
   DSStart,
@@ -38,6 +39,29 @@ do {                                                                    \
     if (string != NULL)   strFree(string);                              \
     return NULL;                                                        \
 } while (0)
+
+eError convertHexToDecimal(char *hexString, int32_t hexLen, int32_t *decimalNumber){
+  int32_t dotPresent = 0;
+  for(int32_t i = hexLen-1; i >= 0 ; i--){
+    // Hack: I need to adjust 2nd arg in pow if dot is present so that i won't fuck up my calculations
+    if (hexString[i] == '.'){
+      dotPresent = 1;
+      continue;
+    }
+    if (isdigit(hexString[i]) || ((hexString[i] >= 'A') && (hexString[i] <= 'F'))){
+      if(isdigit(hexString[i]))
+        *decimalNumber += (hexString[i] - '0') * pow(16, hexLen - i - dotPresent - 1);
+      else{
+        // 'A' is 65 in ASCII table, getting 10 out of it this way, similar for B, ..., F
+        *decimalNumber += (hexString[i] - 55) * pow(16, hexLen - i - dotPresent - 1);
+      }
+    }
+    else{
+      return ERR_INTERN;
+    }
+  }
+  return ERR_OK;
+}
 
 int32_t octalToInt(dtStr *octalString){
   char *octString;
@@ -77,23 +101,44 @@ int32_t binaryToInt(const dtStr *binaryString) {
 }
 
 int32_t hexToInt(const dtStr *hexadecimalString) {
-  char* hexString = &(hexadecimalString->str[2]);
-  int32_t hexLen = hexadecimalString->uiLength - 2;
   int32_t decimalNumber = 0;
-  for(int32_t i = hexLen-1; i >= 0 ; i--){
-    if (isdigit(hexString[i]) || ((hexString[i] >= 'A') && (hexString[i] <= 'F'))){
-      if(isdigit(hexString[i]))
-        decimalNumber += (hexString[i] - '0') * pow(16, hexLen - i - 1);
-      else{
-        // 'A' is 65 in ASCII table, getting 10 out of it this way, similar for B, ..., F
-        decimalNumber += (hexString[i] - 55) * pow(16, hexLen - i - 1);
-      }
-    }
-    else{
-      return INT_CONVERSION_ERROR;
-    }
-  }
+  if (convertHexToDecimal(&(hexadecimalString->str[2]), hexadecimalString->uiLength - 2, &decimalNumber) == ERR_INTERN)
+    return INT_CONVERSION_ERROR;
   return decimalNumber;
+}
+
+double hexToDouble(dtStr *hexDoubleString){
+  // 0xFF.FFp-1 je 65535 / 16^2 * 2^(-1)
+  int32_t p_position = strCharPos(hexDoubleString, 'p') == (-1) ? strCharPos(hexDoubleString, 'P') : strCharPos(hexDoubleString, 'p');
+  dtStrPtr upToExponentPart;
+  if(substr(hexDoubleString, 2, p_position - 2, &upToExponentPart) == ERR_INTERN){
+    strFree(upToExponentPart);
+    return DOUBLE_CONVERSION_ERROR;
+  }
+  int32_t decimalNumber = 0;
+  int32_t dot_position = strCharPos(hexDoubleString, '.');
+  if (convertHexToDecimal(&(upToExponentPart->str[0]), upToExponentPart->uiLength, &decimalNumber) == ERR_INTERN){
+    strFree(upToExponentPart);
+    return DOUBLE_CONVERSION_ERROR;
+  }
+  int32_t fromDotToP;
+  fromDotToP = (dot_position == (-1)) ? 0 : p_position - dot_position - 1;
+  dtStrPtr exponentString;
+  int32_t exponent = 0 ;
+  if(substr(hexDoubleString, p_position + 1, hexDoubleString->uiLength - p_position - 1, &exponentString) == ERR_INTERN){
+    strFree(exponentString);
+    strFree(upToExponentPart);
+    return DOUBLE_CONVERSION_ERROR;
+  }
+  if ((exponent = stringToInt(exponentString)) == INT_CONVERSION_ERROR){
+    strFree(exponentString);
+    strFree(upToExponentPart);
+    return DOUBLE_CONVERSION_ERROR;
+  }
+  double result = (decimalNumber/pow(16, fromDotToP)) * pow(2, exponent);
+  strFree(exponentString);
+  strFree(upToExponentPart);
+  return result;
 }
 
 int32_t stringToInt(const dtStr *string) {
@@ -138,7 +183,12 @@ dtStrPtr doubleToString(double number) {
   }
 }
 
-double stringToDouble(const dtStr *string) {
+double stringToDouble(dtStr *string) {
+  if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1 && (strCharPos(string, 'p') != (-1) || strCharPos(string, 'P') != (-1)))
+    return hexToDouble(string);
+  else{
+    return DOUBLE_CONVERSION_ERROR;
+  }
   uint8_t convertState = DSStart;
   for (uint32_t counter = 0; counter <= string->uiLength; counter++){
     int8_t iCurrentSymbol = string->str[counter];

@@ -39,7 +39,7 @@ int32_t stringToInt(const dtStr *string);
 * @param    string    String that'll be converted
 * @return   Converted double in case of success, DOUBLE_CONVERSION_ERROR in case of failure
 */
-double stringToDouble(const dtStr *string);
+double stringToDouble(dtStr *string);
 
 /**
 * Determines whether 2 doubles are equal
@@ -70,6 +70,12 @@ int32_t binaryToInt(const dtStr *binaryString);
 */
 int32_t hexToInt(const dtStr *hexadecimalString);
 
+/**
+* Converts hexadecimal number stored as a dtStr to double
+* @param    hexDoubleString   String containing the hexadecimal number to be converted
+* @return   Converted double
+*/
+double hexToDouble(dtStr *hexDoubleString);
 /**
 * Converts an integer to string (type dtStrPtr)
 * @param    number   An int to-be converted
@@ -115,5 +121,4 @@ bool *symbolToBool(const tSymbolPtr symbol, const tSymbolData *data, bool *conve
 * @return   Converted string on success, NULL on failure
 */
 dtStrPtr symbolToString(const tSymbolPtr symbol, const tSymbolData *data);
-
 #endif

@@ -340,7 +340,7 @@ eError getToken(Token *token) {
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
+				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || isalpha(iCurrentSymbol)) {
 					UNGETC(iCurrentSymbol, fSourceFile);
 					int32_t number;
 					if(cPrevSymbol == '_')
@@ -368,18 +368,19 @@ eError getToken(Token *token) {
 				break;
 			}
 			case SDouble: {
-				if(isdigit(iCurrentSymbol)) {
+				if(isdigit(iCurrentSymbol) || (iCurrentSymbol >= 'A' && iCurrentSymbol <= 'F' && (strCharPos(token->str, 'x') == 1))) {
 					state = SDoubleDecimalPart;
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else {
+				}
+				else {
 					handleLexError(token, ERR_LEX);
 				}
 				break;
 			}
 			case SDoubleDecimalPart: {
-				if(isdigit(iCurrentSymbol)) {
+				if(isdigit(iCurrentSymbol) || (iCurrentSymbol >= 'A' && iCurrentSymbol <= 'F' && (strCharPos(token->str, 'x') == 1))) {
 					state = SDoubleDecimalPart;
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
@@ -388,7 +389,7 @@ eError getToken(Token *token) {
 				// BONUS: BASE
 				} else if(iCurrentSymbol == '_') {
 					cPrevSymbol = iCurrentSymbol;
-				} else if(iCurrentSymbol == 'e' || iCurrentSymbol == 'E') {
+				} else if(iCurrentSymbol == 'e' || iCurrentSymbol == 'E' || iCurrentSymbol == 'p' || iCurrentSymbol == 'P') {
 					if(cPrevSymbol == '_')
 						handleLexError(token, ERR_LEX);
 					state = SDoubleExponent;
@@ -719,7 +720,7 @@ eError getToken(Token *token) {
 						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 							handleLexError(token, iCurrentSymbol);
 						}
-					} else if((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E')) {
+					} else if((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E' || iCurrentSymbol == 'p' || iCurrentSymbol == 'P')) {
 						state = SDoubleExponent;
 						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 							handleLexError(token, ERR_INTERN);
@@ -762,7 +763,7 @@ eError getToken(Token *token) {
 					if(iCurrentSymbol == '+') {
 						token->type = TT_increment;
 						return ERR_OK;
-						}	else if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
+					}	else if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || iCurrentSymbol == '\"'){
 							UNGETC(iCurrentSymbol, fSourceFile);
 							token->type = TT_plus;
 							return ERR_OK;
