@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# FILES="`pwd`/test/interpret_tests/*/*.code"
+
 FILES="tests/*.code"
 i=0
 j=0
@@ -24,7 +24,6 @@ do
 			echo $FILENAME
 			echo "Differences in output:"
 			echo $DIFF
-			# cat $FILENAME.out
 			i=$((i+1))
 		else
 			echo "SUCCESS"
