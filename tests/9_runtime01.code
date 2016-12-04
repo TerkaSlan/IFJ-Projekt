@@ -1,0 +1,10 @@
+/*Division by zero*/
+
+class Main {
+
+	static void run() {
+		int zero = 0;
+		int result;
+		result = 10 / zero;
+	}
+}

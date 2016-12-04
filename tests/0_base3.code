@@ -1,0 +1,9 @@
+/*Test on BOOLOP extension - double in hexa*/
+
+class Main {
+
+	static void run() {
+		double d = 255.255e-0;
+		ifj16.print(d + "\n");
+	}
+}

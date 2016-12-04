@@ -1,0 +1,14 @@
+/*Test on BASE extension - int in hex octal and binary number system*/
+
+class Main {
+
+	static void run() {
+		int b = 0b100;
+		int x = 0xA;
+		int o = 017;
+		if (b == 4)
+			if (x == 10)
+				if (o == 15)
+					ifj16.print("Success!\n");
+	}
+}

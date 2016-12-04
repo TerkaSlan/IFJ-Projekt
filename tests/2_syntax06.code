@@ -1,0 +1,8 @@
+/*Should be synax error becasue of input parameters to the function run*/
+
+class Main {
+
+	static void run(int a) {
+		
+	}
+}

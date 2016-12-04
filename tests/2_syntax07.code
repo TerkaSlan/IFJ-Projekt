@@ -1,0 +1,9 @@
+/*Should be error becasue run is returning int*/
+
+class Main {
+
+	static int run() {
+		int a = 1;
+		return a;		
+	}
+}

@@ -1,0 +1,15 @@
+/*Long while test*/
+
+class Main {
+	static void run() {
+		
+		int y = 0;
+        int a = 0;
+        
+        while (y != 10000000) {
+            a = a + 5;
+            y = y + 1;
+        }
+        ifj16.print("Success!\n");
+	}
+}

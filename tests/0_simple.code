@@ -1,0 +1,13 @@
+/*Test on SIMPLE extension in if statements*/
+
+class Main {
+
+	static void run() {
+		int a = 0;
+		if (1 < 2)
+			a = 10;
+		if (a == 0)
+			ifj16.print("FAIL!\n");
+		ifj16.print("Success!\n");
+	}
+}

@@ -1,0 +1,8 @@
+/*Should be error becasue of void variable*/
+
+class Main {
+
+	static void run() {
+		void i;
+	}
+}

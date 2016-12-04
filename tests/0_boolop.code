@@ -1,0 +1,9 @@
+/*Test on BOOLOP and SIMPLE extension - while(true)*/
+
+class Main {
+
+	static void run() {
+		while(true)
+			return;
+	}
+}

@@ -1,0 +1,8 @@
+/*Should be synax error becasue of void int run()*/
+
+class Main {
+	
+	static void int run() {
+		
+	}
+}

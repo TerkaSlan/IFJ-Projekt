@@ -1,0 +1,8 @@
+/*Should be error becasue of assigment string to int*/
+
+class Main {
+
+	static void run() {
+		int i = "adw";
+	}
+}

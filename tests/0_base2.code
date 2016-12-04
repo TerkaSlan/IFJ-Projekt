@@ -1,0 +1,9 @@
+/*Test on BOOLOP extension - use "_" in integer*/
+
+class Main {
+
+	static void run() {
+		int i = 999_999;
+		ifj16.print(i + "\n");
+	}
+}

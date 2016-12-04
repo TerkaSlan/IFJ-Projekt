@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # FILES="`pwd`/test/interpret_tests/*/*.code"
-FILES="*.code"
+FILES="tests/*.code"
 i=0
 j=0
 
-if [ ! -d "log" ]; then
-  mkdir log
+if [ ! -d "tests/log" ]; then
+  mkdir tests/log
 fi
 
 for f in $FILES
@@ -13,10 +13,10 @@ do
 	echo "======================================="
 	FILENAME=`echo $f | sed -E 's/^.*\///'`
 	RETVAL=`echo $FILENAME | cut -c 1`
-	./../../interpret $f > log/$FILENAME.out 2> log/$FILENAME.stderr
+	./interpret $f > tests/log/$FILENAME.out 2> tests/log/$FILENAME.stderr
 	REALRETVAL=`echo $?`
 	if [ "$RETVAL" -eq "$REALRETVAL" ];then
-		DIFF=`diff log/$FILENAME.out $FILENAME.out`
+		DIFF=`diff tests/log/$FILENAME.out tests/$FILENAME.out`
 		if [ "$DIFF" != "" ]
 			then
 			echo "FAIL"

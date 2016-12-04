@@ -1,0 +1,16 @@
+/*FUNEXP test*/
+
+class Main {
+
+	static void run() {
+		int i = 0;
+		while (i < 10) {
+			i = fun(i);
+			ifj16.print(i + "\n");
+		}
+	}
+
+	static int fun(int a) {
+		return a + 1;
+	}
+}

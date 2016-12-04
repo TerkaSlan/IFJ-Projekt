@@ -1,0 +1,8 @@
+/*Should be synax error becasue of undeclared return type of run*/
+
+class Main {
+
+	static run() {
+		
+	}
+}
