@@ -1,0 +1,25 @@
+/*Builtins test, everything should be ok and pass correctly. */
+
+class Main
+{
+	static void run()
+	{
+		/*Sort*/
+		String str6 = "abcdefghijklmnopqrstuvwxyz";
+		String str7 = "ofvimgwknbhjxclsrteqyapuzd";
+		String str8 = ifj16.sort(str7);
+		int cmpResult = ifj16.compare(str6,str8);
+		if (cmpResult != 0) {
+			ifj16.print("[FAIL]: Sort didn't work as expected.\n");
+			return;
+		}
+		str7 = "";
+		cmpResult = ifj16.compare(str7,"");
+		if (cmpResult != 0) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
+		}
+		ifj16.print("Success!\n");
+	} // end of static void run()
+	
+} // end of class Main

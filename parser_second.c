@@ -473,7 +473,7 @@ eError stmt_2() {
 					//stmt_2 -> if ( EXPR ) stmt_2 ELSE
 				case KTT_if: {
 					//next token have to be left round bracket
-					getNewToken(token, errCode);
+					getNewToken(token, errCode);    //(
 
 					//call expressions parsing - parse condition
 					errCode = precedenceParsing(NULL);
@@ -495,7 +495,7 @@ eError stmt_2() {
 
 
 					//read next token and call stmt_2 processing
-					getNewToken(token, errCode);
+					getNewToken(token, errCode); //{ or statement
 					errCode = stmt_2();
 					CHECK_ERRCODE();
 
@@ -503,7 +503,6 @@ eError stmt_2() {
 
 					uint32_t indexFalse = instrListGetNextInsertedIndex(instructionList);
 
-					getNewToken(token, errCode); //else check
 					if(token->type == TT_keyword && token->keywordType == KTT_else) {
 
 						//insert jump over false block, dst is to be refined later
@@ -519,7 +518,6 @@ eError stmt_2() {
 						tInstructionPtr igoto = instrListGetInstruction(instructionList, indexGOTO);
 						igoto->dst = (void *) (intptr_t) instrListGetNextInsertedIndex(instructionList);
 
-						getNewToken(token, errCode); // next after }
 					}
 
 					//Refine where is it that we should jump on false condition
@@ -542,9 +540,6 @@ eError stmt_2() {
 					errCode = precedenceParsing(NULL);
 					CHECK_ERRCODE();
 
-					//{
-					getNewToken(token, errCode);
-
 					if(!result) {
 						EXIT(ERR_SYNTAX, "Expression expected.");
 						CHECK_ERRCODE();
@@ -560,10 +555,10 @@ eError stmt_2() {
 					AIwO(iIFNGOTO, NULL, result, NULL, indexIF);
 
 					//start while body
+					getNewToken(token, errCode); //{ or statement
 					errCode = stmt_2();
 					CHECK_ERRCODE();
 
-					getNewToken(token, errCode); // next after }
 
 					//add jump back to the condition
 					uint32_t whileEndBodyIndex;

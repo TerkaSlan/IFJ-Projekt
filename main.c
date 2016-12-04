@@ -136,6 +136,7 @@ int main(int argc, char const *argv[]) {
 	errCode = generateInstructions();
 	CHECK_ERRCODE(lParserFailed);
 
+	//instrListPrint(instructionList);
 
 	errCode = Interpret(globalScopeTable, preInstructionList);
 	CHECK_ERRCODE(lParserFailed);
