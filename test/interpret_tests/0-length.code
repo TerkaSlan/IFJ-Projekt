@@ -1,3 +1,4 @@
+/*Builtin length() test, everything should be ok and pass correctly*/
 class Main
 {
 	static void run()

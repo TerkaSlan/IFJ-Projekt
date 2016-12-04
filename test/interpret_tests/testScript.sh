@@ -3,6 +3,11 @@
 FILES="*.code"
 i=0
 j=0
+
+if [ ! -d "log" ]; then
+  mkdir log
+fi
+
 for f in $FILES
 do
 	echo "======================================="
@@ -18,7 +23,7 @@ do
 			head -1 $f
 			echo $FILENAME
 			echo "Differences in output:"
-			# echo $DIFF
+			echo $DIFF
 			# cat $FILENAME.out
 			i=$((i+1))
 		else
@@ -26,30 +31,13 @@ do
 			echo $FILENAME
 			j=$((j+1))
 		fi
-
-
 	else
 		echo "FAIL"
 		head -1 $f
 		echo $FILENAME
-		echo "Our retval: `echo $?`"
+		echo "Our retval: `echo $REALRETVAL`"
 		i=$((i+1))
 	fi	
-
-	# ./../../interpret $f >> $f.out 2>> $f.stderr
-	# REALRETVAL=0
-	# REALRETVAL=`echo $?`
-	# echo "---------------------------"
-
-	# if [ "$RETVAL" -eq "$REALRETVAL" ];then
-	# 	echo "SUCCESS"
-	# 	echo $f | sed -E 's/^.*\///'
-	# else
-	# 	echo "FAIL"
-	# 	head -1 $f
-	# 	echo $f | sed -E 's/^.*\///'
-	# 	echo "Our retval: `echo $?`"
-	# fi
 done
 
 echo "=================================================="

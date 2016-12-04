@@ -1,6 +1,6 @@
 At first, we will print this easy line.
 And second line, also with some variable. E.g. a = 15
-Third line - printing b variable: 3.14159265358979
-And now more concat. Still in 1 print. Still the same print, concatenation of string and double 153.14159265358979
+Third line - printing b variable: 3.14159
+And now more concat. Still in 1 print. Still the same print, concatenation of string and double 153.14159
 Also trying escape sequences. Tab 	, new line 
 , backslash \ and quotation mark ". And now some nice chars, for example \100: @
