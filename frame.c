@@ -28,7 +28,7 @@ int32_t fstackInit(tFrameStack *stack) {
 	stack->ArgumentIndex  = 0;
 	stack->ReturnData     = (const tSymbolData) {{0}};
 	stack->ReturnType     = eNULL;
-	stack->Prepared       = (const tFrame){NULL, 0, 0, 0};
+	stack->Prepared       = (const tFrame){NULL, 0, 0, 0, eNULL};
 	if((stack->FrameArray = calloc(STACK_DEFAULT_SIZE, sizeof(tFrame))) == NULL)
 		return 0;
 
@@ -47,21 +47,39 @@ void fstackDeinit(tFrameStack *stack) {
 					   stack->FrameArray[i].symbolArray[j].Data.String != NULL)
 						strFree(stack->FrameArray[i].symbolArray[j].Data.String);
 				}
+
+				//free frame
+				free(stack->FrameArray[i].symbolArray);
+				stack->FrameArray[i].symbolArray = NULL;
 			}
-			//free frame
-			free(stack->FrameArray[i].symbolArray);
-
-
 		}
-
-		//if string in return val, free aswell
-		if(stack->ReturnType == eSTRING && stack->ReturnData.String != NULL)
-			strFree(stack->ReturnData.String);
 
 		free(stack->FrameArray);
 		stack->FrameArray = NULL;
 	}
 
+	//if string in return val, free aswell
+	if(stack->ReturnType == eSTRING && stack->ReturnData.String != NULL)
+	{
+		strFree(stack->ReturnData.String);
+		stack->ReturnData.String = NULL;
+	}
+
+	//if exit on error before prepared frame was pushed, clear it
+	if(stack->Prepared.symbolArray) {
+		//check for strings in frame
+		for(uint32_t j = 0; j < stack->Prepared.Size; j++)
+		{
+			if(stack->Prepared.symbolArray[j].Type == eSTRING &&
+			   stack->Prepared.symbolArray[j].Data.String != NULL)
+				strFree(stack->Prepared.symbolArray[j].Data.String);
+		}
+
+		//free prepared frame
+		free(stack->Prepared.symbolArray);
+		stack->Prepared.symbolArray = NULL;
+		stack->Prepared.Size = 0;
+	}
 
 	stack->Top  = -1;
 	stack->Size = 0;

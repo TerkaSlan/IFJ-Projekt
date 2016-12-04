@@ -1,7 +1,9 @@
 #IFJ Project 2016
 CC=gcc
-CFLAGS=-std=c99 -O2 -Wall -Wextra -g
+CFLAGS=-std=c99 -O2 -Wall -Wextra -DNDEBUG
 LIB=-lm
+
+.PHONY: test
 
 SRC_C_FILES=builtin.c constants.c conversions.c error.c frame.c ial.c instruction.c interpret.c str.c scanner.c token.c expr.c parser.c parser_second.c
 SRC_HEADER_FILES=$(SRC_C_FILES:.c=.h)
@@ -14,7 +16,10 @@ all: interpret
 interpret: $(SRC_OBJ_FILES) main.o $(SRC_HEADER_FILES)
 	$(CC) $(CFLAGS) -o interpret main.o $(SRC_OBJ_FILES) $(LIB)
 
-test: $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) $(SRC_HEADER_FILES) $(TEST_HEADER_FILES)
+test:
+	test/interpret_tests/testScript.sh
+	
+test_module: $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) $(SRC_HEADER_FILES) $(TEST_HEADER_FILES)
 	$(CC) $(CFLAGS) -o ./test/test $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) $(LIB)
 
 main.o: main.c
@@ -24,4 +29,4 @@ $(SRC_OBJ_FILES): $(SRC_C_FILES) $(SRC_HEADER_FILES)
 $(TEST_OBJ_FILES): $(TEST_C_FILES) test/test.h
 
 clean:
-	rm -f interpret ./test/test *.o ./test/*.o
+	rm -f interpret ./test/test *.o ./test/*.o ./test/interpret_tests/log/*
