@@ -3,7 +3,7 @@
 class Main {
 
 	static void run() {
-		double d = 255.255e-0;
+		double d = 0xFF.FFp-1;
 		ifj16.print(d + "\n");
 	}
 }

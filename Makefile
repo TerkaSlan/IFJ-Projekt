@@ -17,6 +17,7 @@ interpret: $(SRC_OBJ_FILES) main.o $(SRC_HEADER_FILES)
 	$(CC) $(CFLAGS) -o interpret main.o $(SRC_OBJ_FILES) $(LIB)
 
 test:
+	chmod +x tests/test.sh
 	./tests/test.sh
 	
 test_module: $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) $(SRC_HEADER_FILES) $(TEST_HEADER_FILES)
