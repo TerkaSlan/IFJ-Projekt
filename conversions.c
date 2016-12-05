@@ -184,10 +184,10 @@ dtStrPtr doubleToString(double number) {
 }
 
 double stringToDouble(dtStr *string) {
-  if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1 && (strCharPos(string, 'p') != (-1) || strCharPos(string, 'P') != (-1)))
+  if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1){
+    if (strCharPos(string, 'p') != (-1) && strCharPos(string, 'P') != (-1))
+      return DOUBLE_CONVERSION_ERROR;
     return hexToDouble(string);
-  else{
-    return DOUBLE_CONVERSION_ERROR;
   }
   uint8_t convertState = DSStart;
   for (uint32_t counter = 0; counter <= string->uiLength; counter++){
