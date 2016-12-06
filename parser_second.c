@@ -85,6 +85,8 @@ do{\
     foundSymbol = findSymbol(symbolName);\
     /*The only time different types are allowed is implicit conversion when dst is double and src is int.
 	  Interpret deals with the conversion*/        \
+    if (foundSymbol == NULL)\
+      {EXIT(ERR_SYNTAX, "Identifier not defined."); return ERR_SYNTAX;}\
     if (result->Type == foundSymbol->Type || (result->Type == eINT && foundSymbol->Type  == eDOUBLE)){\
         AI(iMOV, foundSymbol, result, NULL);\
     }\

@@ -330,16 +330,19 @@ eError getToken(Token *token) {
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_LEX);
 					}
+					cPrevSymbol = iCurrentSymbol;
 				} else if((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E')) {
 					state = SDoubleExponent;
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
-				} else if(iCurrentSymbol == 'p' && (strCharPos(token->str, 'x') == 1)) {
+					cPrevSymbol = iCurrentSymbol;
+				} else if((iCurrentSymbol == 'p' || iCurrentSymbol == 'P') && (strCharPos(token->str, 'x') == 1)) {
 					state = SDoubleExponent;
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
+					cPrevSymbol = iCurrentSymbol;
 				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || isalpha(iCurrentSymbol)) {
 					UNGETC(iCurrentSymbol, fSourceFile);
 					int32_t number;
@@ -438,7 +441,7 @@ eError getToken(Token *token) {
 					}
 					cPrevSymbol = iCurrentSymbol;
 				} else if(iCurrentSymbol == '_')
-					cPrevSymbol = iCurrentSymbol;
+						cPrevSymbol = iCurrentSymbol;
 				else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
 					UNGETC(iCurrentSymbol, fSourceFile);
 					if(cPrevSymbol == '_')
