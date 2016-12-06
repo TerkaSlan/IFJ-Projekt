@@ -50,11 +50,11 @@ _Week 5 [2.11 - 8.11]_
 
   #16 Elaborate conversions needed in later phases of interpretation - **Terka** :white_check_mark:
 
-  #17 [LOW] Add support for doubles represented in other than decimal bases - **Terka** :white_medium_square:
+  #17 [LOW] Add support for doubles represented in other than decimal bases - **Terka** :white_check_mark:
 
 _Week 6 [9.11 - 15.11]_
 
-  #18 [HIGH] Expressions module implementation - **Katka** :white_medium_square:
+  #18 [HIGH] Expressions module implementation - **Katka** :white_check_mark:
 
 _Week 7 [16.11 - 22.11]_
 
@@ -72,9 +72,9 @@ _Week 7 [16.11 - 22.11]_
 
   #25 [LOW] Solve leaks originating at interpret module for 2. submission - **Michal** :white_check_mark:
 
-  #26 [LOW] Add additinal tests to cover all instructions for 2. submission - **Michal** :white_medium_square:
+  #26 [LOW] Add additinal tests to cover all instructions for 2. submission - **Michal** :white_check_mark:
 
-  #27 [LOW] Create as much general tests as possible for 2. submission - **ALL** :white_medium_square:
+  #27 [LOW] Create as much general tests as possible for 2. submission - **ALL** :white_check_mark:
 
   #28 [HIGH] Adjust Parser and Interpret modules to deal with the need of initialization of static variables before runtime - **Terka, Michal** :white_check_mark:
 
@@ -86,11 +86,11 @@ _Week 8 [23.11 - 29.11]_
 
 _Week 9 [30.11 - 6.12]_
 
-  Finish parser implementation - **Terka**, **Michal**, **Katka** :white_medium_square:
+  Finish parser implementation - **Terka**, **Michal**, **Katka** :white_check_mark:
 
   Fix general bugs - **ALL** :white_medium_square:
 
-  Adjust Makefile for 2nd submission (/tests directory) - **Michal** :white_medium_square:
+  Adjust Makefile for 2nd submission (/tests directory) - **Michal** :white_check_mark:
 
   Start to work on documentation - **Marek, Jakub** :white_medium_square:
 
