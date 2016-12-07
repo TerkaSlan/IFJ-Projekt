@@ -100,8 +100,10 @@ int32_t binaryToInt(const dtStr *binaryString) {
   return decimalNumber;
 }
 
-int32_t hexToInt(const dtStr *hexadecimalString) {
+int32_t hexToInt(dtStr *hexadecimalString) {
   int32_t decimalNumber = 0;
+  if (strCharPos(hexadecimalString, '.') != (-1))
+    return INT_CONVERSION_ERROR;
   if (convertHexToDecimal(&(hexadecimalString->str[2]), hexadecimalString->uiLength - 2, &decimalNumber) == ERR_INTERN)
     return INT_CONVERSION_ERROR;
   return decimalNumber;
@@ -141,7 +143,13 @@ double hexToDouble(dtStr *hexDoubleString){
   return result;
 }
 
-int32_t stringToInt(const dtStr *string) {
+int32_t stringToInt(dtStr *string) {
+  if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1)
+    return hexToInt(string);
+  if (strCharPos(string, '0') == 0 && strCharPos(string, 'b') == 1)
+    return binaryToInt(string);
+  if (strCharPos(string, '0') == 0 && string->uiLength > 1)
+    return octalToInt(string);
   const char *stringData = string->str;
   while (isspace(*stringData))
       stringData++;
@@ -185,7 +193,7 @@ dtStrPtr doubleToString(double number) {
 
 double stringToDouble(dtStr *string) {
   if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1){
-    if (strCharPos(string, 'p') != (-1) && strCharPos(string, 'P') != (-1))
+    if (strCharPos(string, 'p') == (-1) && strCharPos(string, 'P') == (-1))
       return DOUBLE_CONVERSION_ERROR;
     return hexToDouble(string);
   }

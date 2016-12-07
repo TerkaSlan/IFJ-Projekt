@@ -1,5 +1,6 @@
 
 #include "builtin.h"
+#include "conversions.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -75,29 +76,17 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				}
 			}
 
-			char * ptr;
 			if (symbol->Type == eINT) {
-				long tempLong = strtol(tmpStr->str, &ptr, 10);
-				if (tempLong > INT32_MAX || *ptr != '\0')
-			    return ERR_RUN_INPUT;
-				data->Integer = (int32_t)tempLong;	
+				data->Integer = stringToInt(tmpStr);
+				if ((data->Integer = stringToInt(tmpStr)) == INT_CONVERSION_ERROR){
+					strFree(tmpStr);
+					return ERR_SEM_TYPE;
+				}
 			} else {
-				data->Double = strtod(tmpStr->str, &ptr);
-			}
-
-			if (*ptr != '\0' || (c != EOF && c != '\n')) {
-				if (symbol->Type == eINT) {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
-				} else {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");
+				if (fequal((data->Double = stringToDouble(tmpStr)), DOUBLE_CONVERSION_ERROR)){
+					strFree(tmpStr);
+					return ERR_SEM_TYPE;
 				}
-				if (c != EOF && c != '\n') {
-					do {
-						c = getchar();
-					} while (c != EOF && c != '\n');
-				}
-				strFree(tmpStr);
-				return ERR_RUN_INPUT;
 			}
 
 			strFree(tmpStr);

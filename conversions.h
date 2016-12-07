@@ -35,7 +35,7 @@
 * @param    string    String that'll be converted
 * @return   Converted integer in case of success, INT_CONVERSION_ERROR in case of failure
 */
-int32_t stringToInt(const dtStr *string);
+int32_t stringToInt(dtStr *string);
 
 /**
 * Converts incoming string to double
@@ -71,7 +71,7 @@ int32_t binaryToInt(const dtStr *binaryString);
 * @param    hexadecimalString   String containing the hexadecimal number to be converted
 * @return   Converted int
 */
-int32_t hexToInt(const dtStr *hexadecimalString);
+int32_t hexToInt(dtStr *hexadecimalString);
 
 /**
 * Converts hexadecimal number stored as a dtStr to double
