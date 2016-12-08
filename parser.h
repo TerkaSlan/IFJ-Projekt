@@ -21,6 +21,51 @@
 #include "error.h"
 #include <stdint.h>
 
+/*
+*  Converts between token type and symbol type
+*/
+#define TTtoeSymbolType(ktt, eSymbol)\
+do{                                  \
+  switch (ktt){                      \
+    case KTT_int:                    \
+    eSymbol = eINT; break;         \
+    case KTT_double:                 \
+    eSymbol = eDOUBLE; break;      \
+    case KTT_boolean:                \
+    eSymbol = eBOOL; break;        \
+    case KTT_String:                 \
+    eSymbol = eSTRING; break;      \
+    default:                         \
+    eSymbol = eNULL;               \
+  }                                  \
+}while(0)
+
+#define createFunctionVariable(type, defined, name, isArgument)                                        \
+do{                                                                                                     \
+ tSymbolPtr currentVariable = symbolNew();                                                             \
+ tSymbolPtr addedVar;\
+ if (currentVariable == NULL) {INTERN(); break;}                                                  \
+ currentVariable->Type = type;																                                          \
+ currentVariable->Const = false;																                                        \
+ currentVariable->Defined = defined;															                                      \
+ currentVariable->Name = name;                                                                        \
+ if((currentFunction != NULL && htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, name)) || (currentClass != NULL && (addedVar = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name)) != NULL && addedVar->Type == eFUNCTION))\
+   {EXIT(ERR_SEM, "Redefining symbol.\n"); symbolFree(currentVariable); name = NULL; break;  }			\
+                                       \
+ if ((addedVar = htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, false)) == NULL) \
+     {INTERN(); symbolFree(currentVariable); name = NULL; break;}\
+\
+ if (isArgument){                                                                                      \
+       if(!symbolFuncAddArgument(currentFunction, addedVar))\
+           {INTERN(); symbolFree(currentVariable); name = NULL; break;}\
+ }\
+\
+   symbolFree(currentVariable);\
+ name = NULL;\
+} while (0)
+
+#define INTERN() EXIT(ERR_INTERN, "Error allocating new space. Out of memory.\n")
+
 eError fillSymbolTable();
 eError skipFunctionCall(eError errCode);
 #endif
