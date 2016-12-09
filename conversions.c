@@ -154,7 +154,7 @@ int32_t stringToInt(dtStr *string) {
   while (isspace(*stringData))
       stringData++;
 
-  if (*stringData == '+')
+  if (*stringData == '+' || *stringData == '-')
     return INT_CONVERSION_ERROR;
   // checking char pointer if the conversion fails
   char *end;
@@ -197,6 +197,9 @@ double stringToDouble(dtStr *string) {
       return DOUBLE_CONVERSION_ERROR;
     return hexToDouble(string);
   }
+  if ( ! (strCharPos(string, '.') != (-1) || strCharPos(string, 'e') != (-1) || strCharPos(string, 'E') != (-1)))
+    return DOUBLE_CONVERSION_ERROR;
+
   uint8_t convertState = DSStart;
   for (uint32_t counter = 0; counter <= string->uiLength; counter++){
     int8_t iCurrentSymbol = string->str[counter];

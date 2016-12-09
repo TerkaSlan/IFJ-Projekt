@@ -56,7 +56,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 						c = getchar();
 					} while (c != EOF && c != '\n');
 				}
-				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
+				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double/integer)\n");
 				return ERR_RUN_INPUT;
 			}
 
@@ -80,13 +80,13 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				data->Integer = stringToInt(tmpStr);
 				if ((data->Integer = stringToInt(tmpStr)) == INT_CONVERSION_ERROR){
 					strFree(tmpStr);
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double/integer)\n");
 					return ERR_RUN_INPUT;
 				}
 			} else {
 				if (fequal((data->Double = stringToDouble(tmpStr)), DOUBLE_CONVERSION_ERROR)){
 					strFree(tmpStr);
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double/integer)\n");
 					return ERR_RUN_INPUT;
 				}
 			}
