@@ -241,23 +241,37 @@ double stringToDouble(dtStr *string) {
         else if (isdigit(iCurrentSymbol))
           ;
         else{
-          return strtod(string->str, NULL);
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
         }
         break;
       }
       case DSExponent: {
         if (iCurrentSymbol == '+')
           convertState = DSExponentSign;
-        else if (isdigit(iCurrentSymbol))
-          return strtod(string->str, NULL);
+        else if (isdigit(iCurrentSymbol)){
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
+        }
         else{
           return DOUBLE_CONVERSION_ERROR;
         }
         break;
       }
       case DSExponentSign: {
-        if (isdigit(iCurrentSymbol))
-          return strtod(string->str, NULL);
+        if (isdigit(iCurrentSymbol)){
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
+        }
         else{
           return DOUBLE_CONVERSION_ERROR;
         }
