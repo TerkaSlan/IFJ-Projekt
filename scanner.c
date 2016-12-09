@@ -99,7 +99,7 @@ KeywordTokenType getKeywordType(dtStr *string) {
 			break;
 		}
 		case 'd': {
-			if(strCmpCStr(string, "do") == 0 || strCmpCStr(string, "ifj16.do")) {
+			if(strCmpCStr(string, "do") == 0 || strCmpCStr(string, "ifj16.do") == 0) {
 				return KTT_do;
 			} else if(strCmpCStr(string, "double") == 0 || strCmpCStr(string, "ifj16.double") == 0) {
 				return KTT_double;
@@ -481,6 +481,7 @@ eError getToken(Token *token) {
 					}
 				} else if(iCurrentSymbol == '.') {
 					state = SFullId;
+					cPrevSymbol = iCurrentSymbol;
 					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
 						handleLexError(token, ERR_INTERN);
 					}
@@ -513,7 +514,7 @@ eError getToken(Token *token) {
 					}
 				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
 					// checks if char after '.' is a digit, if it is, fullId won't be valid
-					if(iCurrentSymbol == '.' || isdigit(token->str->str[strCharPos(token->str, '.') + 1]))
+					if(cPrevSymbol == '.' || isdigit(token->str->str[strCharPos(token->str, '.') + 1]))
 						handleLexError(token, ERR_LEX);
 
 					KeywordTokenType keywordType = getKeywordType(token->str);
@@ -528,6 +529,7 @@ eError getToken(Token *token) {
 				else{
 					handleLexError(token, ERR_LEX);
 				}
+				cPrevSymbol = 0;
 				break;
 			}
 			case SDivide: {
