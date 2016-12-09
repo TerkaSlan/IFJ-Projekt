@@ -68,7 +68,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				return ERR_INTERN;
 			}
 
-			for (; !isspace(c) && c < 128 && c != EOF && c != '\n'; c = getchar()) {
+			for (; c < 128 && c != EOF && c != '\n'; c = getchar()) {
 				if (strAddChar(tmpStr, c) == STR_ERROR) {
 					printError(ERR_INTERN, "In readData: Cannot add char to string.\n");
 					strFree(tmpStr);
@@ -80,12 +80,14 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				data->Integer = stringToInt(tmpStr);
 				if ((data->Integer = stringToInt(tmpStr)) == INT_CONVERSION_ERROR){
 					strFree(tmpStr);
-					return ERR_SEM_TYPE;
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
+					return ERR_RUN_INPUT;
 				}
 			} else {
 				if (fequal((data->Double = stringToDouble(tmpStr)), DOUBLE_CONVERSION_ERROR)){
 					strFree(tmpStr);
-					return ERR_SEM_TYPE;
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
+					return ERR_RUN_INPUT;
 				}
 			}
 

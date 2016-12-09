@@ -219,7 +219,11 @@ double stringToDouble(dtStr *string) {
         else if (iCurrentSymbol == 'e' || iCurrentSymbol == 'E')
           convertState = DSExponent;
         else{
-          return strtod(string->str, NULL);
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
         }
         break;
       }
