@@ -653,17 +653,6 @@ eError stmt() {
 			}
 			break;
 
-		case TT_increment:
-		case TT_decrement:
-			errCode = skipPrecedenceParsing(errCode);
-			CHECK_ERRCODE();
-			if(token->type != TT_semicolon) {
-				EXIT(ERR_SYNTAX, "; expected.\n");
-				return ERR_SYNTAX;
-			}
-			getNewToken(token, errCode);
-			break;
-
 		case TT_identifier:
 		case TT_fullIdentifier: {
 			//not LL case
@@ -671,7 +660,7 @@ eError stmt() {
 
 			getNewToken(token, errCode);
 
-			if (token->type == TT_assignment || token->type == TT_increment || token->type == TT_decrement) {
+			if (token->type == TT_assignment) {
 				errCode = skipPrecedenceParsing(errCode);
 				CHECK_ERRCODE();
 

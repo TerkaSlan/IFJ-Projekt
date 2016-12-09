@@ -80,85 +80,86 @@ void closeFile() {
 }
 
 KeywordTokenType getKeywordType(dtStr *string) {
-	switch(string->str[0]) {
+	char charToSwitchOn = strCharPos(string, '.') == (-1) ? string->str[0] : string->str[6];
+	switch(charToSwitchOn) {
 		case 'b': {
-			if(strCmpCStr(string, "boolean") == 0) {
+			if(strCmpCStr(string, "boolean") == 0 || strCmpCStr(string, "ifj16.boolean") == 0) {
 				return KTT_boolean;
-			} else if(strCmpCStr(string, "break") == 0) {
+			} else if(strCmpCStr(string, "break") == 0 || strCmpCStr(string, "ifj16.break") == 0) {
 				return KTT_break;
 			}
 			break;
 		}
 		case 'c': {
-			if(strCmpCStr(string, "class") == 0) {
+			if(strCmpCStr(string, "class") == 0 || strCmpCStr(string, "ifj16.class") == 0) {
 				return KTT_class;
-			} else if(strCmpCStr(string, "continue") == 0) {
+			} else if(strCmpCStr(string, "continue") == 0 || strCmpCStr(string, "ifj16.continue") == 0) {
 				return KTT_continue;
 			}
 			break;
 		}
 		case 'd': {
-			if(strCmpCStr(string, "do") == 0) {
+			if(strCmpCStr(string, "do") == 0 || strCmpCStr(string, "ifj16.do")) {
 				return KTT_do;
-			} else if(strCmpCStr(string, "double") == 0) {
+			} else if(strCmpCStr(string, "double") == 0 || strCmpCStr(string, "ifj16.double") == 0) {
 				return KTT_double;
 			}
 			break;
 		}
 		case 'e': {
-			if(strCmpCStr(string, "else") == 0) {
+			if((strCmpCStr(string, "else") == 0) || (strCmpCStr(string, "ifj16.else") == 0)) {
 				return KTT_else;
 			}
 			break;
 		}
 		case 'f': {
-			if(strCmpCStr(string, "false") == 0) {
+			if(strCmpCStr(string, "false") == 0 || strCmpCStr(string, "ifj16.false") == 0) {
 				return KTT_false;
-			} else if(strCmpCStr(string, "for") == 0) {
+			} else if(strCmpCStr(string, "for") == 0 || strCmpCStr(string, "ifj16.for") == 0) {
 				return KTT_for;
 			}
 			break;
 		}
 		case 'i': {
-			if(strCmpCStr(string, "if") == 0) {
+			if(strCmpCStr(string, "if") == 0 || strCmpCStr(string, "ifj16.if") == 0) {
 				return KTT_if;
-			} else if(strCmpCStr(string, "int") == 0) {
+			} else if(strCmpCStr(string, "int") == 0 || strCmpCStr(string, "ifj16.int") == 0) {
 				return KTT_int;
 			}
 			break;
 		}
 		case 'r': {
-			if(strCmpCStr(string, "return") == 0) {
+			if(strCmpCStr(string, "return") == 0 || strCmpCStr(string, "ifj16.return") == 0) {
 				return KTT_return;
 			}
 			break;
 		}
 		case 's': {
-			if(strCmpCStr(string, "static") == 0) {
+			if(strCmpCStr(string, "static") == 0 || strCmpCStr(string, "ifj16.static") == 0) {
 				return KTT_static;
 			}
 			break;
 		}
 		case 'S': {
-			if(strCmpCStr(string, "String") == 0) {
+			if(strCmpCStr(string, "String") == 0 || strCmpCStr(string, "ifj16.String") == 0) {
 				return KTT_String;
 			}
 			break;
 		}
 		case 't': {
-			if(strCmpCStr(string, "true") == 0) {
+			if(strCmpCStr(string, "true") == 0 || strCmpCStr(string, "ifj16.true") == 0) {
 				return KTT_true;
 			}
 			break;
 		}
 		case 'v': {
-			if(strCmpCStr(string, "void") == 0) {
+			if(strCmpCStr(string, "void") == 0 || strCmpCStr(string, "ifj16.void") == 0) {
 				return KTT_void;
 			}
 			break;
 		}
 		case 'w': {
-			if(strCmpCStr(string, "while") == 0) {
+			if(strCmpCStr(string, "while") == 0 || strCmpCStr(string, "ifj16.while") == 0) {
 				return KTT_while;
 			}
 			break;
@@ -512,7 +513,7 @@ eError getToken(Token *token) {
 					}
 				} else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
 					// checks if char after '.' is a digit, if it is, fullId won't be valid
-					if(isdigit(token->str->str[strCharPos(token->str, '.') + 1]))
+					if(iCurrentSymbol == '.' || isdigit(token->str->str[strCharPos(token->str, '.') + 1]))
 						handleLexError(token, ERR_LEX);
 
 					KeywordTokenType keywordType = getKeywordType(token->str);
@@ -681,19 +682,15 @@ eError getToken(Token *token) {
 					return ERR_OK;
 				}
 				case SMinus: {
-					if(iCurrentSymbol == '-') {
-						token->type = TT_decrement;
+					if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
+						UNGETC(iCurrentSymbol, fSourceFile);
+						token->type = TT_minus;
 						strFree(token->str);
 						return ERR_OK;
-					}else if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
-							UNGETC(iCurrentSymbol, fSourceFile);
-							token->type = TT_minus;
-							strFree(token->str);
-							return ERR_OK;
-						}
-						else{
-							handleLexError(token, ERR_LEX);
-						}
+					}
+					else{
+						handleLexError(token, ERR_LEX);
+					}
 					break;
 				}
 				//BASE: dealing with other number format adepts
@@ -763,17 +760,14 @@ eError getToken(Token *token) {
 					break;
 				}
 				case SPlus: {
-					if(iCurrentSymbol == '+') {
-						token->type = TT_increment;
+					if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || iCurrentSymbol == '\"'){
+						UNGETC(iCurrentSymbol, fSourceFile);
+						token->type = TT_plus;
 						return ERR_OK;
-					}	else if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || iCurrentSymbol == '\"'){
-							UNGETC(iCurrentSymbol, fSourceFile);
-							token->type = TT_plus;
-							return ERR_OK;
-						}
-						else{
-							handleLexError(token, ERR_LEX);
-						}
+					}
+					else{
+						handleLexError(token, ERR_LEX);
+					}
 					break;
 				}
 				default: {

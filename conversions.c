@@ -202,7 +202,7 @@ double stringToDouble(dtStr *string) {
     int8_t iCurrentSymbol = string->str[counter];
     switch (convertState) {
       case DSStart: {
-        if (isdigit(iCurrentSymbol) || iCurrentSymbol == '-')
+        if (isdigit(iCurrentSymbol))
           convertState = DSWholePart;
         else if (isspace(iCurrentSymbol))
           ;
@@ -246,7 +246,7 @@ double stringToDouble(dtStr *string) {
         break;
       }
       case DSExponent: {
-        if (iCurrentSymbol == '+' || iCurrentSymbol == '-')
+        if (iCurrentSymbol == '+')
           convertState = DSExponentSign;
         else if (isdigit(iCurrentSymbol))
           return strtod(string->str, NULL);
