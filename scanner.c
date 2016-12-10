@@ -567,221 +567,221 @@ eError getToken(Token *token) {
 						handleLexError(token, ERR_LEX);
 					}
 					break;
-				}
-				case SEscape: {
-					switch(iCurrentSymbol) {
-						case 'n': {
-							state = SString;
-							if(strAddChar(token->str, '\n') == STR_ERROR) {
-								handleLexError(token, ERR_INTERN);
-							}
-							break;
-						}
-						case 't': {
-							state = SString;
-							if(strAddChar(token->str, '\t') == STR_ERROR) {
-								handleLexError(token, ERR_INTERN);
-							}
-							break;
-						}
-						case '\"': {
-							state = SString;
-							if(strAddChar(token->str, '\"') == STR_ERROR) {
-								handleLexError(token, ERR_INTERN);
-							}
-							break;
-						}
-						case '\\': {
-							state = SString;
-							if(strAddChar(token->str, '\\') == STR_ERROR) {
-								handleLexError(token, ERR_INTERN);
-							}
-							break;
-						}
-						default: {
-							if(iCurrentSymbol >= '0' && iCurrentSymbol <= '3') {
-								state       = SOctal;
-								octalString = strNew();
-								if(strAddChar(octalString, iCurrentSymbol) == STR_ERROR) {
-									handleLexError(token, ERR_INTERN);
-								}
-								octalLength++;
-							} else {
-								handleLexError(token, ERR_LEX);
-							}
-						}
 					}
-					break;
-				}
-				case SOctal: {
-					// 001 to 377 are valid sequences (0-3 already in token->str)
-					if((iCurrentSymbol >= '0' && iCurrentSymbol <= '7') && octalLength < 3) {
-						state = SOctal;
-						strAddChar(octalString, iCurrentSymbol);
-						octalLength++;
-					}
-					else if((iCurrentSymbol == '"' || iCurrentSymbol == EOF || iCurrentSymbol == '\n') && octalLength != 3){
-						strFree(octalString);
-						handleLexError(token, ERR_LEX);
-					}
-					else{
-						// 000 not permitted
-						if (octalLength != 3){
-							strFree(octalString);
-							handleLexError(token, ERR_LEX);
-						}
-						if(strCmpCStr(octalString, "000") == 0){
-							strFree(octalString);
-							handleLexError(token, ERR_LEX);
-						}
-						UNGETC(iCurrentSymbol, fSourceFile);
-						int32_t intFromOctal = octalToInt(octalString);
-						strFree(octalString);
-						octalLength = 0;
-						if(intFromOctal == INT_CONVERSION_ERROR) {
-							handleLexError(token, ERR_INTERN);
-						}
-						if(strAddChar(token->str, (char) intFromOctal) == STR_ERROR) {
-							handleLexError(token, ERR_INTERN);
-						}
+			}
+			case SEscape: {
+				switch(iCurrentSymbol) {
+					case 'n': {
 						state = SString;
-					}
-					break;
-				}
-				case SComment: {
-					if(iCurrentSymbol == '\n') {
-						state = SEmpty;
-					} else if(iCurrentSymbol == EOF) {
-						token->type = TT_EOF;
-						return ERR_OK;
-					} else {
-						state = SComment;
-					}
-					break;
-				}
-				case SBlockCommentStart: {
-					if(iCurrentSymbol == '*') {
-						state = SBlockCommentFinish;
-					} else if(iCurrentSymbol == EOF) {
-						handleLexError(token, ERR_LEX);
-					} else {
-						state = SBlockCommentStart;
-					}
-					break;
-				}
-				case SBlockCommentFinish: {
-					if(iCurrentSymbol == '/') {
-						state = SEmpty;
-					} else if (iCurrentSymbol == '*'){
-						state = SBlockCommentFinish;
-					} else if(iCurrentSymbol == EOF) {
-						handleLexError(token, ERR_LEX);
-					} else {
-						state = SBlockCommentStart;
-					}
-					break;
-				}
-				case SExclamation: {
-					if(iCurrentSymbol == '=') {
-						token->type = TT_notEqual;
-					} else {
-						token->type = TT_not;
-						UNGETC(iCurrentSymbol, fSourceFile);
-					}
-					return ERR_OK;
-				}
-				case SMinus: {
-					if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
-						UNGETC(iCurrentSymbol, fSourceFile);
-						token->type = TT_minus;
-						strFree(token->str);
-						return ERR_OK;
-					}
-					else{
-						handleLexError(token, ERR_LEX);
-					}
-					break;
-				}
-				//BASE: dealing with other number format adepts
-				case SZero: {
-					if(iCurrentSymbol == 'b') {
-						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						if(strAddChar(token->str, '\n') == STR_ERROR) {
 							handleLexError(token, ERR_INTERN);
 						}
-						state = SNumber; // potom urobim search na b in token->str
-					} else if(iCurrentSymbol == 'x') {
-						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						break;
+					}
+					case 't': {
+						state = SString;
+						if(strAddChar(token->str, '\t') == STR_ERROR) {
 							handleLexError(token, ERR_INTERN);
 						}
-						state = SNumber; // potom urobim search na b in token->str ALE pozor na iba digit v SNumber
-					} else if(iCurrentSymbol == '_') {
-						state = SNumber;
-						UNGETC(iCurrentSymbol, fSourceFile); // More elaborate checks related to _ in SNumber
+						break;
 					}
-						// octal literal
-					else if(isdigit(iCurrentSymbol)) {
-						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+					case '\"': {
+						state = SString;
+						if(strAddChar(token->str, '\"') == STR_ERROR) {
 							handleLexError(token, ERR_INTERN);
 						}
-						state = SNumber; // potom urobim search 0 ako prvy char
-					} else if(iCurrentSymbol == '.') {
-						state = SDouble;
-						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
-							handleLexError(token, iCurrentSymbol);
-						}
-					} else if((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E' || iCurrentSymbol == 'p' || iCurrentSymbol == 'P')) {
-						state = SDoubleExponent;
-						if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						break;
+					}
+					case '\\': {
+						state = SString;
+						if(strAddChar(token->str, '\\') == STR_ERROR) {
 							handleLexError(token, ERR_INTERN);
 						}
+						break;
 					}
-						// just plain 0
-					 else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
-						UNGETC(iCurrentSymbol, fSourceFile);
-						strFree(token->str);
-						token->iNum = 0;
-						token->type = TT_number;
-						return ERR_OK;
+					default: {
+						if(iCurrentSymbol >= '0' && iCurrentSymbol <= '3') {
+							state       = SOctal;
+							octalString = strNew();
+							if(strAddChar(octalString, iCurrentSymbol) == STR_ERROR) {
+								handleLexError(token, ERR_INTERN);
+							}
+							octalLength++;
+						} else {
+							handleLexError(token, ERR_LEX);
+						}
 					}
-					else{
-						handleLexError(token, ERR_LEX);
-					}
-					break;
 				}
-				case SAnd: {
-					if(iCurrentSymbol == '&') {
-						token->type = TT_and;
-						return ERR_OK;
-					}
-					else {
-						handleLexError(token, ERR_LEX);
-					}
-					break;
+				break;
+			}
+			case SOctal: {
+				// 001 to 377 are valid sequences (0-3 already in token->str)
+				if((iCurrentSymbol >= '0' && iCurrentSymbol <= '7') && octalLength < 3) {
+					state = SOctal;
+					strAddChar(octalString, iCurrentSymbol);
+					octalLength++;
 				}
-				case SOr: {
-					if(iCurrentSymbol == '|') {
-						token->type = TT_or;
-						return ERR_OK;
-					}
-					else {
-						handleLexError(token, ERR_LEX);
-					}
-					break;
-				}
-				case SPlus: {
-					if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || iCurrentSymbol == '\"'){
-						UNGETC(iCurrentSymbol, fSourceFile);
-						token->type = TT_plus;
-						return ERR_OK;
-					}
-					else{
-						handleLexError(token, ERR_LEX);
-					}
-					break;
-				}
-				default: {
+				else if((iCurrentSymbol == '"' || iCurrentSymbol == EOF || iCurrentSymbol == '\n') && octalLength != 3){
+					strFree(octalString);
 					handleLexError(token, ERR_LEX);
 				}
+				else{
+					// 000 not permitted
+					if (octalLength != 3){
+						strFree(octalString);
+						handleLexError(token, ERR_LEX);
+					}
+					if(strCmpCStr(octalString, "000") == 0){
+						strFree(octalString);
+						handleLexError(token, ERR_LEX);
+					}
+					UNGETC(iCurrentSymbol, fSourceFile);
+					int32_t intFromOctal = octalToInt(octalString);
+					strFree(octalString);
+					octalLength = 0;
+					if(intFromOctal == INT_CONVERSION_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
+					if(strAddChar(token->str, (char) intFromOctal) == STR_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
+					state = SString;
+				}
+				break;
+			}
+			case SComment: {
+				if(iCurrentSymbol == '\n') {
+					state = SEmpty;
+				} else if(iCurrentSymbol == EOF) {
+					token->type = TT_EOF;
+					return ERR_OK;
+				} else {
+					state = SComment;
+				}
+				break;
+			}
+			case SBlockCommentStart: {
+				if(iCurrentSymbol == '*') {
+					state = SBlockCommentFinish;
+				} else if(iCurrentSymbol == EOF) {
+					handleLexError(token, ERR_LEX);
+				} else {
+					state = SBlockCommentStart;
+				}
+				break;
+			}
+			case SBlockCommentFinish: {
+				if(iCurrentSymbol == '/') {
+					state = SEmpty;
+				} else if (iCurrentSymbol == '*'){
+					state = SBlockCommentFinish;
+				} else if(iCurrentSymbol == EOF) {
+					handleLexError(token, ERR_LEX);
+				} else {
+					state = SBlockCommentStart;
+				}
+				break;
+			}
+			case SExclamation: {
+				if(iCurrentSymbol == '=') {
+					token->type = TT_notEqual;
+				} else {
+					token->type = TT_not;
+					UNGETC(iCurrentSymbol, fSourceFile);
+				}
+				return ERR_OK;
+			}
+			case SMinus: {
+				if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)){
+					UNGETC(iCurrentSymbol, fSourceFile);
+					token->type = TT_minus;
+					strFree(token->str);
+					return ERR_OK;
+				}
+				else{
+					handleLexError(token, ERR_LEX);
+				}
+				break;
+			}
+			//BASE: dealing with other number format adepts
+			case SZero: {
+				if(iCurrentSymbol == 'b') {
+					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
+					state = SNumber; // potom urobim search na b in token->str
+				} else if(iCurrentSymbol == 'x') {
+					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
+					state = SNumber; // potom urobim search na b in token->str ALE pozor na iba digit v SNumber
+				} else if(iCurrentSymbol == '_') {
+					state = SNumber;
+					UNGETC(iCurrentSymbol, fSourceFile); // More elaborate checks related to _ in SNumber
+				}
+					// octal literal
+				else if(isdigit(iCurrentSymbol)) {
+					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
+					state = SNumber; // potom urobim search 0 ako prvy char
+				} else if(iCurrentSymbol == '.') {
+					state = SDouble;
+					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						handleLexError(token, iCurrentSymbol);
+					}
+				} else if((iCurrentSymbol == 'e') || (iCurrentSymbol == 'E' || iCurrentSymbol == 'p' || iCurrentSymbol == 'P')) {
+					state = SDoubleExponent;
+					if(strAddChar(token->str, iCurrentSymbol) == STR_ERROR) {
+						handleLexError(token, ERR_INTERN);
+					}
+				}
+					// just plain 0
+				 else if (isOperator(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
+					UNGETC(iCurrentSymbol, fSourceFile);
+					strFree(token->str);
+					token->iNum = 0;
+					token->type = TT_number;
+					return ERR_OK;
+				}
+				else{
+					handleLexError(token, ERR_LEX);
+				}
+				break;
+			}
+			case SAnd: {
+				if(iCurrentSymbol == '&') {
+					token->type = TT_and;
+					return ERR_OK;
+				}
+				else {
+					handleLexError(token, ERR_LEX);
+				}
+				break;
+			}
+			case SOr: {
+				if(iCurrentSymbol == '|') {
+					token->type = TT_or;
+					return ERR_OK;
+				}
+				else {
+					handleLexError(token, ERR_LEX);
+				}
+				break;
+			}
+			case SPlus: {
+				if (isdigit(iCurrentSymbol) || isOperator(iCurrentSymbol) || isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol) || iCurrentSymbol == '\"'){
+					UNGETC(iCurrentSymbol, fSourceFile);
+					token->type = TT_plus;
+					return ERR_OK;
+				}
+				else{
+					handleLexError(token, ERR_LEX);
+				}
+				break;
+			}
+			default: {
+				handleLexError(token, ERR_LEX);
 			}
 		}
 	}
