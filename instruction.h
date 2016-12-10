@@ -1,19 +1,21 @@
-/*
- * Project: IFJ
- * Implementace interpretu imperativního jazyka IFJ16.
- *
- * Description:
- * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
- *
- * Team:
- * Michal Charvát          (xcharv16)
- * Terézia Slanináková     (xslani06)
- * Katarína Grešová        (xgreso00)
- * Marek Schauer           (xschau00)
- * Jakub Handzuš           (xhandz00)
- */
-
-
+/**
+  *  \file instruction.h
+  *  \brief Contains declarations structures and functions regarding the instruction set
+  *  \author Michal
+  *
+  * Project: IFJ
+  * Implementace interpretu imperativního jazyka IFJ16.
+  *
+  * Description:
+  * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+  *
+  * Team:
+  * Michal Charvát          (xcharv16)
+  * Terézia Slanináková     (xslani06)
+  * Katarína Grešová        (xgreso00)
+  * Marek Schauer           (xschau00)
+  * Jakub Handzuš           (xhandz00)
+  */
 
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H

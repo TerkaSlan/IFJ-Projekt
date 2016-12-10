@@ -12,8 +12,6 @@
  * Marek Schauer           (xschau00)
  * Jakub Handzuš           (xhandz00)
  */
-//TODO
-//	unary ++,--, -
 
 #include "expr.h"
 #include "scanner.h"
@@ -25,7 +23,7 @@
 
 #define PRECEDENCE_STACK_DEFAULT_SIZE 32
 #define SYMBOL_STACK_DEFAULT_SIZE 32
-#define NONTERMINALBORDER 25
+#define NONTERMINALBORDER 23
 
 // global variables from parser.c
 extern Token* token;
@@ -62,7 +60,7 @@ do{																\
 	}															\
 	tSymbolPtr tmp = symbolNew();								\
 	tmp->Defined = true;										\
-	tmp->Const = false;											\
+	tmp->Const = preinterpretation;								\
 	tmp->Type = dType;											\
 	tmp->Name = strNewFromStr(name);							\
 	symbolTmp = htabAddSymbol(table, tmp, true);				\
@@ -80,7 +78,7 @@ do{																\
 do {															\
 	tSymbolPtr exprTmp = symbolNew();							\
 	exprTmp->Defined = true;									\
-	exprTmp->Const = false;										\
+	exprTmp->Const = preinterpretation;							\
 	exprTmp->Type = dType;										\
 	switch(dType) {												\
 		case eSTRING:											\
@@ -106,38 +104,44 @@ do {															\
 	symbolFree(exprTmp);										\
 } while (0);
 
+#define createInstruction(Instr, Type, Dst, Arg1, Arg2)	\
+do {													\
+	Instr.type = Type;									\
+	Instr.dst = Dst;									\
+	Instr.arg1 = Arg1;									\
+	Instr.arg2 = Arg2;									\
+} while(0);												\
+
 #define insertInstruction(instr) preinterpretation ? (insertErrCode = instrListInsertInstruction(preInstructionList, instr)) : (insertErrCode = instrListInsertInstruction(instructionList, instr));
 
-const uint32_t precedenceTable[26][26] =
+const uint32_t precedenceTable[24][24] =
 {
 // columns represent token->type
-//    +   -   *   /   <   >  <=  >=  ==  !=  id f.id str  d   i   b  ++  --  not and or   (   )   ,   ;   $
-	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_plus,
-	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_minus,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_multiply,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_divide,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_less,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_greater,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_lessEqual,
-	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_greaterEqual,
-	{'<','<','<','<','<','<','<','<','x','x','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_equal,
-	{'<','<','<','<','<','<','<','<','x','x','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_notEqual,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','x','>','>','f','>','>','>','x'}, //TT_identifier,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','x','>','>','f','>','>','>','x'}, //TT_fullIdentifier,
-	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_string,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_double,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_number,
-	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','x','>','>','>','x'}, //TT_boolean,
-	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','x','x','<','>','>','<','>','>','>','x'}, //TT_increment,
-	{'>','>','>','>','>','>','>','>','>','>','u','u','x','x','x','x','x','x','<','>','>','<','>','>','>','x'}, //TT_decrement,
-	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_not,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_and,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','u','u','<','>','>','<','>','>','>','x'}, //TT_or,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','=','x','>','x'}, //TT_leftRoundBracket,
-	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','u','u','>','>','>','x','>','x','>','x'}, //TT_rightRoundBracket,
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','x','>','x','>','x'}, //TT_comma,
-	{'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','x'}, //TT_semicolon
-	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','e','e','e','x'}  //TT_dolar
+//    +   -   *   /   <   >  <=  >=  ==  !=  id f.id str  d   i   b    not and or   (   )   ,   ;   $
+	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_plus,
+	{'>','>','<','<','>','>','>','>','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_minus,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_multiply,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_divide,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_less,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_greater,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_lessEqual,
+	{'<','<','<','<','x','x','x','x','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_greaterEqual,
+	{'<','<','<','<','<','<','<','<','x','x','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_equal,
+	{'<','<','<','<','<','<','<','<','x','x','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_notEqual,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','>','>','f','>','>','>','x'}, //TT_identifier,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','>','>','f','>','>','>','x'}, //TT_fullIdentifier,
+	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_string,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_double,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','x','x','x','x','>','>','>','x'}, //TT_number,
+	{'>','>','>','>','x','x','x','x','x','x','x','x','x','x','x','x','x','>','>','x','>','>','>','x'}, //TT_boolean,
+	{'>','>','>','>','>','>','>','>','>','>','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_not,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_and,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','>','>','<','>','>','>','x'}, //TT_or,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','=','x','>','x'}, //TT_leftRoundBracket,
+	{'>','>','>','>','>','>','>','>','>','>','x','x','x','x','x','x','>','>','>','x','>','x','>','x'}, //TT_rightRoundBracket,
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','x','>','x','>','x'}, //TT_comma,
+	{'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','>','x'}, //TT_semicolon
+	{'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','<','e','e','e','x'}  //TT_dolar
 																											   //rows represent stackTop
 };
 
@@ -517,10 +521,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		if (result->Type == argument->Symbol->Type) {
 
-			instr.type = iPUSH;
-			instr.dst = NULL;
-			instr.arg1 = result;
-			instr.arg2 = NULL;
+			createInstruction(instr, iPUSH, NULL, result, NULL);
 			insertInstruction(instr);
 			if (insertErrCode == -1) {
 				printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
@@ -559,11 +560,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	afterParams: 
 
-	instr.type = iCALL;
-	instr.dst = NULL;
-	instr.arg1 = NULL;
-	instr.arg2 = NULL;
-
+	createInstruction(instr, iCALL, NULL, NULL, NULL);
 	insertInstruction(instr);
 	if (insertErrCode == -1) {
 		printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
@@ -581,11 +578,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		tSymbolPtr symbolExprTmp;
 		tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, funcSymbol->Data.FunctionData.ReturnType);
 
-		instr.type = iGETRETVAL;
-		instr.dst = symbolExprTmp;
-		instr.arg1 = NULL;
-		instr.arg2 = NULL;
-
+		createInstruction(instr, iGETRETVAL, symbolExprTmp, NULL, NULL);
 		insertInstruction(instr);
 		if (insertErrCode == -1) {
 			precedenceSymbolFree(funcPrecedenceSymbol);
@@ -731,21 +724,15 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tSymbolPtr n = result;
 
-
-		instr.type = iSUBSTR;
-        instr.dst = s;
-        instr.arg1 = i;
-        instr.arg2 = n;
+        createInstruction(instr, iSUBSTR, s, i, n);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
 		}
 
 		tmpVariable(currentFuncTable, symbolExprTmp, eSTRING);
-		instr.type = iGETRETVAL;
-		instr.dst = symbolExprTmp;
-		instr.arg1 = NULL;
-		instr.arg2 = NULL;
+
+		createInstruction(instr, iGETRETVAL, symbolExprTmp, NULL, NULL);
 		if (instrListInsertInstruction(instructionList, instr) == -1 ) {
 			printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -766,7 +753,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		return ERR_OK;
 
 	}
-	if (strCmpCStr(builtin, "ifj16.readDouble") == 0) {
+	if (strCmpCStr(builtin, "ifj16.readDouble") == 0 || (strCmpCStr(builtin, "ifj16.readInt") == 0) || (strCmpCStr(builtin, "ifj16.readString") == 0)) {
 
 		cleanToken(&token);
 		errCode = getToken(token);
@@ -780,12 +767,16 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 			return ERR_SEM_TYPE;
 		}
 
-		tmpVariable(currentFuncTable, symbolExprTmp, eDOUBLE);
+		eSymbolType symbolType;
+		if ((strCmpCStr(builtin, "ifj16.readDouble") == 0))
+			symbolType = eDOUBLE;
+		if ((strCmpCStr(builtin, "ifj16.readInt") == 0))
+			symbolType = eINT;
+		if ((strCmpCStr(builtin, "ifj16.readString") == 0))
+			symbolType = eSTRING;
+		tmpVariable(currentFuncTable, symbolExprTmp, symbolType);
 
-		instr.type = iREAD;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = NULL;
-        instr.arg2 = NULL;
+        createInstruction(instr, iREAD, symbolExprTmp, NULL, NULL);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -806,86 +797,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		return ERR_OK;
 
 	}
-	if (strCmpCStr(builtin, "ifj16.readInt") == 0) {
 
-		cleanToken(&token);
-		errCode = getToken(token);
-		if (errCode != ERR_OK) {
-			return errCode;
-		}
-
-		//this builtin has no parameters - next token should be right round bracket
-		if (token->type != TT_rightRoundBracket) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
-		}
-
-		tmpVariable(currentFuncTable, symbolExprTmp, eINT);
-
-		instr.type = iREAD;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = NULL;
-        instr.arg2 = NULL;
-        if (instrListInsertInstruction(instructionList, instr) == -1) {
-        	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
-			return ERR_INTERN;
-		}
-
-		precedenceStackPush(stack, TT_E);
-
-		tPrecedenceSymbolPtr returnVal = precedenceSymbolNew();
-		returnVal->type = TT_E;
-		returnVal->symbol = symbolExprTmp;
-		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
-			precedenceSymbolFree(returnVal);
-			printError(ERR_INTERN, "Line: %lu - Line: %lu - Push on symbol stack wasn't successful\n", (unsigned long)LineCounter);
-			return ERR_INTERN;
-		}
-		precedenceSymbolFree(returnVal);
-
-		return ERR_OK;
-
-	}
-	if (strCmpCStr(builtin, "ifj16.readString") == 0) {
-
-		cleanToken(&token);
-		errCode = getToken(token);
-		if (errCode != ERR_OK) {
-			return errCode;
-		}
-
-		//this builtin has no parameters - next token should be right round bracket
-		if (token->type != TT_rightRoundBracket) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
-		}
-
-		tmpVariable(currentFuncTable, symbolExprTmp, eSTRING);
-
-		instr.type = iREAD;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = NULL;
-        instr.arg2 = NULL;
-        if (instrListInsertInstruction(instructionList, instr) == -1) {
-        	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
-			return ERR_INTERN;
-		}
-
-		precedenceStackPush(stack, TT_E);
-
-		tPrecedenceSymbolPtr returnVal = precedenceSymbolNew();
-		returnVal->type = TT_E;
-		returnVal->symbol = symbolExprTmp;
-		if (symbolStackPush(symbolStack, returnVal) == ERR_INTERN) {
-			precedenceSymbolFree(returnVal);
-			printError(ERR_INTERN, "Line: %lu - Push on symbol stack wasn't successful\n", (unsigned long)LineCounter);
-			return ERR_INTERN;
-		}
-		precedenceSymbolFree(returnVal);
-
-		return ERR_OK;
-
-	}
 	if (strCmpCStr(builtin, "ifj16.print") == 0) {
 
 		errCode = parsing(NULL);
@@ -918,10 +830,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 			symbolTmp = result;
 		}
 
-		instr.type = iPRINT;
-        instr.dst = NULL;
-        instr.arg1 = symbolTmp;
-        instr.arg2 = NULL;
+        createInstruction(instr, iPRINT, NULL, symbolTmp, NULL);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -980,10 +889,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tmpVariable(currentFuncTable, symbolExprTmp, eINT);
 
-		instr.type = iLEN;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = result;
-        instr.arg2 = NULL;
+        createInstruction(instr, iLEN, symbolExprTmp, result, NULL);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -1062,10 +968,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tmpVariable(currentFuncTable, symbolExprTmp, eINT);
 
-		instr.type = iCOMPARE;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = s1;
-        instr.arg2 = s2;
+        createInstruction(instr, iCOMPARE, symbolExprTmp, s1, s2);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -1144,10 +1047,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tmpVariable(currentFuncTable, symbolExprTmp, eINT);
 
-		instr.type = iFIND;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = s;
-        instr.arg2 = search;
+        createInstruction(instr, iFIND, symbolExprTmp, s, search);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -1197,10 +1097,7 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 
 		tmpVariable(currentFuncTable, symbolExprTmp, eSTRING);
 
-		instr.type = iSORT;
-        instr.dst = symbolExprTmp;
-        instr.arg1 = result;
-        instr.arg2 = NULL;
+        createInstruction(instr, iSORT, symbolExprTmp, result, NULL);
         if (instrListInsertInstruction(instructionList, instr) == -1) {
         	printError(ERR_INTERN, "Line: %lu - Insert of instruction wasn't successful\n", (unsigned long)LineCounter);
 			return ERR_INTERN;
@@ -1229,6 +1126,13 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 	eError errCode;
 	int32_t insertErrCode;
+
+	tHashTablePtr currentTable;
+	if (preinterpretation) {
+		currentTable = currentClass->Data.ClassData.LocalSymbolTable;
+	} else {
+		currentTable = currentFunction->Data.FunctionData.LocalSymbolTable;
+	}
 
 	switch(precedenceStackTopTerminal(stack)) {
 
@@ -1363,7 +1267,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		case TT_number:
 		case TT_boolean:
 
-
 			precedenceStackPop(stack);
 			if (precedenceStackPop(stack) != TT_start) {
 				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression\n", (unsigned long)LineCounter);
@@ -1482,7 +1385,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
 					//convert first operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1505,7 +1408,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				if (operand2->symbol->Type == eINT) {
 
 					//convert second operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1537,7 +1440,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			generateBoolInstruction: {
 
-			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL);
+			tmpVariable(currentTable, symbolExprTmp, eBOOL);
 			eInstructionType instruction;
 			switch(operator) {
 				case TT_less:
@@ -1641,7 +1544,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					if (operand2->symbol->Type != eSTRING) {
 
 						//convert second operand to string
-						convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eSTRING);
+						convert(currentTable, operand2->symbol, instr, symbolTmp, eSTRING);
 
 						insertInstruction(instr);
 						if (insertErrCode == -1) {
@@ -1653,7 +1556,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 						operand2->symbol = symbolTmp;
 					}
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eSTRING)
+					tmpVariable(currentTable, symbolExprTmp, eSTRING)
 					goto generateInstruction;
 
 				} else {
@@ -1668,7 +1571,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					if (operand1->symbol->Type != eSTRING) {
 
 						//convert first operand to string
-						convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eSTRING);
+						convert(currentTable, operand1->symbol, instr, symbolTmp, eSTRING);
 
 						insertInstruction(instr);
 						if (insertErrCode == -1) {
@@ -1680,7 +1583,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 						operand1->symbol = symbolTmp;
 					}
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eSTRING)
+					tmpVariable(currentTable, symbolExprTmp, eSTRING)
 
 					goto generateInstruction;
 				} else {
@@ -1694,13 +1597,13 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			if (operand1->symbol->Type == eINT) {
 				if (operand2->symbol->Type == eINT) {
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eINT)
+					tmpVariable(currentTable, symbolExprTmp, eINT)
 
 					goto generateInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
 					//convert first operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1711,7 +1614,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					}
 					operand1->symbol = symbolTmp;
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else {
@@ -1725,7 +1628,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				if (operand2->symbol->Type == eINT) {
 
 					//convert second operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1736,12 +1639,12 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					}
 					operand2->symbol = symbolTmp;
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else {
@@ -1786,11 +1689,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					return ERR_SYNTAX;
 			}
 
-			instr.type = instruction;
-			instr.dst = symbolExprTmp;
-			instr.arg1 = operand1->symbol;
-			instr.arg2 = operand2->symbol;
-
+			createInstruction(instr, instruction, symbolExprTmp, operand1->symbol, operand2->symbol);
 			insertInstruction(instr);
 			if (insertErrCode == -1) {
 				precedenceSymbolFree(operand1);
@@ -1852,21 +1751,15 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 			tSymbolPtr symbolExprTmp;
-			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL)
+			tmpVariable(currentTable, symbolExprTmp, eBOOL)
 
 			tInstruction instr;
 
 			if (operator == TT_and) {
-				instr.type = iLAND;
-				instr.dst = symbolExprTmp;
-				instr.arg1 = operand1->symbol;
-				instr.arg2 = operand2->symbol;
+				createInstruction(instr, iLAND, symbolExprTmp, operand1->symbol, operand2->symbol);
 			}
 			if (operator == TT_or) {
-				instr.type = iLOR;
-				instr.dst = symbolExprTmp;
-				instr.arg1 = operand1->symbol;
-				instr.arg2 = operand2->symbol;
+				createInstruction(instr, iLOR, symbolExprTmp, operand1->symbol, operand2->symbol);
 			}
 
 			insertInstruction(instr);
@@ -1918,7 +1811,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 			tSymbolPtr symbolExprTmp;
-			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL);
+			tmpVariable(currentTable, symbolExprTmp, eBOOL);
 
 			tInstruction instr = {iLNOT, symbolExprTmp, operand->symbol, NULL};
 
@@ -1943,17 +1836,6 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			precedenceStackPush(stack, TT_E);
 			break;
-
-		// E -> ++ E
-		// E -> -- E
-		// E -> E ++
-		// E -> E --
-		// E -> - E
-		case TT_increment:
-		case TT_decrement:
-
-			printError(ERR_SYNTAX, "Line: %lu - unary not supported yet\n", (unsigned long)LineCounter);
-			return ERR_SYNTAX;
 
 		default:
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression parsing\n", (unsigned long)LineCounter);
@@ -2122,7 +2004,7 @@ eError parsing(Token* helpToken) {
 			}
 		}
 
-		if (token->type > NONTERMINALBORDER) {
+		if (token->type > TT_semicolon) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in expression parsing\n", (unsigned long)LineCounter);
 			errCode = ERR_SYNTAX;
 			goto freeAndExit;
@@ -2142,7 +2024,7 @@ eError parsing(Token* helpToken) {
 				}
 
 				precedenceStackPush(stack, token->type);
-				if (token->type < TT_increment && token->type > TT_notEqual) {
+				if (token->type < TT_not && token->type > TT_notEqual) {
 
 					precedenceSymbolClean(symbol);
 					symbol->type = token->type;
@@ -2197,12 +2079,6 @@ eError parsing(Token* helpToken) {
 					goto freeAndExit;
 				}
 				break;
-
-			case 'u':
-				printError(ERR_SYNTAX, "Line: %lu - Unary not supported yet\n", (unsigned long)LineCounter);
-				errCode = ERR_SYNTAX;
-				result = NULL;
-				goto freeAndExit;
 
 			case 'e':
 

@@ -5,23 +5,45 @@ class Main
 	static void run()
 	{
 		/*Find*/
+		String empty = "";
+		int position = ifj16.find(empty, empty);
+		if (position != 0) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
+		}
 		String str4 = "What a beautiful weather!";
-		int position = ifj16.find(str4, "a b");
+		position = ifj16.find(str4, "a b");
 		if (position != 5) {
 			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
 		}
 		position = ifj16.find(str4, "");
 		if (position != 0) {
 			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
 		}
 		position = ifj16.find(str4, "xyz");
-		if (position >= 0) {
+		int minus1 = 5-6;
+		if (position != minus1) {
 			ifj16.print("[FAIL]: Find didn't work as expected.\n");	
+			return;
 		}
 		String str5 = "a";
 		position = ifj16.find(str4, str5);
 		if (position != 2) {
 			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
+		}
+		String str6 = "What a beautiful weather! And something here as well.";
+		position = ifj16.find(str4, str6);
+		if (position != minus1) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
+		}
+		position = ifj16.find("ABCABAB", "ABAB");
+		if (position != 3) {
+			ifj16.print("[FAIL]: Find didn't work as expected.\n");
+			return;
 		}
 		ifj16.print("Success!\n");
 	} // end of static void run()

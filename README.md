@@ -96,3 +96,9 @@ _Week 9 [30.11 - 6.12]_
 
   Focus all efforts to make program functional for 2nd submission
   
+_Week 10 [7.12 - 14.12]_
+ 
+  #30 FEATURE ADDITION: Move the addition of local variabled to symbol table to second run to overcome specific inapproriate overshadowing issues - **Terka** :white_medium_square:
+  
+  #31 FEATURE ADDITION: Add support for bases covered by BASE extension into readData() function - **Terka** :white_medium_square:
+  

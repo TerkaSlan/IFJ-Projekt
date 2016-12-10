@@ -100,8 +100,10 @@ int32_t binaryToInt(const dtStr *binaryString) {
   return decimalNumber;
 }
 
-int32_t hexToInt(const dtStr *hexadecimalString) {
+int32_t hexToInt(dtStr *hexadecimalString) {
   int32_t decimalNumber = 0;
+  if (strCharPos(hexadecimalString, '.') != (-1))
+    return INT_CONVERSION_ERROR;
   if (convertHexToDecimal(&(hexadecimalString->str[2]), hexadecimalString->uiLength - 2, &decimalNumber) == ERR_INTERN)
     return INT_CONVERSION_ERROR;
   return decimalNumber;
@@ -124,29 +126,39 @@ double hexToDouble(dtStr *hexDoubleString){
   int32_t fromDotToP;
   fromDotToP = (dot_position == (-1)) ? 0 : p_position - dot_position - 1;
   dtStrPtr exponentString;
-  int32_t exponent = 0 ;
+  int32_t exponent = 0;
   if(substr(hexDoubleString, p_position + 1, hexDoubleString->uiLength - p_position - 1, &exponentString) == ERR_INTERN){
     strFree(exponentString);
     strFree(upToExponentPart);
     return DOUBLE_CONVERSION_ERROR;
   }
-  if ((exponent = stringToInt(exponentString)) == INT_CONVERSION_ERROR){
+  char *end;
+  long tempLong = strtol(exponentString->str, &end, 10);
+  if (tempLong > INT32_MAX || *end != '\0'){
     strFree(exponentString);
     strFree(upToExponentPart);
     return DOUBLE_CONVERSION_ERROR;
   }
+  exponent = (int32_t)tempLong;
+
   double result = (decimalNumber/pow(16, fromDotToP)) * pow(2, exponent);
   strFree(exponentString);
   strFree(upToExponentPart);
   return result;
 }
 
-int32_t stringToInt(const dtStr *string) {
+int32_t stringToInt(dtStr *string) {
+  if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1)
+    return hexToInt(string);
+  if (strCharPos(string, '0') == 0 && strCharPos(string, 'b') == 1)
+    return binaryToInt(string);
+  if (strCharPos(string, '0') == 0 && string->uiLength > 1)
+    return octalToInt(string);
   const char *stringData = string->str;
   while (isspace(*stringData))
       stringData++;
 
-  if (*stringData == '+')
+  if (*stringData == '+' || *stringData == '-')
     return INT_CONVERSION_ERROR;
   // checking char pointer if the conversion fails
   char *end;
@@ -185,16 +197,19 @@ dtStrPtr doubleToString(double number) {
 
 double stringToDouble(dtStr *string) {
   if (strCharPos(string, '0') == 0 && strCharPos(string, 'x') == 1){
-    if (strCharPos(string, 'p') != (-1) && strCharPos(string, 'P') != (-1))
+    if (strCharPos(string, 'p') == (-1) && strCharPos(string, 'P') == (-1))
       return DOUBLE_CONVERSION_ERROR;
     return hexToDouble(string);
   }
+  if ( ! (strCharPos(string, '.') != (-1) || strCharPos(string, 'e') != (-1) || strCharPos(string, 'E') != (-1)))
+    return DOUBLE_CONVERSION_ERROR;
+
   uint8_t convertState = DSStart;
   for (uint32_t counter = 0; counter <= string->uiLength; counter++){
     int8_t iCurrentSymbol = string->str[counter];
     switch (convertState) {
       case DSStart: {
-        if (isdigit(iCurrentSymbol) || iCurrentSymbol == '-')
+        if (isdigit(iCurrentSymbol))
           convertState = DSWholePart;
         else if (isspace(iCurrentSymbol))
           ;
@@ -211,7 +226,11 @@ double stringToDouble(dtStr *string) {
         else if (iCurrentSymbol == 'e' || iCurrentSymbol == 'E')
           convertState = DSExponent;
         else{
-          return strtod(string->str, NULL);
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
         }
         break;
       }
@@ -229,23 +248,37 @@ double stringToDouble(dtStr *string) {
         else if (isdigit(iCurrentSymbol))
           ;
         else{
-          return strtod(string->str, NULL);
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
         }
         break;
       }
       case DSExponent: {
         if (iCurrentSymbol == '+' || iCurrentSymbol == '-')
           convertState = DSExponentSign;
-        else if (isdigit(iCurrentSymbol))
-          return strtod(string->str, NULL);
+        else if (isdigit(iCurrentSymbol)){
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
+        }
         else{
           return DOUBLE_CONVERSION_ERROR;
         }
         break;
       }
       case DSExponentSign: {
-        if (isdigit(iCurrentSymbol))
-          return strtod(string->str, NULL);
+        if (isdigit(iCurrentSymbol)){
+          char *end;
+          double tempDouble = strtod(string->str, &end);
+          if (*end != '\0')
+            return DOUBLE_CONVERSION_ERROR;
+          return tempDouble;
+        }
         else{
           return DOUBLE_CONVERSION_ERROR;
         }

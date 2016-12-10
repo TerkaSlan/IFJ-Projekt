@@ -581,17 +581,6 @@ eError stmt_2() {
 			}
 			break;
 
-			// NOT YET IMPLEMENTED IN EXPR.C
-/*		case TT_increment:
-		case TT_decrement:
-			errCode = precedenceParsing(NULL);
-      printf("PrecedenceParsing returned: %d\n", errCode);
-			CHECK_ERRCODE();
-
-			getNewToken(token, errCode);
-			break;
-*/
-
 			//not a keyword
 		case TT_identifier:
 		case TT_fullIdentifier: {
@@ -624,8 +613,7 @@ eError stmt_2() {
 				checkTypesAndGenerateiMOV(errCode);
 
 
-			} else if(token->type == TT_leftRoundBracket || token->type == TT_increment ||
-			          token->type == TT_decrement) {
+			} else if(token->type == TT_leftRoundBracket) {
 
 				errCode = precedenceParsing(helperToken); //TODO::empty func call returns eNULL!
 				freeToken(&helperToken);
