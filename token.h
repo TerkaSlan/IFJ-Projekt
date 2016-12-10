@@ -41,8 +41,6 @@ typedef enum {
 	TT_double,
 	TT_number,
 	TT_boolean,
-	TT_increment,
-	TT_decrement,
 	TT_not,
 	TT_and,
 	TT_or,
@@ -50,14 +48,14 @@ typedef enum {
 	TT_rightRoundBracket,
 	TT_comma,
 	TT_semicolon,
-	TT_dolar, // 25
+	TT_dolar, //23
 	TT_keyword,
 	TT_assignment,
 	TT_rightCurlyBracket,
 	TT_leftCurlyBracket,
-	TT_empty, // 30
+	TT_empty,
 	TT_EOF,
-	TT_E,
+	TT_E, //30
 	TT_void,
 	TT_start
 
