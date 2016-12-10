@@ -455,37 +455,40 @@ void partition(dtStr *s, int32_t low, int32_t high) {
 //-----------------------------Find----------------------------------
 //-------------------------------------------------------------------
 
-int32_t find(dtStr* s, dtStr* search) {
+int32_t find(dtStr* s /*T*/, dtStr* search /*P*/) {
 	if (s == NULL || search == NULL) {
+		return -1;
+	}
+	if (s->uiLength < search->uiLength) {
 		return -1;
 	}
 
 	// At first we must get a vector fail, wchich represents targets of back arrows
-	uint32_t fail[s->uiLength+1];
-	uint32_t r;
-	fail[0] = 0;
-	for (uint32_t k = 1; k < s->uiLength; k++) {
+	uint32_t fail[search->uiLength];
+	int32_t r;
+	fail[0] = -1;		// First value is always -1
+	for (uint32_t k = 1; k < search->uiLength; k++) {
 		r = fail[k-1];
-		while ((r>0) && (s->str[r-1] != s->str[k-1])) {
-			r = fail[r-1];
+		while ((r>-1) && (search->str[r] != search->str[k-1])) {
+			r = fail[r];
 		}
-		fail[k] = r + 1;
+		fail[k] = r+1;
 	}
 
-
-	uint32_t searchIndex = 1;
-	uint32_t sIndex = 1;
-	while ((sIndex <= s->uiLength) && searchIndex <= search->uiLength) {
-		if ((searchIndex == 0) || (s->str[sIndex-1] == search->str[searchIndex-1])) {
+	int32_t searchIndex = 0;
+	int32_t sIndex = 0;
+	while ((sIndex < (int64_t) s->uiLength) &&  (searchIndex < (int64_t) search->uiLength)) {
+		if ((searchIndex == -1) || (s->str[sIndex] == search->str[searchIndex])) {
 			sIndex++;
 			searchIndex++;
 		} else {
-			searchIndex = fail[searchIndex-1];
+			searchIndex = fail[searchIndex];
 		}
 	}
-	if (searchIndex > search->uiLength) {
-		return sIndex - search->uiLength - 1;
+	if ((uint32_t) searchIndex >= search->uiLength) {
+		// search was found on index sIndex - search->uiLength, returning this
+		return sIndex - search->uiLength;
 	}
-	// s doesn't contains substring search, so return -1 according to documentation
+	// s doesn't contain substring search, so returning -1 according to documentation
 	return -1;
 }
