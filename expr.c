@@ -60,7 +60,7 @@ do{																\
 	}															\
 	tSymbolPtr tmp = symbolNew();								\
 	tmp->Defined = true;										\
-	tmp->Const = false;											\
+	tmp->Const = preinterpretation;								\
 	tmp->Type = dType;											\
 	tmp->Name = strNewFromStr(name);							\
 	symbolTmp = htabAddSymbol(table, tmp, true);				\
@@ -78,7 +78,7 @@ do{																\
 do {															\
 	tSymbolPtr exprTmp = symbolNew();							\
 	exprTmp->Defined = true;									\
-	exprTmp->Const = false;										\
+	exprTmp->Const = preinterpretation;							\
 	exprTmp->Type = dType;										\
 	switch(dType) {												\
 		case eSTRING:											\
@@ -1127,6 +1127,13 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	eError errCode;
 	int32_t insertErrCode;
 
+	tHashTablePtr currentTable;
+	if (preinterpretation) {
+		currentTable = currentClass->Data.ClassData.LocalSymbolTable;
+	} else {
+		currentTable = currentFunction->Data.FunctionData.LocalSymbolTable;
+	}
+
 	switch(precedenceStackTopTerminal(stack)) {
 
 		//E -> ID
@@ -1378,7 +1385,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
 					//convert first operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1401,7 +1408,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				if (operand2->symbol->Type == eINT) {
 
 					//convert second operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1433,7 +1440,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 			generateBoolInstruction: {
 
-			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL);
+			tmpVariable(currentTable, symbolExprTmp, eBOOL);
 			eInstructionType instruction;
 			switch(operator) {
 				case TT_less:
@@ -1537,7 +1544,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					if (operand2->symbol->Type != eSTRING) {
 
 						//convert second operand to string
-						convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eSTRING);
+						convert(currentTable, operand2->symbol, instr, symbolTmp, eSTRING);
 
 						insertInstruction(instr);
 						if (insertErrCode == -1) {
@@ -1549,7 +1556,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 						operand2->symbol = symbolTmp;
 					}
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eSTRING)
+					tmpVariable(currentTable, symbolExprTmp, eSTRING)
 					goto generateInstruction;
 
 				} else {
@@ -1564,7 +1571,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					if (operand1->symbol->Type != eSTRING) {
 
 						//convert first operand to string
-						convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eSTRING);
+						convert(currentTable, operand1->symbol, instr, symbolTmp, eSTRING);
 
 						insertInstruction(instr);
 						if (insertErrCode == -1) {
@@ -1576,7 +1583,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 						operand1->symbol = symbolTmp;
 					}
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eSTRING)
+					tmpVariable(currentTable, symbolExprTmp, eSTRING)
 
 					goto generateInstruction;
 				} else {
@@ -1590,13 +1597,13 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			if (operand1->symbol->Type == eINT) {
 				if (operand2->symbol->Type == eINT) {
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eINT)
+					tmpVariable(currentTable, symbolExprTmp, eINT)
 
 					goto generateInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
 					//convert first operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand1->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1607,7 +1614,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					}
 					operand1->symbol = symbolTmp;
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else {
@@ -1621,7 +1628,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 				if (operand2->symbol->Type == eINT) {
 
 					//convert second operand to double
-					convert(currentFunction->Data.FunctionData.LocalSymbolTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
+					convert(currentTable, operand2->symbol, instr, symbolTmp, eDOUBLE);
 
 					insertInstruction(instr);
 					if (insertErrCode == -1) {
@@ -1632,12 +1639,12 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 					}
 					operand2->symbol = symbolTmp;
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else if (operand2->symbol->Type == eDOUBLE) {
 
-					tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eDOUBLE)
+					tmpVariable(currentTable, symbolExprTmp, eDOUBLE)
 
 					goto generateInstruction;
 				} else {
@@ -1744,7 +1751,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 			tSymbolPtr symbolExprTmp;
-			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL)
+			tmpVariable(currentTable, symbolExprTmp, eBOOL)
 
 			tInstruction instr;
 
@@ -1804,7 +1811,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			}
 
 			tSymbolPtr symbolExprTmp;
-			tmpVariable(currentFunction->Data.FunctionData.LocalSymbolTable, symbolExprTmp, eBOOL);
+			tmpVariable(currentTable, symbolExprTmp, eBOOL);
 
 			tInstruction instr = {iLNOT, symbolExprTmp, operand->symbol, NULL};
 
