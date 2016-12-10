@@ -672,6 +672,8 @@ eError getToken(Token *token) {
 				case SBlockCommentFinish: {
 					if(iCurrentSymbol == '/') {
 						state = SEmpty;
+					} else if (iCurrentSymbol == '*'){
+						state = SBlockCommentFinish;
 					} else if(iCurrentSymbol == EOF) {
 						handleLexError(token, ERR_LEX);
 					} else {
