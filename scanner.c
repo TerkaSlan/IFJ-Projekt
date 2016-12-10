@@ -537,7 +537,7 @@ eError getToken(Token *token) {
 					state = SBlockCommentStart;
 				} else if(iCurrentSymbol == '/') {
 					state = SComment;
-				} else if (isalpha(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
+				} else if (isalpha(iCurrentSymbol) || isdigit(iCurrentSymbol) || isspace(iCurrentSymbol) || isLexicallyValid(iCurrentSymbol)) {
 					UNGETC(iCurrentSymbol, fSourceFile);
 					token->type = TT_divide;
 					return ERR_OK;
