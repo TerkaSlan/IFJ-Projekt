@@ -126,17 +126,21 @@ double hexToDouble(dtStr *hexDoubleString){
   int32_t fromDotToP;
   fromDotToP = (dot_position == (-1)) ? 0 : p_position - dot_position - 1;
   dtStrPtr exponentString;
-  int32_t exponent = 0 ;
+  int32_t exponent = 0;
   if(substr(hexDoubleString, p_position + 1, hexDoubleString->uiLength - p_position - 1, &exponentString) == ERR_INTERN){
     strFree(exponentString);
     strFree(upToExponentPart);
     return DOUBLE_CONVERSION_ERROR;
   }
-  if ((exponent = stringToInt(exponentString)) == INT_CONVERSION_ERROR){
+  char *end;
+  long tempLong = strtol(exponentString->str, &end, 10);
+  if (tempLong > INT32_MAX || *end != '\0'){
     strFree(exponentString);
     strFree(upToExponentPart);
     return DOUBLE_CONVERSION_ERROR;
   }
+  exponent = (int32_t)tempLong;
+
   double result = (decimalNumber/pow(16, fromDotToP)) * pow(2, exponent);
   strFree(exponentString);
   strFree(upToExponentPart);
