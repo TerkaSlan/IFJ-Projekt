@@ -619,8 +619,17 @@ eError getToken(Token *token) {
 						state = SOctal;
 						strAddChar(octalString, iCurrentSymbol);
 						octalLength++;
-					} else if (octalLength == 3){
+					}
+					else if((iCurrentSymbol == '"' || iCurrentSymbol == EOF || iCurrentSymbol == '\n') && octalLength != 3){
+						strFree(octalString);
+						handleLexError(token, ERR_LEX);
+					}
+					else{
 						// 000 not permitted
+						if (octalLength != 3){
+							strFree(octalString);
+							handleLexError(token, ERR_LEX);
+						}
 						if(strCmpCStr(octalString, "000") == 0){
 							strFree(octalString);
 							handleLexError(token, ERR_LEX);
