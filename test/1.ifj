@@ -1,4 +1,4 @@
 class Main{
-	static void run(){int a = moje_funkce();}
-	static void moje_funkce() {return 5;}
+	static void run(){int i = moje_funkce();}
+	static void moje_funkce() {return;}
 }

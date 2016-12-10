@@ -197,8 +197,6 @@ TestOperator("<", TT_less, getToken(token), token);
 TestOperator("!", TT_not, getToken(token), token);
 TestOperator(">", TT_greater, getToken(token), token);
 TestOperator("!=", TT_notEqual, getToken(token), token);
-TestOperator("++", TT_increment, getToken(token), token);
-TestOperator("--", TT_decrement, getToken(token), token);
 TestOperator("!", TT_not, getToken(token), token);
 TestOperator("<=", TT_lessEqual, getToken(token), token);
 TestOperator(">=", TT_greaterEqual, getToken(token), token);
@@ -309,17 +307,12 @@ retval = getToken(token);
 SHOULD_EQUAL("\n0x52_", retval, ERR_LEX);
 
 cleanToken(&token);
-retval = getToken(token);
-SHOULD_EQUAL("\n+++ -> ++", token->type, TT_increment);
-cleanToken(&token);
-retval = getToken(token);
-SHOULD_EQUAL("\n+++ -> +", token->type, TT_plus);
 
 retval = getToken(token);
-SHOULD_EQUAL("\n--- -> --", token->type, TT_decrement);
-cleanToken(&token);
+SHOULD_EQUAL("\n+", token->type, TT_plus);
+
 retval = getToken(token);
-SHOULD_EQUAL("\n--- -> -", token->type, TT_minus);
+SHOULD_EQUAL("\n-", token->type, TT_minus);
 cleanToken(&token);
 retval = getToken(token);
 SHOULD_EQUAL("\n EOF", retval, ERR_OK);

@@ -1,17 +1,21 @@
-/*
- * Project: IFJ
- * Implementace interpretu imperativního jazyka IFJ16.
- *
- * Description:
- * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
- *
- * Team:
- * Michal Charvát          (xcharv16)
- * Terézia Slanináková     (xslani06)
- * Katarína Grešová        (xgreso00)
- * Marek Schauer           (xschau00)
- * Jakub Handzuš           (xhandz00)
- */
+/**
+  *  \file error.h
+  *  \brief Contains declarations structures and functions regarding error signals
+  *  \author Michal
+  *
+  * Project: IFJ
+  * Implementace interpretu imperativního jazyka IFJ16.
+  *
+  * Description:
+  * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+  *
+  * Team:
+  * Michal Charvát          (xcharv16)
+  * Terézia Slanináková     (xslani06)
+  * Katarína Grešová        (xgreso00)
+  * Marek Schauer           (xschau00)
+  * Jakub Handzuš           (xhandz00)
+  */
 
 #ifndef ERROR_H
 #define ERROR_H
@@ -34,11 +38,11 @@ typedef enum {
 
 /**
  *  \brief Prints to stderr error message with appropriate error code representation and a custom formated string specified.
- *  
+ *
  *  \param [in] errType eError, Error code that occured.
  *  \param [in] fmt const char*, Custom formatted string to be printed
  *  \param [in] ... other arguments matching the formating string
- *  
+ *
  */
 void printError(eError errType, const char *fmt, ...);
 

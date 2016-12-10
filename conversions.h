@@ -1,18 +1,21 @@
-/*
- * Project: IFJ
- * Implementace interpretu imperativního jazyka IFJ16.
- *
- * Description:
- * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
- *
- * Team:
- * Michal Charvát          (xcharv16)
- * Terézia Slanináková     (xslani06)
- * Katarína Grešová        (xgreso00)
- * Marek Schauer           (xschau00)
- * Jakub Handzuš           (xhandz00)
- */
-
+/**
+  *  \file conversions.h
+  *  \brief Contains declarations structures and functions regarding conversions of various data types
+  *  \author Terka
+  *
+  * Project: IFJ
+  * Implementace interpretu imperativního jazyka IFJ16.
+  *
+  * Description:
+  * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+  *
+  * Team:
+  * Michal Charvát          (xcharv16)
+  * Terézia Slanináková     (xslani06)
+  * Katarína Grešová        (xgreso00)
+  * Marek Schauer           (xschau00)
+  * Jakub Handzuš           (xhandz00)
+  */
 
 #ifndef CONVERSIONS_H
 #define CONVERSIONS_H
@@ -32,7 +35,7 @@
 * @param    string    String that'll be converted
 * @return   Converted integer in case of success, INT_CONVERSION_ERROR in case of failure
 */
-int32_t stringToInt(const dtStr *string);
+int32_t stringToInt(dtStr *string);
 
 /**
 * Converts incoming string to double
@@ -68,7 +71,7 @@ int32_t binaryToInt(const dtStr *binaryString);
 * @param    hexadecimalString   String containing the hexadecimal number to be converted
 * @return   Converted int
 */
-int32_t hexToInt(const dtStr *hexadecimalString);
+int32_t hexToInt(dtStr *hexadecimalString);
 
 /**
 * Converts hexadecimal number stored as a dtStr to double

@@ -52,7 +52,7 @@ boolean
 class
 return
 String string;while void None
-&& || + == = {(*/)}<!>!= ++ -- !
+&& || + == = {(*/)}<!>!= !
 <= >=
 -
 3.1_415

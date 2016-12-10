@@ -1,5 +1,6 @@
 
 #include "builtin.h"
+#include "conversions.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -55,7 +56,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 						c = getchar();
 					} while (c != EOF && c != '\n');
 				}
-				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
+				printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double/integer)\n");
 				return ERR_RUN_INPUT;
 			}
 
@@ -67,7 +68,7 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				return ERR_INTERN;
 			}
 
-			for (; !isspace(c) && c < 128 && c != EOF && c != '\n'; c = getchar()) {
+			for (; c < 128 && c != EOF && c != '\n'; c = getchar()) {
 				if (strAddChar(tmpStr, c) == STR_ERROR) {
 					printError(ERR_INTERN, "In readData: Cannot add char to string.\n");
 					strFree(tmpStr);
@@ -75,29 +76,19 @@ eError readData(tSymbolPtr symbol, tSymbolData* data) {
 				}
 			}
 
-			char * ptr;
 			if (symbol->Type == eINT) {
-				long tempLong = strtol(tmpStr->str, &ptr, 10);
-				if (tempLong > INT32_MAX || *ptr != '\0')
-			    return ERR_RUN_INPUT;
-				data->Integer = (int32_t)tempLong;	
+				data->Integer = stringToInt(tmpStr);
+				if ((data->Integer = stringToInt(tmpStr)) == INT_CONVERSION_ERROR){
+					strFree(tmpStr);
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double/integer)\n");
+					return ERR_RUN_INPUT;
+				}
 			} else {
-				data->Double = strtod(tmpStr->str, &ptr);
-			}
-
-			if (*ptr != '\0' || (c != EOF && c != '\n')) {
-				if (symbol->Type == eINT) {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected integer)\n");
-				} else {
-					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double)\n");
+				if (fequal((data->Double = stringToDouble(tmpStr)), DOUBLE_CONVERSION_ERROR)){
+					strFree(tmpStr);
+					printError(ERR_RUN_INPUT, "Error while reading from stdin: unexpected data (expected double/integer)\n");
+					return ERR_RUN_INPUT;
 				}
-				if (c != EOF && c != '\n') {
-					do {
-						c = getchar();
-					} while (c != EOF && c != '\n');
-				}
-				strFree(tmpStr);
-				return ERR_RUN_INPUT;
 			}
 
 			strFree(tmpStr);

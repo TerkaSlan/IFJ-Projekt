@@ -1,17 +1,22 @@
-/*
- * Project: IFJ
- * Implementace interpretu imperativního jazyka IFJ16.
- *
- * Description:
- * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
- *
- * Team:
- * Michal Charvát          (xcharv16)
- * Terézia Slanináková     (xslani06)
- * Katarína Grešová        (xgreso00)
- * Marek Schauer           (xschau00)
- * Jakub Handzuš           (xhandz00)
- */
+/**
+  *  \file token.h
+  *  \brief Contains declarations structures and functions regarding the token abstraction
+  *  \author Katka
+  *
+  * Project: IFJ
+  * Implementace interpretu imperativního jazyka IFJ16.
+  *
+  * Description:
+  * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+  *
+  * Team:
+  * Michal Charvát          (xcharv16)
+  * Terézia Slanináková     (xslani06)
+  * Katarína Grešová        (xgreso00)
+  * Marek Schauer           (xschau00)
+  * Jakub Handzuš           (xhandz00)
+  */
+
 
 #ifndef TOKEN_H
 #define TOKEN_H
@@ -36,8 +41,6 @@ typedef enum {
 	TT_double,
 	TT_number,
 	TT_boolean,
-	TT_increment,
-	TT_decrement,
 	TT_not,
 	TT_and,
 	TT_or,
@@ -45,14 +48,14 @@ typedef enum {
 	TT_rightRoundBracket,
 	TT_comma,
 	TT_semicolon,
-	TT_dolar, // 25
+	TT_dolar, //23
 	TT_keyword,
 	TT_assignment,
 	TT_rightCurlyBracket,
 	TT_leftCurlyBracket,
-	TT_empty, // 30
+	TT_empty,
 	TT_EOF,
-	TT_E,
+	TT_E, //30
 	TT_void,
 	TT_start
 
