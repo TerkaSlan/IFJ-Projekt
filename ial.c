@@ -455,7 +455,7 @@ void partition(dtStr *s, int32_t low, int32_t high) {
 //-----------------------------Find----------------------------------
 //-------------------------------------------------------------------
 
-int32_t find(dtStr* s /*T*/, dtStr* search /*P*/) {
+int32_t find(dtStr* s, dtStr* search) {
 	if (s == NULL || search == NULL) {
 		return -1;
 	}
