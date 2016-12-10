@@ -253,7 +253,7 @@ double stringToDouble(dtStr *string) {
         break;
       }
       case DSExponent: {
-        if (iCurrentSymbol == '+')
+        if (iCurrentSymbol == '+' || iCurrentSymbol == '-')
           convertState = DSExponentSign;
         else if (isdigit(iCurrentSymbol)){
           char *end;
