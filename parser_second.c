@@ -13,7 +13,6 @@
  * Jakub Handzuš           (xhandz00)
  */
 
-//97
 #include "parser_second.h"
 #include "parser.h"
 #include "expr.h"
