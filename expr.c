@@ -397,6 +397,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	eError errCode;
 	int32_t insertErrCode;
 	tSymbolPtr symbolExprTmp;
+	dtStrPtr func;
 
 	int64_t funcId = precedenceStackPop(stack);
 	if (funcId != TT_identifier && funcId != TT_fullIdentifier) {
@@ -461,8 +462,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			return ERR_INTERN;
 		}
 
-		//get function name from fullIdentifier
-		dtStrPtr func;
+		//get function name from fullIdentifier		
 		errCode = substr(funcName->stringOrId, strCharPos(funcName->stringOrId, '.') + 1, strGetLength(funcName->stringOrId) - (strCharPos(funcName->stringOrId, '.') + 1), &func);
 		precedenceSymbolFree(funcName);
 		if (errCode != ERR_OK) {
@@ -471,7 +471,6 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		//look up function in current class table
 		funcSymbol = htabGetSymbol(classTable, func);
-		strFree(func);
 		if (funcSymbol == NULL) {
 			printError(ERR_SEM, "Line: %lu - Using undefined function\n", (unsigned long)LineCounter);
 			return ERR_SEM;
@@ -504,8 +503,13 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		return errCode;
 	}
 
-	if (paramCount == 0 && result == NULL) {
-		goto afterParams;
+	if (paramCount == 0) {
+		if (result == NULL) {
+			goto afterParams;
+		} else {
+			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in function call\n", (unsigned long)LineCounter);
+			return ERR_SEM_TYPE;
+		}
 	}
 
 	while (paramCount > 0) {
@@ -658,15 +662,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			if (token->type == TT_rightRoundBracket) {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			} else {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			}
 		}
 
-		//this builtin has three parameters - first parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
 			printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SEM_TYPE;
 		}
+
+		//this builtin has three parameters - first parameter have to be followed by comma
 		if (token->type != TT_comma) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
@@ -685,8 +695,8 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+			return ERR_SYNTAX;
 		}
 
 		//this builtin has three parameters - second parameter have to be followed by comma
@@ -712,14 +722,23 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+			return ERR_SYNTAX;
 		}
 
 		//this builtin has three parameters - precedence parsing have to stop on right round bracket after third parameter
 		if (token->type == TT_comma) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+			if (result == NULL) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
 		if (token->type != TT_rightRoundBracket) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
@@ -764,15 +783,18 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 	}
 	if (strCmpCStr(builtin, "ifj16.readDouble") == 0 || (strCmpCStr(builtin, "ifj16.readInt") == 0) || (strCmpCStr(builtin, "ifj16.readString") == 0)) {
 
-		cleanToken(&token);
-		errCode = getToken(token);
+		errCode = parsing(NULL);
 		if (errCode != ERR_OK) {
 			return errCode;
 		}
 
+		if (result != NULL) {
+			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+			return ERR_SEM_TYPE;
+		}
 		//this builtin has no parameters - next token should be right round bracket
 		if (token->type != TT_rightRoundBracket) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SEM_TYPE;
 		}
 
@@ -815,14 +837,28 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			if (token->type == TT_rightRoundBracket) {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			} else {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			}
 		}
 
 		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
 		if (token->type == TT_comma) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+			if (result == NULL) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
 		if (token->type != TT_rightRoundBracket) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
@@ -877,15 +913,30 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			if (token->type != TT_rightRoundBracket) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
 
 		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
 		if (token->type == TT_comma) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+			if (result == NULL) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
+
 		if (token->type != TT_rightRoundBracket) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
@@ -927,15 +978,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			if (token->type == TT_rightRoundBracket) {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			} else {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			}
 		}
 
-		//this builtin has two parameters - first parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
 			printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SEM_TYPE;
 		}
+
+		//this builtin has two parameters - first parameter have to be followed by comma
 		if (token->type != TT_comma) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
@@ -954,15 +1011,25 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+			return ERR_SYNTAX;
 		}
 
 		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
 		if (token->type == TT_comma) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+			if (result == NULL) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
+
 		if (token->type != TT_rightRoundBracket) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
@@ -1006,15 +1073,21 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			if (token->type == TT_rightRoundBracket) {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			} else {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			}
 		}
 
-		//this builtin has two parameters - first parameter have to be followed by comma
 		if (token->type == TT_rightRoundBracket) {
 			printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SEM_TYPE;
 		}
+
+		//this builtin has two parameters - first parameter have to be followed by comma
 		if (token->type != TT_comma) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
@@ -1033,14 +1106,23 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+			return ERR_SYNTAX;
 		}
 
 		//this builtin has two parameters - precedence parsing have to stop on right round bracket after second parameter
 		if (token->type == TT_comma) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+			if (result == NULL) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
 		if (token->type != TT_rightRoundBracket) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
@@ -1085,15 +1167,30 @@ eError builtinCall(dtStrPtr builtin, tPrecedenceStackPtr stack, tSymbolStackPtr 
 		}
 
 		if (result == NULL) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Result from precedenceParsing shouldn't be NULL\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			if (token->type != TT_rightRoundBracket) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too few paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
 
 		//this builtin has only one parameter - precedence parsing have to stop on right round bracket
 		if (token->type == TT_comma) {
-			printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
-			return ERR_SEM_TYPE;
+			errCode = parsing(NULL);
+			if (errCode != ERR_OK) {
+				return errCode;
+			}
+			if (result == NULL) {
+				printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SYNTAX;
+			} else {
+				printError(ERR_SEM_TYPE, "Line: %lu - Too much paramaters in builtin call\n", (unsigned long)LineCounter);
+				return ERR_SEM_TYPE;
+			}
 		}
+
 		if (token->type != TT_rightRoundBracket) {
 			printError(ERR_SYNTAX, "Line: %lu - Unexpected symbol in builtin call\n", (unsigned long)LineCounter);
 			return ERR_SYNTAX;
