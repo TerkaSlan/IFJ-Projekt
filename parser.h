@@ -72,8 +72,6 @@ do{                                                                             
 } while (0)
 
 #define INTERN() EXIT(ERR_INTERN, "Error allocating new space. Out of memory.\n")
-#define CHECK_ERRCODE() if (errCode != ERR_OK) return errCode
-
 
 eError fillSymbolTable();
 eError skipFunctionCall(eError errCode);

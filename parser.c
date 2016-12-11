@@ -27,6 +27,7 @@
 
 // Borrowed from interpret.c
 #define EXIT(err, ...) do{errCode = err; printError(err, "Line: %lu - %s", (unsigned long)LineCounter, __VA_ARGS__);}while(0)
+#define CHECK_ERRCODE() if (errCode != ERR_OK) return errCode
 
 /*
  * Creates a new class symbol and stores it in globalScopeTable
@@ -297,7 +298,7 @@ eError classList() {
 
 eError classBody() {
 	eError errCode = ERR_OK;
-
+  bool isRun = false;
 	//[<KTT_CLASS>][<TT_identifier>][{][<KTT_STATIC>]5.Token -> [<KTT_*>]
 	//RULE: CLASS_BODY -> static type simple_id VAR_OR_FUNC CLASS_BODY
 	getNewToken(token, errCode);
@@ -324,6 +325,8 @@ eError classBody() {
 		INTERN();
 		return ERR_INTERN;
 	}
+  if (strCmpCStr(symbolName, "run") == 0)
+    isRun = true;
 
 
 	//read next token - now we will find out, if it is function or identifier
@@ -376,6 +379,11 @@ eError classBody() {
 
 			//reading all parameters
 			getNewToken(token, errCode);
+      if (isRun && token->type != TT_rightRoundBracket){
+        EXIT(ERR_SYNTAX, "Violating run's signature\n");
+        return ERR_SYNTAX;
+      }
+
 			//stops, when right round bracket is read - end of parameters
 			while (token->type != TT_rightRoundBracket) {
 
