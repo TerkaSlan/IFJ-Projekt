@@ -325,7 +325,7 @@ eError classBody() {
 		INTERN();
 		return ERR_INTERN;
 	}
-  if (strCmpCStr(symbolName, "run") == 0)
+  if (strCmpCStr(currentClass->Name, "Main") == 0 && strCmpCStr(symbolName, "run") == 0)
     isRun = true;
 
 
