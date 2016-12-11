@@ -39,7 +39,7 @@ static tSymbolPtr prepareForInterpret(tSymbolPtr symbol, void* param);
 
 
 eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) {
-	//lets start this shit
+	//lets start this nice piece of work
 #define EXIT(err, ...) do{ret = err; printError(err, __VA_ARGS__); goto lbFinish;}while(0)
 	eError ret = ERR_OK;
 
@@ -79,7 +79,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 	instrListSetFirstInstruction(instrList, mainSymbol->Data.FunctionData.InstructionIndex);
 	ASSERT(mainSymbol->Data.FunctionData.InstructionIndex > 0);
 
-	//get instruction and do shit, loop
+	//get instruction and do interpretation and stuff, loop
 	tInstructionPtr i = NULL;
 	while(1) {
 		if(!(i = instrListGetNextInstruction(instrList)))

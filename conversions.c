@@ -47,7 +47,7 @@ do {                                                                    \
 eError convertHexToDecimal(char *hexString, int32_t hexLen, int32_t *decimalNumber){
   int32_t dotPresent = 0;
   for(int32_t i = hexLen-1; i >= 0 ; i--){
-    // Hack: I need to adjust 2nd arg in pow if dot is present so that i won't fuck up my calculations
+    // Hack: I need to adjust 2nd arg in pow if dot is present so that i won't introduce some disastrous changes to my calculations
     if (hexString[i] == '.'){
       dotPresent = 1;
       continue;
