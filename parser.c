@@ -667,15 +667,6 @@ eError var() {
 		return ERR_SYNTAX;
 	}
 
-	if ((symbolName = strNewFromStr(token->str)) == NULL) {
-		INTERN();
-		return ERR_INTERN;
-	}
-
-	//TODO::->deleted part - Can be identifier empty? ""
-
-	CHECK_ERRCODE();
-
 	getNewToken(token, errCode);
 	// INITIALIZE ->     = EXPR ;
 	if (token->type == TT_assignment) {
