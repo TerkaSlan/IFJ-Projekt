@@ -17,7 +17,7 @@
   * Marek Schauer           (xschau00)
   * Jakub Handzuš           (xhandz00)
   */
-#include <stdint.h>				//for "uint32_t"
+#include <stdint.h>
 #include "str.h"
 #include "error.h"
 #include "ial.h"

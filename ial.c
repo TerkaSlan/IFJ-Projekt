@@ -429,25 +429,26 @@ void partition(dtStr *s, int32_t low, int32_t high) {
 	int32_t i = low;
 	int32_t j = high;
 	char pMedian = s->str[(i+j) / 2];
-	char tmpChar;
 	//pMedian is pseudo median
+	char tmpChar;
 	do	{
-		while (s->str[i] < pMedian)
+		while (s->str[i] < pMedian)		//first 'i' from left, where is str[i] >= pMedian
 			i++;
-		while (s->str[j] > pMedian)
+		while (s->str[j] > pMedian)		//first 'j' from right, where is str[j] <= pMedian
 			j--;
 		if (i <= j) {
+			// swapping of elements
 			tmpChar = s->str[i];
 			s->str[i] = s->str[j];
 			s->str[j] = tmpChar;
 			i++;
 			j--;
 		}
-	} while (i <= j);
+	} while (i <= j);			// loop ends, when indexes 'i' and 'j' are crossed
 	if (i < high)
-		partition(s, i, high);
+		partition(s, i, high);	// right recursion
 	if (j > low)
-		partition(s, low, j);
+		partition(s, low, j);	// left recursion
 }
 
 

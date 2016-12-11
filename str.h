@@ -19,7 +19,7 @@
   */
 
 
-#include <stdint.h>				//for "uint32_t"
+#include <stdint.h>
 #include <stdbool.h>
 
 #ifndef STR_H
