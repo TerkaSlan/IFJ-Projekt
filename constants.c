@@ -1,4 +1,8 @@
 /*
+ *  \file constants.c
+ *  \brief Contains implementation of functions regarding the handling of constants
+ *  \author Michal
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

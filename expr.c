@@ -1,4 +1,8 @@
 /*
+ *  \file expr.c
+ *  \brief Contains implementation of functions regarding expression handling
+ *  \author Katka
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

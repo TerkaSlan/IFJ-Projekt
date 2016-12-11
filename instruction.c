@@ -1,4 +1,9 @@
 /*
+ *  \file instruction.c
+ *  \brief Contains implementation of functions regarding the instruction set
+ *  \author Michal
+ *
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

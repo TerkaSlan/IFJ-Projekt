@@ -1,8 +1,7 @@
 /**
  *  \file ial.h
  *  \brief Contains declarations structures and functions regarding Symbol table
- *  \author CharvN
- *  \date 15. 10. 2016
+ *  \author Michal
  *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.

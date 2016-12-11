@@ -1,7 +1,25 @@
-//
-// Basic structure created by Katika
-// Refined into more elaborate structure by Terka
-//
+/**
+  *  \file parser.c
+  *  \brief Contains implementation of functions regarding the first run of parser
+  *  \author Terka
+  *  \author Katka
+  *  \author Michal
+  *
+  * Project: IFJ
+  * Implementace interpretu imperativního jazyka IFJ16.
+  *
+  * Description:
+  * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+  *
+  * Team:
+  * Michal Charvát          (xcharv16)
+  * Terézia Slanináková     (xslani06)
+  * Katarína Grešová        (xgreso00)
+  * Marek Schauer           (xschau00)
+  * Jakub Handzuš           (xhandz00)
+  */
+
+
 #include "parser.h"
 #include "scanner.h"
 #include "ial.h"

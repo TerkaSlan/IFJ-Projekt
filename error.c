@@ -1,4 +1,9 @@
 /*
+ *
+ *  \file error.c
+ *  \brief Contains implementation of functions regarding error signals
+ *  \author Michal
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

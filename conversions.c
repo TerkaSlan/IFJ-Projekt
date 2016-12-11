@@ -1,4 +1,8 @@
 /*
+ *  \file conversions.c
+ *  \brief Contains implementation of functions regarding conversions of various data types
+ *  \author Terka
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

@@ -140,9 +140,10 @@ int main(int argc, char const *argv[]) {
 	errCode = generateInstructions();
 	CHECK_ERRCODE(lParserFailed);
 
+	//instrListPrint(preInstructionList);
 	//instrListPrint(instructionList);
 
-	errCode = Interpret(globalScopeTable, preInstructionList);
+	errCode = Interpret(helperSymbolTable, preInstructionList);
 	CHECK_ERRCODE(lParserFailed);
 
 	errCode = Interpret(globalScopeTable, instructionList);

@@ -1,4 +1,8 @@
 /*
+ *  \file interpret.c
+ *  \brief Contains implementation of functions regarding the interpretation
+ *  \author Michal
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

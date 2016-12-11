@@ -1,7 +1,7 @@
 /**
   *  \file constants.h
   *  \brief Contains declarations structures and functions regarding the handling of constants
-  *  \author Katka
+  *  \author Michal
   *
   * Project: IFJ
   * Implementace interpretu imperativního jazyka IFJ16.

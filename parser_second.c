@@ -1,17 +1,23 @@
-/*
- * Project: IFJ
- * Implementace interpretu imperativního jazyka IFJ16.
- *
- * Description:
- * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
- *
- * Team:
- * Michal Charvát          (xcharv16)
- * Terézia Slanináková     (xslani06)
- * Katarína Grešová        (xgreso00)
- * Marek Schauer           (xschau00)
- * Jakub Handzuš           (xhandz00)
- */
+/**
+  *  \file parser_second.c
+  *  \brief Contains implementation of functions regarding the second run of parser
+  *  \author Terka
+  *  \author Katka
+  *  \author Michal
+  *
+  * Project: IFJ
+  * Implementace interpretu imperativního jazyka IFJ16.
+  *
+  * Description:
+  * https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+  *
+  * Team:
+  * Michal Charvát          (xcharv16)
+  * Terézia Slanináková     (xslani06)
+  * Katarína Grešová        (xgreso00)
+  * Marek Schauer           (xschau00)
+  * Jakub Handzuš           (xhandz00)
+  */
 
 #include "parser_second.h"
 #include "parser.h"
@@ -91,9 +97,13 @@ do{\
     if (result->Type == foundSymbol->Type || (result->Type == eINT && foundSymbol->Type  == eDOUBLE)){\
         AI(iMOV, foundSymbol, result, NULL);\
     }\
-    else{\
-        EXIT(ERR_SEM, "Assigning of inconvertible types.");\
+ else if(result->Type == eNULL){\
+        EXIT(ERR_SEM, "Assigning void type.");\
         return ERR_SEM;\
+    }\
+    else {\
+        EXIT(ERR_SEM_TYPE, "Assigning of inconvertible types.");\
+        return ERR_SEM_TYPE;\
     }\
 }while(0)
 
@@ -449,8 +459,8 @@ eError stmt_2() {
 						//return void
 						if(currentFunction->Data.FunctionData.ReturnType != eNULL)
 						{
-							EXIT(ERR_SEM, "Function must return a value.");
-							return ERR_SEM;
+							EXIT(ERR_SEM_TYPE, "Function must return a value.");
+							return ERR_SEM_TYPE;
 						}
 					}
 					else

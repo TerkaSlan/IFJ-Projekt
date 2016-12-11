@@ -1,4 +1,9 @@
 /*
+ *  \file ial.c
+ *  \brief Contains implementation of functions regarding Symbol table
+ *  \author Michal
+ *
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *

@@ -1,4 +1,9 @@
 /*
+ *  \file frame.c
+ *  \brief Contains implementation of functions regarding context frames
+ *  \author Michal
+ *
+ *
  * Project: IFJ
  * Implementace interpretu imperativního jazyka IFJ16.
  *
