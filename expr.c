@@ -397,7 +397,6 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 	eError errCode;
 	int32_t insertErrCode;
 	tSymbolPtr symbolExprTmp;
-	dtStrPtr func;
 
 	int64_t funcId = precedenceStackPop(stack);
 	if (funcId != TT_identifier && funcId != TT_fullIdentifier) {
@@ -463,6 +462,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		}
 
 		//get function name from fullIdentifier		
+		dtStrPtr func;
 		errCode = substr(funcName->stringOrId, strCharPos(funcName->stringOrId, '.') + 1, strGetLength(funcName->stringOrId) - (strCharPos(funcName->stringOrId, '.') + 1), &func);
 		precedenceSymbolFree(funcName);
 		if (errCode != ERR_OK) {
@@ -471,6 +471,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 		//look up function in current class table
 		funcSymbol = htabGetSymbol(classTable, func);
+		strFree(func);
 		if (funcSymbol == NULL) {
 			printError(ERR_SEM, "Line: %lu - Using undefined function\n", (unsigned long)LineCounter);
 			return ERR_SEM;
