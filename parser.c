@@ -7,33 +7,8 @@
 #include "ial.h"
 #include "token.h"
 
-/*
-*  Converts between token type and symbol type
-*/
-#define TTtoeSymbolType(ktt, eSymbol)\
-do{                                  \
-  switch (ktt){                      \
-    case KTT_int:                    \
-    eSymbol = eINT; break;         \
-    case KTT_double:                 \
-    eSymbol = eDOUBLE; break;      \
-    case KTT_boolean:                \
-    eSymbol = eBOOL; break;        \
-    case KTT_String:                 \
-    eSymbol = eSTRING; break;      \
-    default:                         \
-    eSymbol = eNULL;               \
-  }                                  \
-}while(0)
-
-
-#define printSymbol(what_symbol, symbol) ; /*do{\
-  printf("%s symbol living at: %p\nSymbol->Const: %d\nSymbol->Defined: %d\nSymbol->Name: %s\nGST: %p \nCurrentClass: %p\nCurrent function: %p\n\n", what_symbol, symbol, symbol->Const, symbol->Defined, symbol->Name->str, globalScopeTable, currentClass, currentFunction);\
-}while (0);*/
-
 // Borrowed from interpret.c
 #define EXIT(err, ...) do{errCode = err; printError(err, "Line: %lu - %s", (unsigned long)LineCounter, __VA_ARGS__);}while(0)
-#define INTERN() EXIT(ERR_INTERN, "Error allocating new space. Out of memory.\n")
 #define CHECK_ERRCODE() if (errCode != ERR_OK) return errCode
 
 /*
@@ -66,7 +41,6 @@ do{                                  \
 	    {INTERN(); htabFree(newTable); symbolFree(classSymbol); name = NULL; break;  }\
 	newTable->Parent = addedClass;						                                 \
 	currentClass = addedClass;                                                \
-	printSymbol("Class", currentClass);                                       \
 	symbolFree(classSymbol);\
 	name = NULL;\
  } while (0)
@@ -99,7 +73,6 @@ do{																										\
 	\
 	newTable->Parent = addedFunc;\
 	currentFunction = addedFunc;\
-	printSymbol("Function", currentFunction);\
 	symbolFree(functionSymbol);\
 	name = NULL;\
 } while (0)
@@ -120,40 +93,10 @@ do{																										\
 																				\
 	if (htabAddSymbol(currentClass->Data.ClassData.LocalSymbolTable, currentVariable, false) == NULL)\
 		{INTERN(); symbolFree(currentVariable); name = NULL; break;}\
-	printSymbol("Static variable", currentVariable);\
 	symbolFree(currentVariable);\
 	name = NULL;\
  } while (0)
 
-
- /*
-  * Creates a new local variable or parameter symbol and stores it table of function variables
-  */
-
- #define createFunctionVariable(type, defined, name, isArgument)                                        \
- do{                                                                                                     \
- 	tSymbolPtr currentVariable = symbolNew();                                                             \
-	tSymbolPtr addedVar;\
-	if (currentVariable == NULL) {INTERN(); break;}                                                  \
-	currentVariable->Type = type;																                                          \
-	currentVariable->Const = false;																                                        \
-	currentVariable->Defined = defined;															                                      \
-	currentVariable->Name = name;                                                                        \
-	if((currentFunction != NULL && htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, name)) || (currentClass != NULL && (addedVar = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, name)) != NULL && addedVar->Type == eFUNCTION))\
-		{EXIT(ERR_SEM, "Redefining symbol.\n"); symbolFree(currentVariable); name = NULL; break;  }			\
-																				\
-	if ((addedVar = htabAddSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, currentVariable, false)) == NULL) \
-	    {INTERN(); symbolFree(currentVariable); name = NULL; break;}\
-\
-	printSymbol("Function variable", currentVariable);                                                    \
-	if (isArgument){                                                                                      \
-        if(!symbolFuncAddArgument(currentFunction, addedVar))\
-            {INTERN(); symbolFree(currentVariable); name = NULL; break;}\
-	}\
-\
-    symbolFree(currentVariable);\
-	name = NULL;\
- } while (0)
 
 #define getNewToken(token, errCode)   \
 do{                                   \
@@ -164,7 +107,6 @@ do{                                   \
 
 extern tHashTablePtr globalScopeTable;
 extern tConstContainerPtr constTable;
-
 
 /*
  */
@@ -458,10 +400,10 @@ eError classBody() {
 				}
 
 
-                // last true for isArgument, updating argument list of currentFunction
+        // last true for isArgument, updating argument list of currentFunction
 				createFunctionVariable(symbolTokenType, true, symbolName, true);
 		        CHECK_ERRCODE();
-            }
+      }
 
 			//read next token - it should be left curly bracket
 			//RULE: VAR_OR_FUNC -> ( PARAM ) { FUNC_BODY }
@@ -714,7 +656,6 @@ eError var() {
 
 	//TODO::->deleted part - Can be identifier empty? ""
 
-	createFunctionVariable(symbolTokenType, true, symbolName, false);
 	CHECK_ERRCODE();
 
 	getNewToken(token, errCode);

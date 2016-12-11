@@ -13,7 +13,6 @@
  * Jakub Handzuš           (xhandz00)
  */
 
-
 #include "parser_second.h"
 #include "parser.h"
 #include "expr.h"
@@ -49,9 +48,7 @@ static eError stmtBody_2();
 
 static eError var_2();
 
-//static eInstructionType getFunctionCallForBuiltin(dtStrPtr *string); //TODO::where is it used??
-static tSymbolPtr findSymbol(dtStrPtr symbolName);
-
+static tSymbolPtr findSymbol(dtStrPtr insertedSymbolName);
 
 /* Instruction tape for preinterpretation needed in specific case when there is
    static variable with initialization which needs to be done before interpretation */
@@ -69,8 +66,10 @@ tSymbolPtr        currentFunction;
 tSymbolPtr        currentClass;
 // Symbol returned from expr.c as a result of expression evaluation
 tSymbolPtr        result;
-// String holding identifier when needed throghout the module
-static dtStrPtr   symbolName;
+// String holding the inserted identifier when needed throghout the module
+static dtStrPtr   insertedSymbolName;
+// String needed to hold identifier when it's yet to be inserted throughout the module
+static dtStrPtr adeptSymbolName;
 // result of findSymbol()
 static tSymbolPtr foundSymbol;
 /* Flag available to expr module so that it knows when to generate instructions
@@ -78,11 +77,13 @@ static tSymbolPtr foundSymbol;
 	 instructions most of the time.*/
 bool preinterpretation = false;
 
+static eSymbolType symbolTokenType;
+
 #define checkTypesAndGenerateiMOV(errCode)\
 do{\
     if (!result)\
         {EXIT(ERR_SYNTAX, "Expression expected."); return ERR_SYNTAX;}\
-    foundSymbol = findSymbol(symbolName);\
+    foundSymbol = findSymbol(insertedSymbolName);\
     /*The only time different types are allowed is implicit conversion when dst is double and src is int.
 	  Interpret deals with the conversion*/        \
     if (foundSymbol == NULL)\
@@ -109,7 +110,7 @@ eError initializeHelperVariables_2() {
 		EXIT(ERR_INTERN, "Error allocating new space. Out of memory.");
 		return ERR_INTERN;
 	}
-	if((symbolName = strNew()) == NULL) {
+	if((insertedSymbolName = strNew()) == NULL) {
 		freeToken(&token);
 		EXIT(ERR_INTERN, "Error allocating new space. Out of memory.");
 	}
@@ -119,26 +120,26 @@ eError initializeHelperVariables_2() {
 
 void freeHelperVariables_2() {
 	freeToken(&token);
-	strFree(symbolName);
+	strFree(insertedSymbolName);
 }
 
 /**
  *  \brief Checks if symbol with given name exists in symbol table
- *	\param symbolName Name to be checked for
+ *	\param insertedSymbolName Name to be checked for
  *  \return Pointer to the symbol found in symbol table on success, NULL on failure
  */
-tSymbolPtr findSymbol(dtStrPtr symbolName) {
+tSymbolPtr findSymbol(dtStrPtr insertedSymbolName) {
 	tSymbolPtr symbolAdept;
-	int32_t    dotPosition = strCharPos(symbolName, '.');
+	int32_t    dotPosition = strCharPos(insertedSymbolName, '.');
 
 	// Full Identifier -> needs to be split into class and simple id and checked for existence of both
 	if(dotPosition != (-1)) {
 		dtStrPtr   functionName, className;
 		tSymbolPtr classSymbol, functionSymbol;
 
-		if(substr(symbolName, dotPosition + 1, strGetLength(symbolName) - dotPosition - 1, &functionName) != ERR_OK)
+		if(substr(insertedSymbolName, dotPosition + 1, strGetLength(insertedSymbolName) - dotPosition - 1, &functionName) != ERR_OK)
 			return NULL;
-		if(substr(symbolName, 0, dotPosition, &className) != ERR_OK)
+		if(substr(insertedSymbolName, 0, dotPosition, &className) != ERR_OK)
 		{
 			strFree(functionName);
 			return NULL;
@@ -166,8 +167,8 @@ tSymbolPtr findSymbol(dtStrPtr symbolName) {
 		// Simple Identifier
 	else {
 
-		if(currentFunction == NULL || (symbolAdept = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, symbolName)) == NULL) {
-			if(currentClass == NULL || (symbolAdept = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName)) == NULL) {
+		if(currentFunction == NULL || (symbolAdept = htabGetSymbol(currentFunction->Data.FunctionData.LocalSymbolTable, insertedSymbolName)) == NULL) {
+			if(currentClass == NULL || (symbolAdept = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, insertedSymbolName)) == NULL) {
 				return NULL;
 			} else {
 				// I'm in currentClass, not in currentFunction
@@ -259,7 +260,7 @@ eError classBody_2() {
 	//[<TT_identifier>]
 	getNewToken(token, errCode);
 
-	if(strCopyStr(symbolName, token->str) == STR_ERROR) {
+	if(strCopyStr(insertedSymbolName, token->str) == STR_ERROR) {
 		EXIT(ERR_INTERN, "Error allocating new space. Out of memory.");
 		return ERR_INTERN;
 	}
@@ -282,7 +283,7 @@ eError classBody_2() {
 				EXIT(ERR_SYNTAX, "Expression expected.");
 				return ERR_SYNTAX;
 			}
-			if((foundSymbol = findSymbol(symbolName)) == NULL) {
+			if((foundSymbol = findSymbol(insertedSymbolName)) == NULL) {
 				EXIT(ERR_SEM, "Unresolved symbol.");
 				return ERR_SEM;
 			}
@@ -307,9 +308,9 @@ eError classBody_2() {
 
 		case TT_leftRoundBracket:
 			// Function definition
-			currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, symbolName);
+			currentFunction = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, insertedSymbolName);
 			getNewToken(token, errCode);
-			strClear(symbolName);
+			strClear(insertedSymbolName);
 
 			while(token->type != TT_rightRoundBracket) {
 				getNewToken(token, errCode);
@@ -596,7 +597,7 @@ eError stmt_2() {
 				return ERR_INTERN;
 			}
 
-			if(strCopyStr(symbolName, token->str) != ERR_OK) {
+			if(strCopyStr(insertedSymbolName, token->str) != ERR_OK) {
 				freeToken(&helperToken);
 				EXIT(ERR_INTERN, "Error allocating new space. Out of memory.");
 				return ERR_INTERN;
@@ -634,20 +635,26 @@ eError stmt_2() {
 eError var_2() {
 
 	eError errCode = ERR_OK;
+  TTtoeSymbolType(token->keywordType, symbolTokenType);
 	getNewToken(token, errCode);
-	strCopyStr(symbolName, token->str);
-	getNewToken(token, errCode);
+  if ((adeptSymbolName = strNewFromStr(token->str)) == NULL) {
+    INTERN();
+    return ERR_INTERN;
+  }
+  createFunctionVariable(symbolTokenType, true, adeptSymbolName, false);
+  strCopyStr(insertedSymbolName, token->str);
+  getNewToken(token, errCode);
 
 	if(token->type == TT_assignment) {
 		errCode = precedenceParsing(NULL);
 		CHECK_ERRCODE();
 		checkTypesAndGenerateiMOV(errCode);
 	}
-	if(token->type != TT_semicolon) { //TODO::precedence parsing may stop on )??
+	if(token->type != TT_semicolon) {
 		EXIT(ERR_SYNTAX, "Assignment expected. Missing ';'?");
 		return ERR_SYNTAX;
 	}
 
-	strClear(symbolName);
+	strClear(insertedSymbolName);
 	return ERR_OK;
 }
