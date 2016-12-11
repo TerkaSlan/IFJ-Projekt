@@ -558,7 +558,7 @@ eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 		}
 	}
 
-	afterParams: 
+	afterParams:
 
 	createInstruction(instr, iCALL, NULL, NULL, NULL);
 	insertInstruction(instr);
@@ -1168,7 +1168,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
 					//id isn't in current function symbol table - but it still could be static id in current class symbol table
 					symbolId = htabGetSymbol(currentClass->Data.ClassData.LocalSymbolTable, id->stringOrId);
-					if (symbolId == NULL) {
+					 if (symbolId == NULL || symbolId->Data.FunctionData.LocalSymbolTable != NULL) {
 						precedenceSymbolFree(id);
 						printError(ERR_SEM, "Line: %lu - Using undefined identfier\n", (unsigned long)LineCounter);
 						return ERR_SEM;
@@ -1240,7 +1240,7 @@ eError reduce(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 			tSymbolPtr symbolId;
 			symbolId = htabGetSymbol(classTable, id);
 			strFree(id);
-			if (symbolId == NULL) {
+			if (symbolId == NULL || symbolId->Data.FunctionData.LocalSymbolTable != NULL) {
 				precedenceSymbolFree(fullId);
 				printError(ERR_SEM, "Line: %lu - Using undefined identifier\n", (unsigned long)LineCounter);
 				return ERR_SEM;

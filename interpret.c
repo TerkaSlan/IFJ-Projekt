@@ -646,7 +646,6 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				ASSERT(((tSymbolPtr) i->arg1)->Type == eBOOL);
 
 				CHECK_INIT(i->arg1, curFrame);
-				CHECK_INIT(i->arg2, curFrame);
 
 				SD(i->dst, curFrame)->Bool = !(GD(i->arg1, curFrame)->Bool);
 				break;
@@ -703,7 +702,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				int32_t val;
 				void* result = symbolToInt(i->arg1, GD(i->arg1, curFrame), &val);
 				(void)result;
-				
+
 				ASSERT(result != NULL);
 
 				SD(i->dst, curFrame)->Integer = val;
@@ -717,7 +716,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				bool val;
 				void *result = symbolToBool(i->arg1, GD(i->arg1, curFrame), &val);
 				(void)result;
-				
+
 				ASSERT(result != NULL);
 
 				SD(i->dst, curFrame)->Bool = val;
@@ -731,7 +730,7 @@ eError Interpret(tHashTablePtr globalClassTable, tInstructionListPtr instrList) 
 				double val;
 				void *result = symbolToDouble(i->arg1, GD(i->arg1, curFrame), &val);
 				(void)result;
-				
+
 				ASSERT(result != NULL);
 
 				SD(i->dst, curFrame)->Double = val;

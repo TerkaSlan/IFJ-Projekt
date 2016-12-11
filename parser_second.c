@@ -92,8 +92,8 @@ do{\
         AI(iMOV, foundSymbol, result, NULL);\
     }\
     else{\
-        EXIT(ERR_SEM_TYPE, "Assigning of unconvertible types.");\
-        return ERR_SEM_TYPE;\
+        EXIT(ERR_SEM, "Assigning of inconvertible types.");\
+        return ERR_SEM;\
     }\
 }while(0)
 
@@ -458,7 +458,7 @@ eError stmt_2() {
 						//return value
 						if(currentFunction->Data.FunctionData.ReturnType != result->Type && !(currentFunction->Data.FunctionData.ReturnType == eDOUBLE && result->Type == eINT))
 						{
-							EXIT(ERR_SEM_TYPE, "Returning unconvertible type.");
+							EXIT(ERR_SEM_TYPE, "Returning inconvertible type.");
 							return ERR_SEM_TYPE;
 						}
 					}
