@@ -27,7 +27,6 @@
 
 // Borrowed from interpret.c
 #define EXIT(err, ...) do{errCode = err; printError(err, "Line: %lu - %s", (unsigned long)LineCounter, __VA_ARGS__);}while(0)
-#define CHECK_ERRCODE() if (errCode != ERR_OK) return errCode
 
 /*
  * Creates a new class symbol and stores it in globalScopeTable

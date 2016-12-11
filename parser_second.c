@@ -93,7 +93,7 @@ do{\
     /*The only time different types are allowed is implicit conversion when dst is double and src is int.
 	  Interpret deals with the conversion*/        \
     if (foundSymbol == NULL)\
-      {EXIT(ERR_SYNTAX, "Identifier not defined."); return ERR_SYNTAX;}\
+      {EXIT(ERR_SEM, "Identifier not defined."); return ERR_SEM;}\
     if (result->Type == foundSymbol->Type || (result->Type == eINT && foundSymbol->Type  == eDOUBLE)){\
         AI(iMOV, foundSymbol, result, NULL);\
     }\
@@ -652,6 +652,7 @@ eError var_2() {
     return ERR_INTERN;
   }
   createFunctionVariable(symbolTokenType, true, adeptSymbolName, false);
+  CHECK_ERRCODE();
   strCopyStr(insertedSymbolName, token->str);
   getNewToken(token, errCode);
 
