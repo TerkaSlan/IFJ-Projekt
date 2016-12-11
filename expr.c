@@ -389,6 +389,11 @@ tPrecedenceSymbolPtr symbolStackPop(tSymbolStackPtr stack) {
 
 eError functionParse(tPrecedenceStackPtr stack, tSymbolStackPtr symbolStack) {
 
+	if (preinterpretation) {
+		printError(ERR_SEM, "Line: %lu - Function call in static variable initialization isn't supported\n", (unsigned long)LineCounter);
+		return ERR_SEM;
+	}
+
 	eError errCode;
 	int32_t insertErrCode;
 	tSymbolPtr symbolExprTmp;
