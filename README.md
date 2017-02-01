@@ -1,12 +1,20 @@
 ![logo](http://i.imgur.com/mrVumMH.png)
 
+  Repository for our project to the IFJ course at FIT, BUT : Interpreter for simplified version of Java SE 8
+
+  **Team:**	[Michal Charvát](https://github.com/CharvN), [Terka Slanináková](https://github.com/TerkaSlan), [Katarína Grešová](https://github.com/kati-ka), [Marek Schauer](https://github.com/marekschauer), [Jakub Handzuš](https://github.com/JakubHandzus)
+
+  **Project Specification (cz):** https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
+
+  How to run: Download/clone this repository, run "make", provide a source file or use one from /tests directory (".code" extension). Supports only x64 platform.
+
  **Stage 1: Basic data structures, supporting modules, simple lexical analysis**
 
  **Stage 2: Symbol table, grammar, basic scanner implementation, elaborate lexical analysis**
 
  **Stage 3: Parser, interpret, expressions and instruction modules implementation.**
 
- We're at **Stage 4: Testing, debugging, fixing, optimalizations, low-priority bonus extensions**
+ **Stage 4: Testing, debugging, fixing, optimalizations, low-priority bonus extensions**
 
 _Week 1 [4.10. - 11.10]_
 
@@ -92,13 +100,12 @@ _Week 9 [30.11 - 6.12]_
 
   Adjust Makefile for 2nd submission (/tests directory) - **Michal** :white_check_mark:
 
-  Start to work on documentation - **Marek, Jakub** :white_medium_square:
+  Start to work on documentation - **Marek, Jakub** :white_check_mark:
 
   Focus all efforts to make program functional for 2nd submission
-  
+
 _Week 10 [7.12 - 14.12]_
- 
-  #30 FEATURE ADDITION: Move the addition of local variabled to symbol table to second run to overcome specific inapproriate overshadowing issues - **Terka** :white_medium_square:
-  
-  #31 FEATURE ADDITION: Add support for bases covered by BASE extension into readData() function - **Terka** :white_medium_square:
-  
+
+  #30 FEATURE ADDITION: Move the addition of local variabled to symbol table to second run to overcome specific inapproriate overshadowing issues - **Terka** :white_check_mark:
+
+  #31 FEATURE ADDITION: Add support for bases covered by BASE extension into readData() function - **Terka** :white_check_mark:
