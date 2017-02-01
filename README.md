@@ -6,7 +6,7 @@
 
   **Project Specification (cz):** https://wis.fit.vutbr.cz/FIT/st/course-files-st.php/course/IFJ-IT/projects/ifj2016.pdf
 
-  How to run: Download/clone this repository, run "make", provide a source file or use one from /tests directory (".code" extension). Supports only x64 platform.
+  **How to run:** Download/clone this repository, run "make", provide a source file or use one from /tests directory (".code" extension). Supports only x64 platform.
 
  **Stage 1: Basic data structures, supporting modules, simple lexical analysis**
 
@@ -96,7 +96,7 @@ _Week 9 [30.11 - 6.12]_
 
   Finish parser implementation - **Terka**, **Michal**, **Katka** :white_check_mark:
 
-  Fix general bugs - **ALL** :white_medium_square:
+  Fix general bugs - **ALL** :white_check_mark:
 
   Adjust Makefile for 2nd submission (/tests directory) - **Michal** :white_check_mark:
 
